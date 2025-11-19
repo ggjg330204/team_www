@@ -20,4 +20,4 @@ provider "azurerm" {
 
 
 ##fepwqjfepjwfejwpefjpjpo
-#ais;d;정현지
+#ais;d;정현지ㅁㄴㅇㄹㄴㅇㄹ
