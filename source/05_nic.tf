@@ -1,6 +1,6 @@
 #source\05_nic.tf
 resource "azurerm_network_interface" "www_bas_nic" {
-  name                = "www-bas-nic"
+  name                = "${var.teamuser}-bas-nic"
   resource_group_name = var.rgname
   location            = var.loca
 

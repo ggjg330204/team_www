@@ -1,6 +1,6 @@
 #source\04_pub.tf
 resource "azurerm_public_ip" "www_basip" {
-  name                = "www-basip"
+  name                = "${var.teamuser}-pubip"
   location            = var.loca
   resource_group_name = var.rgname
   allocation_method   = "Static"

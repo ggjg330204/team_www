@@ -1,7 +1,7 @@
 #source\10_vm.tf
 resource "azurerm_linux_virtual_machine" "hamap_basvm" {
-  name                  = "hamap-basvm"
-  resource_group_name   = azurerm_resource_group.hamap_rg.name
+  name                  = "${var.teamuser}-basvm"
+  resource_group_name   = var.rgname
   location              = azurerm_virtual_network.hamap_vnet.location
   size                  = "Standard_B1s"
   admin_username        = "www"
