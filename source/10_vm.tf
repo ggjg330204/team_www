@@ -1,3 +1,4 @@
+#source\10_vm.tf
 resource "azurerm_linux_virtual_machine" "hamap_basvm" {
   name                  = "hamap-basvm"
   resource_group_name   = azurerm_resource_group.hamap_rg.name

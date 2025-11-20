@@ -1,3 +1,4 @@
+#source\00_init.tf
 terraform {
     required_providers {
         azurerm = {
@@ -15,12 +16,3 @@ provider "azurerm" {
     }
     subscription_id = var.subid
 }
-
-#klasjdflkajsdlkfjasdfsadfasdfsadf
-
-
-##fepwqjfepjwfejwpefjpjpo
-
-
-
-1471274172r309fjwsdiofh9uwfdgv98w2ujf9-2wh4fe9h9

@@ -1,3 +1,4 @@
+#source\03_sub.tf
 resource "azurerm_subnet" "www_bas" {
   name                            = "www-bas"
   resource_group_name             = var.rgname

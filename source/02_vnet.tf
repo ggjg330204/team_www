@@ -1,3 +1,4 @@
+#source\02_vnet.tf
 resource "azurerm_virtual_network" "www_vnet" {
   name                = "www-vnet"
   location            = var.loca
