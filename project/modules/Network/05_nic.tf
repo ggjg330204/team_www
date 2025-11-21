@@ -1,8 +1,8 @@
 #source\05_nic.tf
 resource "azurerm_network_interface" "www_bas_nic" {
   name                = "${var.teamuser}-bas-nic"
-  resource_group_name = var.rgname
-  location            = var.loca
+  resource_group_name = azurerm_resource_group.www_rg.name
+  location            = azurerm_resource_group.www_rg.location
 
   ip_configuration {
     name                          = "hamap-bas-nic"

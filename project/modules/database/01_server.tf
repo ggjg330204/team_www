@@ -5,7 +5,7 @@ resource "azurerm_mysql_flexible_server" "www_mysql" {
   location               = var.loca
   administrator_login    = "adminuser"
   administrator_password = var.db_password
-  sku_name               = "B_Standard_B2s"
+  sku_name               = "GP_Standard_D2ds_v4"
   version                = "8.0.21"
   backup_retention_days  = 35
 }

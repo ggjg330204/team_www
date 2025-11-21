@@ -37,14 +37,14 @@ module "compute" {
 module "storage" {
   source = "./modules/storage"
 
-  rgname = var.rg_name
+  rgname = module.network.rg_name
   loca   = var.location
 }
 
 module "db" {
   source = "./modules/database"
 
-  rgname       = var.rg_name
+  rgname       = module.network.rg_name
   loca         = var.location
   db_subnet_id = module.network.subnet_id
   db_password  = var.db_password

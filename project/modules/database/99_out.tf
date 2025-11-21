@@ -8,10 +8,11 @@ output "mysql_server_id" {
   value       = azurerm_mysql_flexible_server.www_mysql.id
 }
 
-output "replica_server_fqdn" {
-  description = "The FQDN of the Replica Server"
-  value       = azurerm_mysql_flexible_server.www_replica.fqdn
-}
+# Replica output - 비활성화됨
+# output "replica_server_fqdn" {
+#   description = "The FQDN of the Replica Server"
+#   value       = azurerm_mysql_flexible_server.www_replica.fqdn
+# }
 
 # Redis outputs
 output "redis_hostname" {
