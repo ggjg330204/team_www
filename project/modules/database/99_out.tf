@@ -15,21 +15,21 @@ output "mysql_server_id" {
 # }
 
 # Redis outputs
-output "redis_hostname" {
-  description = "The Hostname of the Redis Instance"
-  value       = azurerm_redis_cache.www_redis.hostname
-}
-
-output "redis_ssl_port" {
-  description = "The SSL Port of the Redis Instance"
-  value       = azurerm_redis_cache.www_redis.ssl_port
-}
-
-output "redis_primary_key" {
-  description = "The Primary Access Key for the Redis Instance"
-  value       = azurerm_redis_cache.www_redis.primary_access_key
-  sensitive   = true
-}
+#output "redis_hostname" {
+#  description = "The Hostname of the Redis Instance"
+#  value       = azurerm_redis_cache.www_redis.hostname
+#}
+#
+#output "redis_ssl_port" {
+#  description = "The SSL Port of the Redis Instance"
+#  value       = azurerm_redis_cache.www_redis.ssl_port
+#}
+#
+#output "redis_primary_key" {
+#  description = "The Primary Access Key for the Redis Instance"
+#  value       = azurerm_redis_cache.www_redis.primary_access_key
+#  sensitive   = true
+#}
 
 # Data Factory outputs
 output "adf_name" {

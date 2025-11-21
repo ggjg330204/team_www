@@ -11,7 +11,7 @@ variable "loca" {
 variable "replica_loca" {
   description = "The location for the read replica"
   type        = string
-  default     = "japaneast" # Korea South에서 GP SKU 미지원으로 Japan East로 변경
+  default     = "Korea South"
 }
 
 variable "db_subnet_id" {
