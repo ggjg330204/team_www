@@ -49,12 +49,19 @@ graph TB
     ADF -.->|데이터 추출| MYSQL
     ADF -.->|파일 처리| STORAGE
     
-    style MYSQL fill:#ff6b6b
-    style MYSQL_REP fill:#ffd93d
-    style REDIS fill:#4ecdc4
-    style STORAGE fill:#95e1d3
-    style CDN fill:#a8dadc
-    style ADF fill:#457b9d
+    %% 컬러 스타일 (기존 색상 유지하되 텍스트 강화)
+    style MYSQL fill:#ff6b6b,stroke:#333,stroke-width:3px,color:#000
+    style MYSQL_REP fill:#ffd93d,stroke:#333,stroke-width:3px,color:#000
+    style REDIS fill:#4ecdc4,stroke:#333,stroke-width:3px,color:#000
+    style STORAGE fill:#95e1d3,stroke:#333,stroke-width:3px,color:#000
+    style CDN fill:#a8dadc,stroke:#333,stroke-width:3px,color:#000
+    style ADF fill:#457b9d,stroke:#333,stroke-width:3px,color:#fff
+    style WEB fill:#f4a261,stroke:#333,stroke-width:3px,color:#000
+    style PE_DB fill:#e0e0e0,stroke:#333,stroke-width:2px,color:#000
+    style PE_STG fill:#e0e0e0,stroke:#333,stroke-width:2px,color:#000
+    
+    %% 전역 테마 설정 (글자 굵기 및 크기 강화)
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px,color:#000,font-weight:bold,font-size:14px
 ```
 
 ---
