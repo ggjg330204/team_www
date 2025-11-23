@@ -1,23 +1,24 @@
 #modules\vm.tf\04-1_appgw.tf
 locals {
-  backend_address_pool_name          = "${azurerm_subnet.www_vnet.id}-beap"
-  frontend_port_name             = "${azurerm_subnet.www_vnet.id}-feport"
-  frontend_ip_configuration_name = "${azurerm_subnet.www_vnet.id}-feip"
-  http_setting_name             = "${azurerm_subnet.www_vnet.id}-be-htst"
-  listener_name                 = "${azurerm_subnet.www_vnet.id}-httplstn"
-  request_routing_rule_name     = "${azurerm_subnet.www_vnet.id}-rqrt"
-  redirect_configuration_name   = "${azurerm_subnet.www_vnet.id}-rdrcfg"
+  appgw_prefix = azurerm_subnet.www_load.name
+  backend_address_pool_name          = "${local.appgw_prefix}-beap"
+  frontend_port_name             = "${local.appgw_prefix}-feport"
+  frontend_ip_configuration_name = "${local.appgw_prefix}-feip"
+  http_setting_name             = "${local.appgw_prefix}-be-htst"
+  listener_name                 = "${local.appgw_prefix}-httplstn"
+  request_routing_rule_name     = "${local.appgw_prefix}-rqrt"
+  redirect_configuration_name   = "${local.appgw_prefix}-rdrcfg"
 }
 
-resource "azurerm_application_gateway" "network" {
+resource "azurerm_application_gateway" "www_appgw" {
   name                = "www-appgateway"
   resource_group_name = azurerm_resource_group.www_rg.name
   location            = azurerm_resource_group.www_rg.location
 
 
   sku {
-    name = "WAF_v2"
-    tier = "WAF_v2"
+    name = "Standard_v2"
+    tier = "Standard_v2"
   }
 
   autoscale_configuration {
@@ -62,6 +63,7 @@ resource "azurerm_application_gateway" "network" {
   request_routing_rule {
     name                       = local.request_routing_rule_name
     rule_type                  = "Basic"
+    priority = 100
     http_listener_name         = local.listener_name
     backend_address_pool_name  = local.backend_address_pool_name
     backend_http_settings_name = local.http_setting_name
