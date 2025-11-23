@@ -10,6 +10,6 @@ cp /var/www/html/wp-config-sample.php  /var/www/html/wp-config.php
 sed -i 's/database_name_here/wordpress/g' /var/www/html/wp-config.php
 sed -i 's/username_here/www/g' /var/www/html/wp-config.php
 sed -i 's/password_here/It12345!/g' /var/www/html/wp-config.php
-sed -i 's/localhost/www-mysql.mysql.database.azure.com/g' /var/www/html/wp-config.php
+sed -i 's/localhost/10.0.4.4/g' /var/www/html/wp-config.php
 echo $HOSTNAME > /var/www/html/health.html
 systemctl enable --now httpd

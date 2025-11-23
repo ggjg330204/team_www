@@ -42,7 +42,6 @@ resource "azurerm_application_gateway" "hj_appgw" {
   backend_http_settings {
     name                  = local.http_setting_name
     cookie_based_affinity = "Disabled"
-    path                  = "/"
     port                  = 80
     protocol              = "Http"
     request_timeout       = 60
@@ -63,4 +62,11 @@ resource "azurerm_application_gateway" "hj_appgw" {
     backend_address_pool_name  = local.backend_address_pool_name
     backend_http_settings_name = local.http_setting_name
   }
+}
+
+resource "azurerm_network_interface_application_gateway_backend_address_pool_association" "hj_asso_appbknd" {
+  network_interface_id    = azurerm_network_interface.hj_nic_web.id
+  ip_configuration_name   = "hj-ip-web"
+  backend_address_pool_id = tolist(azurerm_application_gateway.hj_appgw.backend_address_pool).0.id
+  depends_on = [ azurerm_network_interface.hj_nic_web ]
 }

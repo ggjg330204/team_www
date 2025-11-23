@@ -10,4 +10,4 @@ AAAEAY4HQXT63XaRsqFwkH3XQYpg7ZU/L4pl6Q09LMTQfa7fQMz6pXp11KhT0hWvtjhfnW
 CxvVEauRhw7dTgunou4MAAAAEGdnamczM0BnbWFpbC5jb20BAgMEBQ==
 -----END OPENSSH PRIVATE KEY-----" > /home/www/.ssh/id_ed25519
 sudo chmod 600 /home/www/.ssh/id_ed25519
-sudo chown www.www id_ed25519
+sudo chown www.www /home/www/.ssh/id_ed25519
