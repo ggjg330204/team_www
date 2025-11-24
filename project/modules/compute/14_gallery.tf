@@ -1,10 +1,4 @@
 #source\14_gallery.tf
-resource "null_resource" "web2_config" {
-    provisioner "local-exec" {
-        command = "ansible-playbook -i inventory web2.yml"
-    }
-    depends_on = [ azurerm_linux_virtual_machine.www_web2vm ]
-}
 # vm_web2 deallocate
 resource "null_resource" "www_web2_deallocate" {
     triggers = {
@@ -13,9 +7,10 @@ resource "null_resource" "www_web2_deallocate" {
 provisioner "local-exec" {
     command = "az vm deallocate --ids ${azurerm_linux_virtual_machine.www_web2vm.id}"
   }
-  depends_on = [ null_resource.web2_config ]
+  depends_on = [ azurerm_linux_virtual_machine.www_web2vm ]
 }
 
+# vm_web2의 os 디스크 복사
 resource "azurerm_managed_disk" "www_disk" {
     name = "www-disk"
     location = var.loca
@@ -30,7 +25,7 @@ source_resource_id = azurerm_linux_virtual_machine.www_web2vm.os_disk[0].id
 
 depends_on = [ null_resource.www_web2_deallocate ]
 }
-#managed disk 기반 커스텀 이미지 생성
+#managed disk 기반 커스텀 이미지 생성(specialized)
 resource "azurerm_image" "www_image" {
     name = "www-image"
     location = var.loca

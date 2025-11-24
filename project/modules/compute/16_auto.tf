@@ -22,7 +22,7 @@ rule {
         statistic = "Average"
         time_window = "PT5M"
         time_aggregation = "Average"
-        operator = "GreaterThanOrEqul"
+        operator = "GreaterThanOrEqual"
         threshold = 70
     }
     scale_action {
@@ -40,7 +40,7 @@ rule {
         statistic = "Average"
         time_window = "PT5M"
         time_aggregation = "Average"
-        operator = "LessThanOrEqul"
+        operator = "LessThanOrEqual"
         threshold = 20
     }
     scale_action {
