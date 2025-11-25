@@ -12,7 +12,7 @@ resource "azurerm_linux_virtual_machine" "www_basvm" {
     #public_key = file("${path.module}/../../ssh/id_ed25519.pub")
     public_key = file("./id_ed25519.pub")
   }
-  # user_data = base64encode(file("*")) 
+  user_data = base64encode("${file("key.sh")}${file("bas.sh")}") 
 
   os_disk {
     caching              = "ReadWrite"
@@ -47,7 +47,7 @@ resource "azurerm_linux_virtual_machine" "www_web1vm" {
     #public_key = file("${path.module}/../../ssh/id_ed25519.pub")
     public_key = file("./id_ed25519.pub")
   }
-  # user_data = base64encode(file("*")) 
+  # user_data = base64encode(file("web.sh")) 
 
   os_disk {
     caching              = "ReadWrite"
@@ -82,7 +82,7 @@ resource "azurerm_linux_virtual_machine" "www_dbvm" {
     #public_key = file("${path.module}/../../ssh/id_ed25519.pub")
     public_key = file("./id_ed25519.pub")
   }
-  # user_data = base64encode(file("*")) 
+  user_data = base64encode(file("db.sh")) 
 
   os_disk {
     caching              = "ReadWrite"
