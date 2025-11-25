@@ -65,9 +65,14 @@ variable "subnet_bas" {
   default = "azurerm_subnet.www_sub_bas"
 }
 
-variable "subnet_web" {
+variable "subnet_web1" {
   type = string
-  default = "azurerm_subnet.www_sub_web"
+  default = "azurerm_subnet.www_sub_web1"
+}
+
+variable "subnet_web2" {
+  type = string
+  default = "azurerm_subnet.www_sub_web2"
 }
 
 variable "subnet_db" {
@@ -75,7 +80,12 @@ variable "subnet_db" {
   default = "azurerm_subnet.www_sub_db"
 }
 
-variable "sth_subnet_web" {
+variable "sth_subnet_web1" {
   type = string
-  default = "azurerm_subnet.www_sth_sub_web"
+  default = "azurerm_subnet.www_sth_sub_web1"
+}
+
+variable "sth_subnet_web2" {
+  type = string
+  default = "azurerm_subnet.www_sth_sub_web2"
 }
