@@ -1,3 +1,6 @@
+
+SERVER_HOSTNAME=$(hostname)
+
 cat <<EOF > /var/www/html/index.html
 <!DOCTYPE html>
 <html lang="ko">
@@ -144,7 +147,7 @@ cat <<EOF > /var/www/html/index.html
         // =============================================
 
         // 2. 실제 페이지에서는 서버에서 호스트네임을 주입
-        const hostname = "{{HOSTNAME}}"; // 실제 서버에서 주입 시 주석 해제
+        const hostname = '${SERVER_HOSTNAME}'; // 실제 서버에서 주입 시 주석 해제
         // const hostname = TEST_HOSTNAME; // 테스트 시 주석 해제
 
         // 아래 라인 하나로 테스트/실제 쉽게 전환 가능
@@ -154,29 +157,49 @@ cat <<EOF > /var/www/html/index.html
         document.getElementById("hostname-display").textContent = hostname;
 
         // 무지개 색상 배열
-        const rainbowColors = [
-		"#FF9999", // 연한 빨강 (원래: #FF0000)
-    		"#FFC999", // 연한 주황 (원래: #FF7F00)
-    		"#FFFF99", // 연한 노랑 (원래: #FFFF00)
-    		"#99FF99", // 연한 초록 (원래: #00FF00)
-    		"#9999FF", // 연한 파랑 (원래: #0000FF)
-    		"#A399C8", // 연한 남색 (원래: #4B0082, 인디고 계열로 조정)
-    		"#C899FF"  // 연한 보라 (원래: #8B00FF)
-        ];
+ const rainbowColors = [
+        "#FF9999", // 0: 연한 빨강
+            "#FFC999", // 1: 연한 주황
+            "#FFFF99", // 2: 연한 노랑
+            "#99FF99", // 3: 연한 초록
+            "#9999FF", // 4: 연한 파랑
+            "#A399C8", // 5: 연한 남색
+            "#C899FF"  // 6: 연한 보라
+        ];
 
-        let selectedColor = "#000000"; // 기본 검정색
+        let selectedColor = "#000000"; // 기본 검정색
+        let instanceNumber = null; // 인스턴스 번호를 저장할 변수
 
-        if (/^www-vmss\d{6}$/.test(hostname)) {
-            const vmNumber = parseInt(hostname.match(/\d{6}$/)[0]);
-            selectedColor = rainbowColors[vmNumber % rainbowColors.length];
-        } else if (/^www-web\d+vm$/.test(hostname)) {
-            const webNumber = parseInt(hostname.match(/\d+/)[0]);
-            selectedColor = rainbowColors[webNumber % rainbowColors.length];
+        // 1. www- 접두사에 관계없이 [접두사]-vmss[6자리 숫자] 패턴 처리
+        if (/-vmss\d{6}$/.test(hostname)) {
+            // 호스트네임 끝 6자리 숫자를 추출
+            const match = hostname.match(/\d{6}$/);
+            if (match) {
+                // 6자리 숫자를 정수로 변환 (예: 000001 -> 1)
+                instanceNumber = parseInt(match[0], 10);
+            }
+        } 
+        
+        // 2. www- 접두사에 관계없이 [접두사]-web[숫자]vm 패턴 처리
+        else if (/-web\d+vm$/.test(hostname)) {
+            // web과 vm 사이에 있는 숫자를 추출
+            const match = hostname.match(/web(\d+)vm$/);
+            if (match && match[1]) {
+                // 숫자를 정수로 변환 (예: web1vm -> 1)
+                instanceNumber = parseInt(match[1], 10);
+            }
+        }
+        
+        // 인스턴스 번호가 유효할 경우 색상 할당
+        if (instanceNumber !== null && instanceNumber > 0) {
+            // 숫자를 배열 길이로 나눈 나머지로 인덱스 결정 (순환)
+            // 인덱스는 0부터 시작하므로, 1번 인스턴스는 0번 인덱스에 매핑되도록 -1을 사용
+            const colorIndex = (instanceNumber - 1) % rainbowColors.length;
+            selectedColor = rainbowColors[colorIndex];
         }
 
-        // **[변경됨]** body가 아닌 header 배경색 적용
-        document.querySelector('header').style.backgroundColor = selectedColor;
-    </script>
+        // **[변경됨]** body가 아닌 header 배경색 적용
+        document.querySelector('header').style.backgroundColor = selectedColor;    </script>
 
 </body>
 </html>
