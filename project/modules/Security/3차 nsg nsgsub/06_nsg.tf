@@ -77,8 +77,8 @@ resource "azurerm_network_security_group" "www_nsg_db" {
   }
 }
 
-resource "azurerm_network_security_group" "www_sth_nsg_http" {
-  name                = var.www_sth_nsg_http
+resource "azurerm_network_security_group" "www_v1_nsg_http" {
+  name                = var.www_v1_nsg_http
   location            = "KoreaSouth"
   resource_group_name = var.rgname
 

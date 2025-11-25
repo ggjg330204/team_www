@@ -42,9 +42,9 @@ variable "www_nsg_db" {
   default = "www_nsg_db" 
 }
 
-variable "www_sth_nsg_http" {
+variable "www_v1_nsg_http" {
   type = string
-  default = "www_sth_nsg_http" 
+  default = "www_v1_nsg_http" 
 }
 
 
@@ -80,17 +80,17 @@ variable "subnet_db" {
   default = "azurerm_subnet.www_sub_db"
 }
 
-variable "sth_subnet_web1" {
+variable "v1_subnet_web1" {
   type = string
-  default = "azurerm_subnet.www_sth_sub_web1"
+  default = "azurerm_subnet.www_v1_sub_web1"
 }
 
-variable "sth_subnet_web2" {
+variable "v1_subnet_web2" {
   type = string
-  default = "azurerm_subnet.www_sth_sub_web2"
+  default = "azurerm_subnet.www_v1_sub_web2"
 }
 
-variable "sth_subnet_vmss" {
+variable "v1_subnet_vmss" {
   type = string
-  default = "azurerm_subnet.www_sth_sub_vmss"
+  default = "azurerm_subnet.www_v1_sub_vmss"
 }
