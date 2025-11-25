@@ -14,7 +14,7 @@ resource "azurerm_subnet_network_security_group_association" "www_asso_subnsg_we
 }
 
 resource "azurerm_subnet_network_security_group_association" "www_asso_subnsg_db" {
-  subnet_id                 = var.subnet_db
+  subnet_id                 = var.subnet_db.id
   network_security_group_id = var.www_nsg_db
 }
 
