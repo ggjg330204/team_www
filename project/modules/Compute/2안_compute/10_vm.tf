@@ -10,7 +10,7 @@ resource "azurerm_linux_virtual_machine" "www_basvm" {
   admin_ssh_key {
     username   = "www"
     #public_key = file("${path.module}/../../ssh/id_ed25519.pub")
-    public_key = file("./id_ed25519.pub.txt")
+    public_key = file("./id_ed25519.pub")
   }
   user_data = base64encode("${file("key.sh")}${file("bas.sh")}")
 
@@ -45,7 +45,7 @@ resource "azurerm_linux_virtual_machine" "www_web1vm" {
   admin_ssh_key {
     username   = "www"
     #public_key = file("${path.module}/../../ssh/id_ed25519.pub")
-    public_key = file("./id_ed25519.pub.txt")
+    public_key = file("./id_ed25519.pub")
   }
   user_data = base64encode(file("web.sh")) 
 
@@ -81,7 +81,7 @@ resource "azurerm_linux_virtual_machine" "www_dbvm" {
   admin_ssh_key {
     username   = "www"
     #public_key = file("${path.module}/../../ssh/id_ed25519.pub")
-    public_key = file("./id_ed25519.pub.txt")
+    public_key = file("./id_ed25519.pub")
   }
   user_data = base64encode(file("db.sh")) 
 
@@ -116,7 +116,7 @@ resource "azurerm_linux_virtual_machine" "www_vnet1_web1vm" {
   admin_ssh_key {
     username   = "www"
     #public_key = file("${path.module}/../../ssh/id_ed25519.pub")
-    public_key = file("./id_ed25519.pub.txt")
+    public_key = file("./id_ed25519.pub")
   }
   user_data = base64encode(file("web.sh")) 
 
@@ -151,7 +151,7 @@ resource "azurerm_linux_virtual_machine" "www_vnet1_web2vm" {
   admin_ssh_key {
     username   = "www"
     #public_key = file("${path.module}/../../ssh/id_ed25519.pub")
-    public_key = file("./id_ed25519.pub.txt")
+    public_key = file("./id_ed25519.pub")
   }
   user_data = base64encode(file("web.sh")) 
 
