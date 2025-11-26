@@ -9,6 +9,11 @@ variable "loca" {
   type        = string
 }
 
+variable "loca_replica" {
+  description = "보조 리전 (Korea South)"
+  type        = string
+}
+
 variable "teamuser" {
   description = "리소스 명명에 사용될 팀 사용자명"
   type        = string

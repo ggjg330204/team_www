@@ -1,5 +1,6 @@
 resource "azurerm_storage_account" "www_sa" {
-  name                     = var.sa_name
+  name                     = "${var.sa_name}${var.teamuser}"
+  #name                     = var.sa_name
   resource_group_name      = var.rgname
   location                 = var.loca
   account_tier             = "Standard"

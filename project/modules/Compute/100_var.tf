@@ -2,16 +2,31 @@
 variable "subid" { type = string }
 variable "rgname" { type = string }
 variable "loca" { type = string }
-variable "vnet-bas" { type = string }
-variable "vnet-nat" { type = string }
-variable "vnet-load" { type = string }
-variable "vnet-web1" { type = string }
-variable "vnet-web2" { type = string }
-variable "vnet-db" { type = string }
-variable "vnet-vmss" { type = string }
 variable "teamuser" { type = string }
 # variable "vnet" {
 #   type = string
 #   default = "www-vnet"
 # }
 variable "nic_id" { type = string }
+
+variable "subnet_www_bas_nic" {
+  type = string
+}
+variable "subnet_www_web1_nic" {
+  type = string
+}
+variable "subnet_www_web2_nic" {
+  type = string
+}
+variable "subnet_www_db_nic" {
+  type = string
+}
+variable "subnet_www_app_nic" {
+  type = string
+}
+variable "subnet_www_web1_v1_nic" {
+  type = string
+}
+variable "subnet_www_web2_v1_nic" {
+  type = string
+}

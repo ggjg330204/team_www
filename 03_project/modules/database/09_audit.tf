@@ -1,5 +1,5 @@
 resource "azurerm_log_analytics_workspace" "log" {
-  name                = "www-log-analytics"
+  name                = "${var.teamuser}-log-analytics"
   location            = var.loca
   resource_group_name = var.rgname
   sku                 = "PerGB2018"

@@ -1,8 +1,8 @@
 # vnet0 NIC (Korea Central)
 resource "azurerm_network_interface" "www_bas_nic" {
   name                = "${var.teamuser}-bas-nic"
-  resource_group_name = azurerm_resource_group.www_rg.name
-  location            = "KoreaCentral"
+  resource_group_name = var.rgname
+  location            = var.loca
 
   ip_configuration {
     name                          = "www-bas-nic-ipconf"
@@ -16,8 +16,8 @@ resource "azurerm_network_interface" "www_bas_nic" {
 
 resource "azurerm_network_interface" "www_web1_nic" {
   name                = "${var.teamuser}-web1-nic"
-  resource_group_name = azurerm_resource_group.www_rg.name
-  location            = "KoreaCentral"
+  resource_group_name = var.rgname
+  location            = var.loca
 
   ip_configuration {
     name                          = "www-web1-nic-ipconf"
@@ -31,8 +31,8 @@ resource "azurerm_network_interface" "www_web1_nic" {
 
 resource "azurerm_network_interface" "www_web2_nic" {
   name                = "${var.teamuser}-web2-nic"
-  resource_group_name = azurerm_resource_group.www_rg.name
-  location            = "KoreaCentral"
+  resource_group_name = var.rgname
+  location            = var.loca
 
   ip_configuration {
     name                          = "www-web2-nic-ipconf"
@@ -46,15 +46,15 @@ resource "azurerm_network_interface" "www_web2_nic" {
 
 resource "azurerm_network_interface" "www_db_nic" {
   name                = "${var.teamuser}db-nic"
-  resource_group_name = azurerm_resource_group.www_rg.name
-  location            = "KoreaCentral"
+  resource_group_name = var.rgname
+  location            = var.loca
 
   ip_configuration {
     name                          = "www-db-nic-ipconf"
     subnet_id                     = azurerm_subnet.www_db.id
     private_ip_address_allocation = "Static"
     private_ip_address_version    = "IPv4"
-    private_ip_address            = "10.0.4.4"
+    private_ip_address            = "10.0.4.5"
     # public_ip_address_id          = azurerm_public_ip.www_dbip.id
   }
 }
@@ -62,8 +62,8 @@ resource "azurerm_network_interface" "www_db_nic" {
 # vnet1 NIC (Korea South)
 resource "azurerm_network_interface" "www_app_nic" {
   name                = "${var.teamuser}app-nic"
-  resource_group_name = azurerm_resource_group.www_rg.name
-  location            = "KoreaSouth"
+  resource_group_name = var.rgname
+  location            = var.loca_replica
 
   ip_configuration {
     name                          = "www-app-nic-ipconf"
@@ -77,8 +77,8 @@ resource "azurerm_network_interface" "www_app_nic" {
 
 resource "azurerm_network_interface" "www_web1_v1_nic" {
   name                = "${var.teamuser}web1-v1-nic"
-  resource_group_name = azurerm_resource_group.www_rg.name
-  location            = "KoreaSouth"
+  resource_group_name = var.rgname
+  location            = var.loca_replica
 
   ip_configuration {
     name                          = "www-web1-v1-nic-ipconf"
@@ -92,8 +92,8 @@ resource "azurerm_network_interface" "www_web1_v1_nic" {
 
 resource "azurerm_network_interface" "www_web2_v1_nic" {
   name                = "${var.teamuser}web2-v1-nic"
-  resource_group_name = azurerm_resource_group.www_rg.name
-  location            = "KoreaSouth"
+  resource_group_name = var.rgname
+  location            = var.loca_replica
 
   ip_configuration {
     name                          = "www-web2-v1-nic-ipconf"

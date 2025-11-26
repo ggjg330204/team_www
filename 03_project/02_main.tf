@@ -1,9 +1,14 @@
 locals {
-  teamuser = "leegh"
-  rg_name  = "04-t1-${local.teamuser}"
-  location    = "koreacentral"
+  teamuser         = "leegh"
+  rg_name          = "04-t1-${local.teamuser}"
+  location         = "koreacentral"
   location_replica = "Korea South"
-  db_password = "It12345!"
+  db_password      = "It12345!"
+}
+
+resource "azurerm_resource_group" "www_rg" {
+  name     = local.rg_name
+  location = local.location
 }
 
 module "network" {
@@ -23,6 +28,7 @@ module "compute" {
   loca           = local.location
   teamuser       = local.teamuser
   subid          = var.subid
+  loca_replica   = local.location_replica
   nic_id         = module.network.nic_id
   vmss_subnet_id = module.network.vmss_subnet_id
 }
@@ -31,6 +37,7 @@ module "storage" {
   source = "./modules/Storage"
 
   rgname            = local.rg_name
+  teamuser          = local.teamuser
   loca              = local.location
   storage_subnet_id = module.network.storage_subnet_id
   vnet_id           = module.network.vnet_id
@@ -41,6 +48,8 @@ module "db" {
 
   rgname                    = local.rg_name
   loca                      = local.location
+  teamuser                  = local.teamuser
+  replica_loca              = local.location_replica
   db_subnet_id              = module.network.db_subnet_id
   db_password               = local.db_password
   vnet_id                   = module.network.vnet_id

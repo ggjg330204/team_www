@@ -2,7 +2,7 @@
 resource "azurerm_public_ip" "www_basip" {
   name                = "${var.teamuser}-pubip"
   location            = "KoreaCentral"
-  resource_group_name = azurerm_resource_group.www_rg.name
+  resource_group_name = var.rgname
   allocation_method   = "Static"
   sku                 = "Standard"
   ip_version          = "IPv4"
@@ -11,7 +11,7 @@ resource "azurerm_public_ip" "www_basip" {
 resource "azurerm_public_ip" "www_natip" {
   name                = "${var.teamuser}-natip"
   location            = "KoreaCentral"
-  resource_group_name = azurerm_resource_group.www_rg.name
+  resource_group_name = var.rgname
   allocation_method   = "Static"
   sku                 = "Standard"
   ip_version          = "IPv4"
@@ -23,7 +23,7 @@ resource "azurerm_public_ip" "www_natip" {
 resource "azurerm_public_ip" "www_loadip" {
   name                = "${var.teamuser}-loadip"
   location            = "KoreaSouth"
-  resource_group_name = azurerm_resource_group.www_rg.name
+  resource_group_name = var.rgname
   allocation_method   = "Static"
   sku                 = "Standard"
   ip_version          = "IPv4"
@@ -32,7 +32,7 @@ resource "azurerm_public_ip" "www_loadip" {
 resource "azurerm_public_ip" "www_appip" {
   name                = "${var.teamuser}-appip"
   location            = "KoreaSouth"
-  resource_group_name = azurerm_resource_group.www_rg.name
+  resource_group_name = var.rgname
   allocation_method   = "Static"
   sku                 = "Standard"
   ip_version          = "IPv4"
@@ -41,7 +41,7 @@ resource "azurerm_public_ip" "www_appip" {
 resource "azurerm_public_ip" "www_natip_v1" {
   name                = "${var.teamuser}-natip-v1"
   location            = "KoreaSouth"
-  resource_group_name = azurerm_resource_group.www_rg.name
+  resource_group_name = var.rgname
   allocation_method   = "Static"
   sku                 = "Standard"
   ip_version          = "IPv4"

@@ -1,6 +1,6 @@
 resource "azurerm_lb" "www_lb_v1" {
-  name                = "www-lb-v1"
-  resource_group_name = azurerm_resource_group.www_rg.name
+  name                = "${var.teamuser}-lb-v1"
+  resource_group_name = var.rgname
   location            = "KoreaSouth"
   sku                 = "Standard"
 

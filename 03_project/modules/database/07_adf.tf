@@ -18,11 +18,11 @@ resource "random_string" "adf_suffix" {
   upper   = false
 }
 
-resource "azurerm_data_factory_linked_service_mysql" "mysql_source" {
-  name              = "MySQLSource"
-  data_factory_id   = azurerm_data_factory.www_adf.id
-  connection_string = "Server=${azurerm_mysql_flexible_server.www_mysql.fqdn};Port=3306;Database=${var.db_name};Uid=${var.db_user};Pwd=${var.db_password};SslMode=Required;"
-}
+# resource "azurerm_data_factory_linked_service_mysql" "mysql_source" {
+#   name              = "MySQLSource"
+#   data_factory_id   = azurerm_data_factory.www_adf.id
+#   connection_string = "Server=${azurerm_mysql_flexible_server.www_mysql.fqdn};Port=3306;Database=${var.db_name};Uid=${var.db_user};Pwd=${var.db_password};SslMode=Required;"
+# }
 
 resource "azurerm_data_factory_linked_service_azure_blob_storage" "blob_dest" {
   name              = "BlobStorageDestination"
@@ -30,47 +30,47 @@ resource "azurerm_data_factory_linked_service_azure_blob_storage" "blob_dest" {
   connection_string = var.storage_connection_string
 }
 
-resource "azurerm_data_factory_pipeline" "mysql_backup" {
-  name            = "MySQLDailyBackup"
-  data_factory_id = azurerm_data_factory.www_adf.id
+# resource "azurerm_data_factory_pipeline" "mysql_backup" {
+#   name            = "MySQLDailyBackup"
+#   data_factory_id = azurerm_data_factory.www_adf.id
 
-  description = "Daily MySQL backup to Blob Storage"
+#   description = "Daily MySQL backup to Blob Storage"
 
-  activities_json = jsonencode([
-    {
-      name = "CopyMySQLToBlob"
-      type = "Copy"
-      inputs = [
-        {
-          referenceName = azurerm_data_factory_dataset_mysql.mysql_dataset.name
-          type          = "DatasetReference"
-        }
-      ]
-      outputs = [
-        {
-          referenceName = azurerm_data_factory_dataset_delimited_text.blob_dataset.name
-          type          = "DatasetReference"
-        }
-      ]
-      typeProperties = {
-        source = {
-          type  = "MySqlSource"
-          query = "SELECT * FROM information_schema.tables"
-        }
-        sink = {
-          type = "DelimitedTextSink"
-        }
-        enableStaging = false
-      }
-    }
-  ])
-}
+#   activities_json = jsonencode([
+#     {
+#       name = "CopyMySQLToBlob"
+#       type = "Copy"
+#       inputs = [
+#         {
+#           referenceName = "MySQLDataset" # azurerm_data_factory_dataset_mysql.mysql_dataset.name
+#           type          = "DatasetReference"
+#         }
+#       ]
+#       outputs = [
+#         {
+#           referenceName = azurerm_data_factory_dataset_delimited_text.blob_dataset.name
+#           type          = "DatasetReference"
+#         }
+#       ]
+#       typeProperties = {
+#         source = {
+#           type  = "MySqlSource"
+#           query = "SELECT * FROM information_schema.tables"
+#         }
+#         sink = {
+#           type = "DelimitedTextSink"
+#         }
+#         enableStaging = false
+#       }
+#     }
+#   ])
+# }
 
-resource "azurerm_data_factory_dataset_mysql" "mysql_dataset" {
-  name                = "MySQLDataset"
-  data_factory_id     = azurerm_data_factory.www_adf.id
-  linked_service_name = azurerm_data_factory_linked_service_mysql.mysql_source.name
-}
+# resource "azurerm_data_factory_dataset_mysql" "mysql_dataset" {
+#   name                = "MySQLDataset"
+#   data_factory_id     = azurerm_data_factory.www_adf.id
+#   linked_service_name = "MySQLSource" # azurerm_data_factory_linked_service_mysql.mysql_source.name
+# }
 
 resource "azurerm_data_factory_dataset_delimited_text" "blob_dataset" {
   name                = "BlobBackupDataset"
@@ -91,17 +91,17 @@ resource "azurerm_data_factory_dataset_delimited_text" "blob_dataset" {
   first_row_as_header = true
 }
 
-resource "azurerm_data_factory_trigger_schedule" "daily_backup_trigger" {
-  name            = "DailyBackupTrigger"
-  data_factory_id = azurerm_data_factory.www_adf.id
-  pipeline_name   = azurerm_data_factory_pipeline.mysql_backup.name
+# resource "azurerm_data_factory_trigger_schedule" "daily_backup_trigger" {
+#   name            = "DailyBackupTrigger"
+#   data_factory_id = azurerm_data_factory.www_adf.id
+#   pipeline_name   = "MySQLDailyBackup" # azurerm_data_factory_pipeline.mysql_backup.name
 
-  frequency  = "Day"
-  interval   = 1
-  start_time = "2025-11-25T02:00:00Z"
+#   frequency  = "Day"
+#   interval   = 1
+#   start_time = "2025-11-25T02:00:00Z"
 
-  schedule {
-    hours   = [2]
-    minutes = [0]
-  }
-}
+#   schedule {
+#     hours   = [2]
+#     minutes = [0]
+#   }
+# }

@@ -3,15 +3,15 @@ output "bas_pub_ip" {
   value       = azurerm_public_ip.www_basip.ip_address
 }
 
-output "rg_name" {
-  description = "리소스 그룹 이름"
-  value       = azurerm_resource_group.www_rg.name
-}
+# output "rg_name" {
+#   description = "리소스 그룹 이름"
+#   value       = azurerm_resource_group.www_rg.name
+# }
 
-output "rg_id" {
-  description = "리소스 그룹 ID"
-  value       = azurerm_resource_group.www_rg.id
-}
+# output "rg_id" {
+#   description = "리소스 그룹 ID"
+#   value       = azurerm_resource_group.www_rg.id
+# }
 
 output "vnet_id" {
   description = "메인 가상 네트워크 ID (vnet0 - Korea Central)"

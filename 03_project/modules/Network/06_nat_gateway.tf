@@ -1,7 +1,7 @@
 # vnet0 NAT 게이트웨이 (Korea Central)
 resource "azurerm_nat_gateway" "www_nat" {
   name                    = "${var.teamuser}-nat"
-  resource_group_name     = azurerm_resource_group.www_rg.name
+  resource_group_name     = var.rgname
   location                = "KoreaCentral"
   sku_name                = "Standard"
   idle_timeout_in_minutes = "4"
@@ -17,7 +17,7 @@ resource "azurerm_nat_gateway_public_ip_association" "www_nat_pubip" {
 # vnet1 NAT 게이트웨이 (Korea South)
 resource "azurerm_nat_gateway" "www_nat_v1" {
   name                    = "${var.teamuser}-nat-v1"
-  resource_group_name     = azurerm_resource_group.www_rg.name
+  resource_group_name     = var.rgname
   location                = "KoreaSouth"
   sku_name                = "Standard"
   idle_timeout_in_minutes = "4"

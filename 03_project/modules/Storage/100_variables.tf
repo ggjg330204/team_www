@@ -8,6 +8,11 @@ variable "loca" {
   type        = string
 }
 
+variable "teamuser" {
+  description = "스토리지계정용 teamname"
+  type        = string
+}
+
 variable "sa_name" {
   description = "스토리지 계정 이름 (전역적으로 고유해야 하며, 소문자 및 숫자만 가능)"
   type        = string

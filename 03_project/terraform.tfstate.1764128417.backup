@@ -1,0 +1,2738 @@
+{
+  "version": 4,
+  "terraform_version": "1.13.5",
+  "serial": 130,
+  "lineage": "64ef1917-a84b-4fe7-1e59-469188eac695",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "data",
+      "type": "azuread_user",
+      "name": "compute_admin",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azuread\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "account_enabled": true,
+            "age_group": "",
+            "business_phones": [],
+            "city": "",
+            "company_name": "",
+            "consent_provided_for_minor": "",
+            "cost_center": null,
+            "country": "",
+            "creation_type": "",
+            "department": "",
+            "display_name": "배하영",
+            "division": null,
+            "employee_hire_date": "",
+            "employee_id": "",
+            "employee_type": "",
+            "external_user_state": "",
+            "fax_number": "",
+            "given_name": "",
+            "id": "/users/5a54cace-68ce-40f1-b485-b32a226e50e5",
+            "im_addresses": [],
+            "job_title": "",
+            "mail": "",
+            "mail_nickname": "student11",
+            "manager_id": "",
+            "mobile_phone": "",
+            "object_id": "5a54cace-68ce-40f1-b485-b32a226e50e5",
+            "office_location": "",
+            "onpremises_distinguished_name": "",
+            "onpremises_domain_name": "",
+            "onpremises_immutable_id": "",
+            "onpremises_sam_account_name": "",
+            "onpremises_security_identifier": "",
+            "onpremises_sync_enabled": false,
+            "onpremises_user_principal_name": "",
+            "other_mails": [],
+            "postal_code": "",
+            "preferred_language": "",
+            "proxy_addresses": [],
+            "show_in_address_list": false,
+            "state": "",
+            "street_address": "",
+            "surname": "",
+            "timeouts": null,
+            "usage_location": "",
+            "user_principal_name": "student411@mscsschool.onmicrosoft.com",
+            "user_type": "Member"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "data",
+      "type": "azuread_user",
+      "name": "db_admin",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azuread\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "account_enabled": true,
+            "age_group": "",
+            "business_phones": [],
+            "city": "",
+            "company_name": "",
+            "consent_provided_for_minor": "",
+            "cost_center": null,
+            "country": "",
+            "creation_type": "",
+            "department": "",
+            "display_name": "이두경",
+            "division": null,
+            "employee_hire_date": "",
+            "employee_id": "",
+            "employee_type": "",
+            "external_user_state": "",
+            "fax_number": "",
+            "given_name": "",
+            "id": "/users/492131b6-671b-43f1-ac1e-db6a26222569",
+            "im_addresses": [],
+            "job_title": "",
+            "mail": "",
+            "mail_nickname": "student421",
+            "manager_id": "",
+            "mobile_phone": "",
+            "object_id": "492131b6-671b-43f1-ac1e-db6a26222569",
+            "office_location": "",
+            "onpremises_distinguished_name": "",
+            "onpremises_domain_name": "",
+            "onpremises_immutable_id": "",
+            "onpremises_sam_account_name": "",
+            "onpremises_security_identifier": "",
+            "onpremises_sync_enabled": false,
+            "onpremises_user_principal_name": "",
+            "other_mails": [],
+            "postal_code": "",
+            "preferred_language": "",
+            "proxy_addresses": [],
+            "show_in_address_list": false,
+            "state": "",
+            "street_address": "",
+            "surname": "",
+            "timeouts": null,
+            "usage_location": "",
+            "user_principal_name": "student421@mscsschool.onmicrosoft.com",
+            "user_type": "Member"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "data",
+      "type": "azuread_user",
+      "name": "network_admin",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azuread\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "account_enabled": true,
+            "age_group": "",
+            "business_phones": [],
+            "city": "",
+            "company_name": "",
+            "consent_provided_for_minor": "",
+            "cost_center": null,
+            "country": "",
+            "creation_type": "",
+            "department": "",
+            "display_name": "이하연",
+            "division": null,
+            "employee_hire_date": "",
+            "employee_id": "",
+            "employee_type": "",
+            "external_user_state": "",
+            "fax_number": "",
+            "given_name": "",
+            "id": "/users/459480bc-f44e-4582-8c98-71fa3d881811",
+            "im_addresses": [],
+            "job_title": "",
+            "mail": "",
+            "mail_nickname": "student424",
+            "manager_id": "",
+            "mobile_phone": "",
+            "object_id": "459480bc-f44e-4582-8c98-71fa3d881811",
+            "office_location": "",
+            "onpremises_distinguished_name": "",
+            "onpremises_domain_name": "",
+            "onpremises_immutable_id": "",
+            "onpremises_sam_account_name": "",
+            "onpremises_security_identifier": "",
+            "onpremises_sync_enabled": false,
+            "onpremises_user_principal_name": "",
+            "other_mails": [],
+            "postal_code": "",
+            "preferred_language": "",
+            "proxy_addresses": [],
+            "show_in_address_list": false,
+            "state": "",
+            "street_address": "",
+            "surname": "",
+            "timeouts": null,
+            "usage_location": "",
+            "user_principal_name": "student424@mscsschool.onmicrosoft.com",
+            "user_type": "Member"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "data",
+      "type": "azuread_user",
+      "name": "pm_user",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azuread\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "account_enabled": true,
+            "age_group": "",
+            "business_phones": [],
+            "city": "",
+            "company_name": "",
+            "consent_provided_for_minor": "",
+            "cost_center": null,
+            "country": "",
+            "creation_type": "",
+            "department": "",
+            "display_name": "이기훈",
+            "division": null,
+            "employee_hire_date": "",
+            "employee_id": "",
+            "employee_type": "",
+            "external_user_state": "",
+            "fax_number": "",
+            "given_name": "",
+            "id": "/users/cbca0876-4730-495c-8c47-18b9c9af868a",
+            "im_addresses": [],
+            "job_title": "",
+            "mail": "",
+            "mail_nickname": "student420",
+            "manager_id": "",
+            "mobile_phone": "",
+            "object_id": "cbca0876-4730-495c-8c47-18b9c9af868a",
+            "office_location": "",
+            "onpremises_distinguished_name": "",
+            "onpremises_domain_name": "",
+            "onpremises_immutable_id": "",
+            "onpremises_sam_account_name": "",
+            "onpremises_security_identifier": "",
+            "onpremises_sync_enabled": false,
+            "onpremises_user_principal_name": "",
+            "other_mails": [],
+            "postal_code": "",
+            "preferred_language": "",
+            "proxy_addresses": [],
+            "show_in_address_list": false,
+            "state": "",
+            "street_address": "",
+            "surname": "",
+            "timeouts": null,
+            "usage_location": "",
+            "user_principal_name": "student420@mscsschool.onmicrosoft.com",
+            "user_type": "Member"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "data",
+      "type": "azuread_user",
+      "name": "security_admin",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azuread\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "account_enabled": true,
+            "age_group": "",
+            "business_phones": [],
+            "city": "",
+            "company_name": "",
+            "consent_provided_for_minor": "",
+            "cost_center": null,
+            "country": "",
+            "creation_type": "",
+            "department": "",
+            "display_name": "정현지",
+            "division": null,
+            "employee_hire_date": "",
+            "employee_id": "",
+            "employee_type": "",
+            "external_user_state": "",
+            "fax_number": "",
+            "given_name": "",
+            "id": "/users/b9d57093-411e-4141-b5a5-faf01b0edd17",
+            "im_addresses": [],
+            "job_title": "",
+            "mail": "",
+            "mail_nickname": "student426",
+            "manager_id": "",
+            "mobile_phone": "",
+            "object_id": "b9d57093-411e-4141-b5a5-faf01b0edd17",
+            "office_location": "",
+            "onpremises_distinguished_name": "",
+            "onpremises_domain_name": "",
+            "onpremises_immutable_id": "",
+            "onpremises_sam_account_name": "",
+            "onpremises_security_identifier": "",
+            "onpremises_sync_enabled": false,
+            "onpremises_user_principal_name": "",
+            "other_mails": [],
+            "postal_code": "",
+            "preferred_language": "",
+            "proxy_addresses": [],
+            "show_in_address_list": false,
+            "state": "",
+            "street_address": "",
+            "surname": "",
+            "timeouts": null,
+            "usage_location": "",
+            "user_principal_name": "student426@mscsschool.onmicrosoft.com",
+            "user_type": "Member"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "module": "module.db",
+      "mode": "managed",
+      "type": "azurerm_private_dns_zone",
+      "name": "www_dns_zone",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/privateDnsZones/privatelink.mysql.database.azure.com",
+            "max_number_of_record_sets": 25000,
+            "max_number_of_virtual_network_links": 1000,
+            "max_number_of_virtual_network_links_with_registration": 100,
+            "name": "privatelink.mysql.database.azure.com",
+            "number_of_record_sets": 1,
+            "resource_group_name": "04-T1-www",
+            "soa_record": [
+              {
+                "email": "azureprivatedns-host.microsoft.com",
+                "expire_time": 2419200,
+                "fqdn": "privatelink.mysql.database.azure.com.",
+                "host_name": "azureprivatedns.net",
+                "minimum_ttl": 10,
+                "refresh_time": 3600,
+                "retry_time": 300,
+                "serial_number": 1,
+                "tags": {},
+                "ttl": 3600
+              }
+            ],
+            "tags": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "privatelink.mysql.database.azure.com",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.db",
+      "mode": "managed",
+      "type": "azurerm_private_dns_zone_virtual_network_link",
+      "name": "www_dns_link",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/privateDnsZones/privatelink.mysql.database.azure.com/virtualNetworkLinks/www-dns-link",
+            "name": "www-dns-link",
+            "private_dns_zone_name": "privatelink.mysql.database.azure.com",
+            "registration_enabled": false,
+            "resolution_policy": "Default",
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_network_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "www-dns-link",
+            "private_dns_zone_name": "privatelink.mysql.database.azure.com",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.db.azurerm_private_dns_zone.www_dns_zone",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.db",
+      "mode": "managed",
+      "type": "azurerm_private_dns_zone_virtual_network_link",
+      "name": "www_dns_link_south",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/privateDnsZones/privatelink.mysql.database.azure.com/virtualNetworkLinks/www-dns-link-south",
+            "name": "www-dns-link-south",
+            "private_dns_zone_name": "privatelink.mysql.database.azure.com",
+            "registration_enabled": false,
+            "resolution_policy": "Default",
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_network_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "www-dns-link-south",
+            "private_dns_zone_name": "privatelink.mysql.database.azure.com",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.db.azurerm_private_dns_zone.www_dns_zone",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.db",
+      "mode": "managed",
+      "type": "azurerm_redis_cache",
+      "name": "www_redis",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "access_keys_authentication_enabled": true,
+            "capacity": 0,
+            "family": "C",
+            "hostname": "www-redis-cache.redis.cache.windows.net",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Cache/redis/www-redis-cache",
+            "identity": [],
+            "location": "koreacentral",
+            "minimum_tls_version": "1.2",
+            "name": "www-redis-cache",
+            "non_ssl_port_enabled": false,
+            "patch_schedule": [],
+            "port": 6379,
+            "primary_access_key": "ns09r3nMy1lnBnuKGCQHMYPsNaJAfOIK0AzCaIatcLk=",
+            "primary_connection_string": "www-redis-cache.redis.cache.windows.net:6380,password=ns09r3nMy1lnBnuKGCQHMYPsNaJAfOIK0AzCaIatcLk=,ssl=true,abortConnect=False",
+            "private_static_ip_address": "",
+            "public_network_access_enabled": true,
+            "redis_configuration": [
+              {
+                "active_directory_authentication_enabled": false,
+                "aof_backup_enabled": false,
+                "aof_storage_connection_string_0": "",
+                "aof_storage_connection_string_1": "",
+                "authentication_enabled": true,
+                "data_persistence_authentication_method": "",
+                "maxclients": 256,
+                "maxfragmentationmemory_reserved": 30,
+                "maxmemory_delta": 30,
+                "maxmemory_policy": "volatile-lru",
+                "maxmemory_reserved": 30,
+                "notify_keyspace_events": "",
+                "rdb_backup_enabled": false,
+                "rdb_backup_frequency": 0,
+                "rdb_backup_max_snapshot_count": 0,
+                "rdb_storage_connection_string": "",
+                "storage_account_subscription_id": ""
+              }
+            ],
+            "redis_version": "6.0",
+            "replicas_per_master": 0,
+            "replicas_per_primary": 0,
+            "resource_group_name": "04-T1-www",
+            "secondary_access_key": "wgBMgrwsRjLdEkMVbZAC2MVB4D13Odte6AzCaJpoVts=",
+            "secondary_connection_string": "www-redis-cache.redis.cache.windows.net:6380,password=wgBMgrwsRjLdEkMVbZAC2MVB4D13Odte6AzCaJpoVts=,ssl=true,abortConnect=False",
+            "shard_count": 0,
+            "sku_name": "Basic",
+            "ssl_port": 6380,
+            "subnet_id": "",
+            "tags": {
+              "environment": "production",
+              "team": "www"
+            },
+            "tenant_settings": {},
+            "timeouts": null,
+            "zones": []
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "primary_access_key"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "primary_connection_string"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "redis_configuration"
+              },
+              {
+                "type": "index",
+                "value": {
+                  "value": 0,
+                  "type": "number"
+                }
+              },
+              {
+                "type": "get_attr",
+                "value": "aof_storage_connection_string_0"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "redis_configuration"
+              },
+              {
+                "type": "index",
+                "value": {
+                  "value": 0,
+                  "type": "number"
+                }
+              },
+              {
+                "type": "get_attr",
+                "value": "aof_storage_connection_string_1"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "redis_configuration"
+              },
+              {
+                "type": "index",
+                "value": {
+                  "value": 0,
+                  "type": "number"
+                }
+              },
+              {
+                "type": "get_attr",
+                "value": "rdb_storage_connection_string"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "secondary_access_key"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "secondary_connection_string"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMDgwMDAwMDAwMDAwMCwiZGVsZXRlIjoxMDgwMDAwMDAwMDAwMCwicmVhZCI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEwODAwMDAwMDAwMDAwfSwic2NoZW1hX3ZlcnNpb24iOiIxIn0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.db",
+      "mode": "managed",
+      "type": "random_string",
+      "name": "adf_suffix",
+      "provider": "provider[\"registry.terraform.io/hashicorp/random\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "id": "hbki",
+            "keepers": null,
+            "length": 4,
+            "lower": true,
+            "min_lower": 0,
+            "min_numeric": 0,
+            "min_special": 0,
+            "min_upper": 0,
+            "number": true,
+            "numeric": true,
+            "override_special": null,
+            "result": "hbki",
+            "special": false,
+            "upper": false
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "module": "module.db",
+      "mode": "managed",
+      "type": "random_string",
+      "name": "mysql_suffix",
+      "provider": "provider[\"registry.terraform.io/hashicorp/random\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "id": "kx09",
+            "keepers": null,
+            "length": 4,
+            "lower": true,
+            "min_lower": 0,
+            "min_numeric": 0,
+            "min_special": 0,
+            "min_upper": 0,
+            "number": true,
+            "numeric": true,
+            "override_special": null,
+            "result": "kx09",
+            "special": false,
+            "upper": false
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_lb",
+      "name": "www_lb_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "edge_zone": "",
+            "frontend_ip_configuration": [
+              {
+                "gateway_load_balancer_frontend_ip_configuration_id": "",
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/frontendIPConfigurations/lbpublicip",
+                "inbound_nat_rules": [],
+                "load_balancer_rules": [
+                  "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/loadBalancingRules/leegh-lb-rule-v1"
+                ],
+                "name": "lbpublicip",
+                "outbound_rules": [],
+                "private_ip_address": "",
+                "private_ip_address_allocation": "Dynamic",
+                "private_ip_address_version": "",
+                "public_ip_address_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-loadip",
+                "public_ip_prefix_id": "",
+                "subnet_id": "",
+                "zones": []
+              }
+            ],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1",
+            "location": "koreasouth",
+            "name": "www-lb-v1",
+            "private_ip_address": "",
+            "private_ip_addresses": [],
+            "public_ip_address_id": null,
+            "resource_group_name": "04-T1-www",
+            "sku": "Standard",
+            "sku_tier": "Regional",
+            "subnet_id": null,
+            "tags": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_public_ip.www_loadip",
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_lb_backend_address_pool",
+      "name": "www_back_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "backend_ip_configurations": [
+              "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghweb1-v1-nic/ipConfigurations/www-web1-v1-nic-ipconf",
+              "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghweb2-v1-nic/ipConfigurations/www-web2-v1-nic-ipconf"
+            ],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/backendAddressPools/leegh-back-v1",
+            "inbound_nat_rules": [],
+            "load_balancing_rules": [
+              "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/loadBalancingRules/leegh-lb-rule-v1"
+            ],
+            "loadbalancer_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1",
+            "name": "leegh-back-v1",
+            "outbound_rules": [],
+            "synchronous_mode": "",
+            "timeouts": null,
+            "tunnel_interface": [],
+            "virtual_network_id": ""
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_lb.www_lb_v1",
+            "module.network.azurerm_public_ip.www_loadip",
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_lb_probe",
+      "name": "www_lb_probe_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/probes/leegh-lb-probe-v1",
+            "interval_in_seconds": 5,
+            "load_balancer_rules": [
+              "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/loadBalancingRules/leegh-lb-rule-v1"
+            ],
+            "loadbalancer_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1",
+            "name": "leegh-lb-probe-v1",
+            "number_of_probes": 2,
+            "port": 80,
+            "probe_threshold": 1,
+            "protocol": "Http",
+            "request_path": "/health.html",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_lb.www_lb_v1",
+            "module.network.azurerm_public_ip.www_loadip",
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_lb_rule",
+      "name": "www_lb_rule_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "backend_address_pool_ids": [
+              "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/backendAddressPools/leegh-back-v1"
+            ],
+            "backend_port": 80,
+            "disable_outbound_snat": false,
+            "enable_floating_ip": false,
+            "enable_tcp_reset": false,
+            "floating_ip_enabled": false,
+            "frontend_ip_configuration_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/frontendIPConfigurations/lbpublicip",
+            "frontend_ip_configuration_name": "lbpublicip",
+            "frontend_port": 80,
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/loadBalancingRules/leegh-lb-rule-v1",
+            "idle_timeout_in_minutes": 4,
+            "load_distribution": "Default",
+            "loadbalancer_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1",
+            "name": "leegh-lb-rule-v1",
+            "probe_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/probes/leegh-lb-probe-v1",
+            "protocol": "Tcp",
+            "tcp_reset_enabled": false,
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_lb.www_lb_v1",
+            "module.network.azurerm_lb_backend_address_pool.www_back_v1",
+            "module.network.azurerm_lb_probe.www_lb_probe_v1",
+            "module.network.azurerm_public_ip.www_loadip",
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_nat_gateway",
+      "name": "www_nat",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat",
+            "idle_timeout_in_minutes": 4,
+            "location": "koreacentral",
+            "name": "leegh-nat",
+            "resource_group_name": "04-T1-www",
+            "resource_guid": "6d2572a5-cebe-49a2-b08f-43280d076ac1",
+            "sku_name": "Standard",
+            "tags": {},
+            "timeouts": null,
+            "zones": []
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-nat",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozNjAwMDAwMDAwMDAwLCJkZWxldGUiOjM2MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjozNjAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_nat_gateway",
+      "name": "www_nat_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat-v1",
+            "idle_timeout_in_minutes": 4,
+            "location": "koreasouth",
+            "name": "leegh-nat-v1",
+            "resource_group_name": "04-T1-www",
+            "resource_guid": "0e26df3a-f26c-4040-8cb0-974f7330e4c1",
+            "sku_name": "Standard",
+            "tags": {},
+            "timeouts": null,
+            "zones": []
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-nat-v1",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozNjAwMDAwMDAwMDAwLCJkZWxldGUiOjM2MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjozNjAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_nat_gateway_public_ip_association",
+      "name": "www_nat_pubip",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat|/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-natip",
+            "nat_gateway_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat",
+            "public_ip_address_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-natip",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.network.azurerm_nat_gateway.www_nat",
+            "module.network.azurerm_public_ip.www_natip",
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_nat_gateway_public_ip_association",
+      "name": "www_nat_v1_pubip",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat-v1|/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-natip-v1",
+            "nat_gateway_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat-v1",
+            "public_ip_address_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-natip-v1",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.network.azurerm_nat_gateway.www_nat_v1",
+            "module.network.azurerm_public_ip.www_natip_v1",
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_network_interface",
+      "name": "www_app_nic",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "accelerated_networking_enabled": false,
+            "applied_dns_servers": [],
+            "auxiliary_mode": "",
+            "auxiliary_sku": "",
+            "dns_servers": [],
+            "edge_zone": "",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghapp-nic",
+            "internal_dns_name_label": "",
+            "internal_domain_name_suffix": "jvpv2updsp5evkqvi02qpgq24c.psx.internal.cloudapp.net",
+            "ip_configuration": [
+              {
+                "gateway_load_balancer_frontend_ip_configuration_id": "",
+                "name": "www-app-nic-ipconf",
+                "primary": true,
+                "private_ip_address": "192.168.0.4",
+                "private_ip_address_allocation": "Static",
+                "private_ip_address_version": "IPv4",
+                "public_ip_address_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-appip",
+                "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-app"
+              }
+            ],
+            "ip_forwarding_enabled": false,
+            "location": "koreasouth",
+            "mac_address": "",
+            "name": "leeghapp-nic",
+            "private_ip_address": "192.168.0.4",
+            "private_ip_addresses": [
+              "192.168.0.4"
+            ],
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_machine_id": ""
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leeghapp-nic",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_public_ip.www_appip",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_app",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_network_interface",
+      "name": "www_bas_nic",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "accelerated_networking_enabled": false,
+            "applied_dns_servers": [],
+            "auxiliary_mode": "",
+            "auxiliary_sku": "",
+            "dns_servers": [],
+            "edge_zone": "",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leegh-bas-nic",
+            "internal_dns_name_label": "",
+            "internal_domain_name_suffix": "b1t0zsgtn0lutn1thefj0ot5te.syx.internal.cloudapp.net",
+            "ip_configuration": [
+              {
+                "gateway_load_balancer_frontend_ip_configuration_id": "",
+                "name": "www-bas-nic-ipconf",
+                "primary": true,
+                "private_ip_address": "10.0.0.4",
+                "private_ip_address_allocation": "Static",
+                "private_ip_address_version": "IPv4",
+                "public_ip_address_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-pubip",
+                "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-bas"
+              }
+            ],
+            "ip_forwarding_enabled": false,
+            "location": "koreacentral",
+            "mac_address": "",
+            "name": "leegh-bas-nic",
+            "private_ip_address": "10.0.0.4",
+            "private_ip_addresses": [
+              "10.0.0.4"
+            ],
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_machine_id": ""
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-bas-nic",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_public_ip.www_basip",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_bas",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_network_interface",
+      "name": "www_db_nic",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "accelerated_networking_enabled": false,
+            "applied_dns_servers": [],
+            "auxiliary_mode": "",
+            "auxiliary_sku": "",
+            "dns_servers": [],
+            "edge_zone": "",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghdb-nic",
+            "internal_dns_name_label": "",
+            "internal_domain_name_suffix": "b1t0zsgtn0lutn1thefj0ot5te.syx.internal.cloudapp.net",
+            "ip_configuration": [
+              {
+                "gateway_load_balancer_frontend_ip_configuration_id": "",
+                "name": "www-db-nic-ipconf",
+                "primary": true,
+                "private_ip_address": "10.0.4.4",
+                "private_ip_address_allocation": "Static",
+                "private_ip_address_version": "IPv4",
+                "public_ip_address_id": "",
+                "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-db"
+              }
+            ],
+            "ip_forwarding_enabled": false,
+            "location": "koreacentral",
+            "mac_address": "",
+            "name": "leeghdb-nic",
+            "private_ip_address": "10.0.4.4",
+            "private_ip_addresses": [
+              "10.0.4.4"
+            ],
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_machine_id": ""
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leeghdb-nic",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_db",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_network_interface",
+      "name": "www_web1_nic",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "accelerated_networking_enabled": false,
+            "applied_dns_servers": [],
+            "auxiliary_mode": "",
+            "auxiliary_sku": "",
+            "dns_servers": [],
+            "edge_zone": "",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leegh-web1-nic",
+            "internal_dns_name_label": "",
+            "internal_domain_name_suffix": "b1t0zsgtn0lutn1thefj0ot5te.syx.internal.cloudapp.net",
+            "ip_configuration": [
+              {
+                "gateway_load_balancer_frontend_ip_configuration_id": "",
+                "name": "www-web1-nic-ipconf",
+                "primary": true,
+                "private_ip_address": "10.0.2.4",
+                "private_ip_address_allocation": "Static",
+                "private_ip_address_version": "IPv4",
+                "public_ip_address_id": "",
+                "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web1"
+              }
+            ],
+            "ip_forwarding_enabled": false,
+            "location": "koreacentral",
+            "mac_address": "",
+            "name": "leegh-web1-nic",
+            "private_ip_address": "10.0.2.4",
+            "private_ip_addresses": [
+              "10.0.2.4"
+            ],
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_machine_id": ""
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-web1-nic",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web1",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_network_interface",
+      "name": "www_web1_v1_nic",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "accelerated_networking_enabled": false,
+            "applied_dns_servers": [],
+            "auxiliary_mode": "",
+            "auxiliary_sku": "",
+            "dns_servers": [],
+            "edge_zone": "",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghweb1-v1-nic",
+            "internal_dns_name_label": "",
+            "internal_domain_name_suffix": "jvpv2updsp5evkqvi02qpgq24c.psx.internal.cloudapp.net",
+            "ip_configuration": [
+              {
+                "gateway_load_balancer_frontend_ip_configuration_id": "",
+                "name": "www-web1-v1-nic-ipconf",
+                "primary": true,
+                "private_ip_address": "192.168.3.4",
+                "private_ip_address_allocation": "Static",
+                "private_ip_address_version": "IPv4",
+                "public_ip_address_id": "",
+                "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web1-v1"
+              }
+            ],
+            "ip_forwarding_enabled": false,
+            "location": "koreasouth",
+            "mac_address": "",
+            "name": "leeghweb1-v1-nic",
+            "private_ip_address": "192.168.3.4",
+            "private_ip_addresses": [
+              "192.168.3.4"
+            ],
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_machine_id": ""
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leeghweb1-v1-nic",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web1_v1",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_network_interface",
+      "name": "www_web2_nic",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "accelerated_networking_enabled": false,
+            "applied_dns_servers": [],
+            "auxiliary_mode": "",
+            "auxiliary_sku": "",
+            "dns_servers": [],
+            "edge_zone": "",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leegh-web2-nic",
+            "internal_dns_name_label": "",
+            "internal_domain_name_suffix": "b1t0zsgtn0lutn1thefj0ot5te.syx.internal.cloudapp.net",
+            "ip_configuration": [
+              {
+                "gateway_load_balancer_frontend_ip_configuration_id": "",
+                "name": "www-web2-nic-ipconf",
+                "primary": true,
+                "private_ip_address": "10.0.3.4",
+                "private_ip_address_allocation": "Static",
+                "private_ip_address_version": "IPv4",
+                "public_ip_address_id": "",
+                "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web2"
+              }
+            ],
+            "ip_forwarding_enabled": false,
+            "location": "koreacentral",
+            "mac_address": "",
+            "name": "leegh-web2-nic",
+            "private_ip_address": "10.0.3.4",
+            "private_ip_addresses": [
+              "10.0.3.4"
+            ],
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_machine_id": ""
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-web2-nic",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web2",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_network_interface",
+      "name": "www_web2_v1_nic",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "accelerated_networking_enabled": false,
+            "applied_dns_servers": [],
+            "auxiliary_mode": "",
+            "auxiliary_sku": "",
+            "dns_servers": [],
+            "edge_zone": "",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghweb2-v1-nic",
+            "internal_dns_name_label": "",
+            "internal_domain_name_suffix": "jvpv2updsp5evkqvi02qpgq24c.psx.internal.cloudapp.net",
+            "ip_configuration": [
+              {
+                "gateway_load_balancer_frontend_ip_configuration_id": "",
+                "name": "www-web2-v1-nic-ipconf",
+                "primary": true,
+                "private_ip_address": "192.168.4.4",
+                "private_ip_address_allocation": "Static",
+                "private_ip_address_version": "IPv4",
+                "public_ip_address_id": "",
+                "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web2-v1"
+              }
+            ],
+            "ip_forwarding_enabled": false,
+            "location": "koreasouth",
+            "mac_address": "",
+            "name": "leeghweb2-v1-nic",
+            "private_ip_address": "192.168.4.4",
+            "private_ip_addresses": [
+              "192.168.4.4"
+            ],
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_machine_id": ""
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leeghweb2-v1-nic",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web2_v1",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_network_interface_backend_address_pool_association",
+      "name": "www_lbback1_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "backend_address_pool_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/backendAddressPools/leegh-back-v1",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghweb1-v1-nic/ipConfigurations/www-web1-v1-nic-ipconf|/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/backendAddressPools/leegh-back-v1",
+            "ip_configuration_name": "www-web1-v1-nic-ipconf",
+            "network_interface_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghweb1-v1-nic",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.network.azurerm_lb.www_lb_v1",
+            "module.network.azurerm_lb_backend_address_pool.www_back_v1",
+            "module.network.azurerm_network_interface.www_web1_v1_nic",
+            "module.network.azurerm_public_ip.www_loadip",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web1_v1",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_network_interface_backend_address_pool_association",
+      "name": "www_lbback2_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "backend_address_pool_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/backendAddressPools/leegh-back-v1",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghweb2-v1-nic/ipConfigurations/www-web2-v1-nic-ipconf|/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/loadBalancers/www-lb-v1/backendAddressPools/leegh-back-v1",
+            "ip_configuration_name": "www-web2-v1-nic-ipconf",
+            "network_interface_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/networkInterfaces/leeghweb2-v1-nic",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.network.azurerm_lb.www_lb_v1",
+            "module.network.azurerm_lb_backend_address_pool.www_back_v1",
+            "module.network.azurerm_network_interface.www_web2_v1_nic",
+            "module.network.azurerm_public_ip.www_loadip",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web2_v1",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_public_ip",
+      "name": "www_appip",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allocation_method": "Static",
+            "ddos_protection_mode": "VirtualNetworkInherited",
+            "ddos_protection_plan_id": null,
+            "domain_name_label": null,
+            "domain_name_label_scope": null,
+            "edge_zone": "",
+            "fqdn": null,
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-appip",
+            "idle_timeout_in_minutes": 4,
+            "ip_address": "20.200.128.42",
+            "ip_tags": {},
+            "ip_version": "IPv4",
+            "location": "koreasouth",
+            "name": "leegh-appip",
+            "public_ip_prefix_id": null,
+            "resource_group_name": "04-T1-www",
+            "reverse_fqdn": null,
+            "sku": "Standard",
+            "sku_tier": "Regional",
+            "tags": {},
+            "timeouts": null,
+            "zones": []
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_public_ip",
+      "name": "www_basip",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allocation_method": "Static",
+            "ddos_protection_mode": "VirtualNetworkInherited",
+            "ddos_protection_plan_id": null,
+            "domain_name_label": null,
+            "domain_name_label_scope": null,
+            "edge_zone": "",
+            "fqdn": null,
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-pubip",
+            "idle_timeout_in_minutes": 4,
+            "ip_address": "4.217.253.253",
+            "ip_tags": {},
+            "ip_version": "IPv4",
+            "location": "koreacentral",
+            "name": "leegh-pubip",
+            "public_ip_prefix_id": null,
+            "resource_group_name": "04-T1-www",
+            "reverse_fqdn": null,
+            "sku": "Standard",
+            "sku_tier": "Regional",
+            "tags": {},
+            "timeouts": null,
+            "zones": []
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_public_ip",
+      "name": "www_loadip",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allocation_method": "Static",
+            "ddos_protection_mode": "VirtualNetworkInherited",
+            "ddos_protection_plan_id": null,
+            "domain_name_label": null,
+            "domain_name_label_scope": null,
+            "edge_zone": "",
+            "fqdn": null,
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-loadip",
+            "idle_timeout_in_minutes": 4,
+            "ip_address": "20.200.144.133",
+            "ip_tags": {},
+            "ip_version": "IPv4",
+            "location": "koreasouth",
+            "name": "leegh-loadip",
+            "public_ip_prefix_id": null,
+            "resource_group_name": "04-T1-www",
+            "reverse_fqdn": null,
+            "sku": "Standard",
+            "sku_tier": "Regional",
+            "tags": {},
+            "timeouts": null,
+            "zones": []
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_public_ip",
+      "name": "www_natip",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allocation_method": "Static",
+            "ddos_protection_mode": "VirtualNetworkInherited",
+            "ddos_protection_plan_id": null,
+            "domain_name_label": null,
+            "domain_name_label_scope": null,
+            "edge_zone": "",
+            "fqdn": null,
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-natip",
+            "idle_timeout_in_minutes": 4,
+            "ip_address": "4.217.253.215",
+            "ip_tags": {},
+            "ip_version": "IPv4",
+            "location": "koreacentral",
+            "name": "leegh-natip",
+            "public_ip_prefix_id": null,
+            "resource_group_name": "04-T1-www",
+            "reverse_fqdn": null,
+            "sku": "Standard",
+            "sku_tier": "Regional",
+            "tags": {},
+            "timeouts": null,
+            "zones": []
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_public_ip",
+      "name": "www_natip_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allocation_method": "Static",
+            "ddos_protection_mode": "VirtualNetworkInherited",
+            "ddos_protection_plan_id": null,
+            "domain_name_label": null,
+            "domain_name_label_scope": null,
+            "edge_zone": "",
+            "fqdn": null,
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/publicIPAddresses/leegh-natip-v1",
+            "idle_timeout_in_minutes": 4,
+            "ip_address": "20.200.136.106",
+            "ip_tags": {},
+            "ip_version": "IPv4",
+            "location": "koreasouth",
+            "name": "leegh-natip-v1",
+            "public_ip_prefix_id": null,
+            "resource_group_name": "04-T1-www",
+            "reverse_fqdn": null,
+            "sku": "Standard",
+            "sku_tier": "Regional",
+            "tags": {},
+            "timeouts": null,
+            "zones": []
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_resource_group",
+      "name": "www_rg",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www",
+            "location": "koreacentral",
+            "managed_by": "",
+            "name": "04-T1-www",
+            "tags": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo1NDAwMDAwMDAwMDAwLCJkZWxldGUiOjU0MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjo1NDAwMDAwMDAwMDAwfX0="
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_app",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "192.168.0.0/24"
+            ],
+            "default_outbound_access_enabled": true,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-app",
+            "ip_address_pool": [],
+            "name": "leegh-app",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-app",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_bas",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "10.0.0.0/24"
+            ],
+            "default_outbound_access_enabled": true,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-bas",
+            "ip_address_pool": [],
+            "name": "leegh-bas",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-bas",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_db",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "10.0.4.0/24"
+            ],
+            "default_outbound_access_enabled": false,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-db",
+            "ip_address_pool": [],
+            "name": "leegh-db",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-db",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_load",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "192.168.2.0/24"
+            ],
+            "default_outbound_access_enabled": true,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-load",
+            "ip_address_pool": [],
+            "name": "leegh-load",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-load",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_nat",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "10.0.1.0/24"
+            ],
+            "default_outbound_access_enabled": true,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-nat",
+            "ip_address_pool": [],
+            "name": "leegh-nat",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-nat",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_nat_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "192.168.1.0/24"
+            ],
+            "default_outbound_access_enabled": true,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-nat-v1",
+            "ip_address_pool": [],
+            "name": "leegh-nat-v1",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-nat-v1",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_vmss",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "192.168.5.0/24"
+            ],
+            "default_outbound_access_enabled": false,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-vmss",
+            "ip_address_pool": [],
+            "name": "leegh-vmss",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-vmss",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_web1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "10.0.2.0/24"
+            ],
+            "default_outbound_access_enabled": false,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web1",
+            "ip_address_pool": [],
+            "name": "leegh-web1",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-web1",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_web1_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "192.168.3.0/24"
+            ],
+            "default_outbound_access_enabled": false,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web1-v1",
+            "ip_address_pool": [],
+            "name": "leegh-web1-v1",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-web1-v1",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_web2",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "10.0.3.0/24"
+            ],
+            "default_outbound_access_enabled": false,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web2",
+            "ip_address_pool": [],
+            "name": "leegh-web2",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-web2",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "www_web2_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_prefixes": [
+              "192.168.4.0/24"
+            ],
+            "default_outbound_access_enabled": false,
+            "delegation": [],
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web2-v1",
+            "ip_address_pool": [],
+            "name": "leegh-web2-v1",
+            "private_endpoint_network_policies": "Disabled",
+            "private_link_service_network_policies_enabled": true,
+            "resource_group_name": "04-T1-www",
+            "service_endpoint_policy_ids": [],
+            "service_endpoints": [],
+            "sharing_scope": "",
+            "timeouts": null,
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-web2-v1",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1",
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet_nat_gateway_association",
+      "name": "www_natdb",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-db",
+            "nat_gateway_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat",
+            "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-db",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.network.azurerm_nat_gateway.www_nat",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_db",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet_nat_gateway_association",
+      "name": "www_natweb1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web1",
+            "nat_gateway_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat",
+            "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web1",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.network.azurerm_nat_gateway.www_nat",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web1",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet_nat_gateway_association",
+      "name": "www_natweb1_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web1-v1",
+            "nat_gateway_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat-v1",
+            "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web1-v1",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.network.azurerm_nat_gateway.www_nat_v1",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web1_v1",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet_nat_gateway_association",
+      "name": "www_natweb2",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web2",
+            "nat_gateway_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat",
+            "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web2",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.network.azurerm_nat_gateway.www_nat",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web2",
+            "module.network.azurerm_virtual_network.www_vnet0"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_subnet_nat_gateway_association",
+      "name": "www_natweb2_v1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web2-v1",
+            "nat_gateway_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/natGateways/leegh-nat-v1",
+            "subnet_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web2-v1",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "module.network.azurerm_nat_gateway.www_nat_v1",
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_subnet.www_web2_v1",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_virtual_network",
+      "name": "www_vnet0",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_space": [
+              "10.0.0.0/16"
+            ],
+            "bgp_community": "",
+            "ddos_protection_plan": [],
+            "dns_servers": [],
+            "edge_zone": "",
+            "encryption": [],
+            "flow_timeout_in_minutes": 0,
+            "guid": "c8ace70e-6ed3-4997-b773-390a9d3a7f9c",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0",
+            "ip_address_pool": [],
+            "location": "koreacentral",
+            "name": "leegh-vnet0",
+            "private_endpoint_vnet_policies": "Disabled",
+            "resource_group_name": "04-T1-www",
+            "subnet": [
+              {
+                "address_prefixes": [
+                  "10.0.0.0/24"
+                ],
+                "default_outbound_access_enabled": true,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-bas",
+                "name": "leegh-bas",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              },
+              {
+                "address_prefixes": [
+                  "10.0.1.0/24"
+                ],
+                "default_outbound_access_enabled": true,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-nat",
+                "name": "leegh-nat",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              },
+              {
+                "address_prefixes": [
+                  "10.0.2.0/24"
+                ],
+                "default_outbound_access_enabled": false,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web1",
+                "name": "leegh-web1",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              },
+              {
+                "address_prefixes": [
+                  "10.0.3.0/24"
+                ],
+                "default_outbound_access_enabled": false,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-web2",
+                "name": "leegh-web2",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              },
+              {
+                "address_prefixes": [
+                  "10.0.4.0/24"
+                ],
+                "default_outbound_access_enabled": false,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/subnets/leegh-db",
+                "name": "leegh-db",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              }
+            ],
+            "tags": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-vnet0",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_virtual_network",
+      "name": "www_vnet1",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address_space": [
+              "192.168.0.0/16"
+            ],
+            "bgp_community": "",
+            "ddos_protection_plan": [],
+            "dns_servers": [],
+            "edge_zone": "",
+            "encryption": [],
+            "flow_timeout_in_minutes": 0,
+            "guid": "515e5f4d-93e3-4afe-aa15-46b9079a1cf2",
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1",
+            "ip_address_pool": [],
+            "location": "koreasouth",
+            "name": "leegh-vnet1",
+            "private_endpoint_vnet_policies": "Disabled",
+            "resource_group_name": "04-T1-www",
+            "subnet": [
+              {
+                "address_prefixes": [
+                  "192.168.0.0/24"
+                ],
+                "default_outbound_access_enabled": true,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-app",
+                "name": "leegh-app",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              },
+              {
+                "address_prefixes": [
+                  "192.168.1.0/24"
+                ],
+                "default_outbound_access_enabled": true,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-nat-v1",
+                "name": "leegh-nat-v1",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              },
+              {
+                "address_prefixes": [
+                  "192.168.2.0/24"
+                ],
+                "default_outbound_access_enabled": true,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-load",
+                "name": "leegh-load",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              },
+              {
+                "address_prefixes": [
+                  "192.168.3.0/24"
+                ],
+                "default_outbound_access_enabled": false,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web1-v1",
+                "name": "leegh-web1-v1",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              },
+              {
+                "address_prefixes": [
+                  "192.168.4.0/24"
+                ],
+                "default_outbound_access_enabled": false,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-web2-v1",
+                "name": "leegh-web2-v1",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              },
+              {
+                "address_prefixes": [
+                  "192.168.5.0/24"
+                ],
+                "default_outbound_access_enabled": false,
+                "delegation": [],
+                "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/subnets/leegh-vmss",
+                "name": "leegh-vmss",
+                "private_endpoint_network_policies": "Disabled",
+                "private_link_service_network_policies_enabled": true,
+                "route_table_id": "",
+                "security_group": "",
+                "service_endpoint_policy_ids": [],
+                "service_endpoints": []
+              }
+            ],
+            "tags": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "leegh-vnet1",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_virtual_network_peering",
+      "name": "peer_ctr_sth",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allow_forwarded_traffic": false,
+            "allow_gateway_transit": false,
+            "allow_virtual_network_access": true,
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0/virtualNetworkPeerings/ctr-sth",
+            "local_subnet_names": [],
+            "name": "ctr-sth",
+            "only_ipv6_peering_enabled": false,
+            "peer_complete_virtual_networks_enabled": true,
+            "remote_subnet_names": [],
+            "remote_virtual_network_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1",
+            "resource_group_name": "04-T1-www",
+            "timeouts": null,
+            "triggers": null,
+            "use_remote_gateways": false,
+            "virtual_network_name": "leegh-vnet0"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet0",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.network",
+      "mode": "managed",
+      "type": "azurerm_virtual_network_peering",
+      "name": "peer_sth_ctr",
+      "provider": "module.network.provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allow_forwarded_traffic": false,
+            "allow_gateway_transit": false,
+            "allow_virtual_network_access": true,
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet1/virtualNetworkPeerings/sth-ctr",
+            "local_subnet_names": [],
+            "name": "sth-ctr",
+            "only_ipv6_peering_enabled": false,
+            "peer_complete_virtual_networks_enabled": true,
+            "remote_subnet_names": [],
+            "remote_virtual_network_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0",
+            "resource_group_name": "04-T1-www",
+            "timeouts": null,
+            "triggers": null,
+            "use_remote_gateways": false,
+            "virtual_network_name": "leegh-vnet1"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet0",
+            "module.network.azurerm_virtual_network.www_vnet1"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.storage",
+      "mode": "managed",
+      "type": "azurerm_cdn_frontdoor_profile",
+      "name": "www_fd_profile",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Cdn/profiles/www-cdn-profile",
+            "identity": [],
+            "log_scrubbing_rule": [],
+            "name": "www-cdn-profile",
+            "resource_group_name": "04-T1-www",
+            "resource_guid": "6da81e8e-177c-48c8-a31a-7f9b7e2e4918",
+            "response_timeout_seconds": 120,
+            "sku_name": "Standard_AzureFrontDoor",
+            "tags": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.storage",
+      "mode": "managed",
+      "type": "azurerm_private_dns_zone",
+      "name": "storage_dns_zone",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net",
+            "max_number_of_record_sets": 25000,
+            "max_number_of_virtual_network_links": 1000,
+            "max_number_of_virtual_network_links_with_registration": 100,
+            "name": "privatelink.blob.core.windows.net",
+            "number_of_record_sets": 1,
+            "resource_group_name": "04-T1-www",
+            "soa_record": [
+              {
+                "email": "azureprivatedns-host.microsoft.com",
+                "expire_time": 2419200,
+                "fqdn": "privatelink.blob.core.windows.net.",
+                "host_name": "azureprivatedns.net",
+                "minimum_ttl": 10,
+                "refresh_time": 3600,
+                "retry_time": 300,
+                "serial_number": 1,
+                "tags": {},
+                "ttl": 3600
+              }
+            ],
+            "tags": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "privatelink.blob.core.windows.net",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.storage",
+      "mode": "managed",
+      "type": "azurerm_private_dns_zone_virtual_network_link",
+      "name": "storage_dns_link",
+      "provider": "provider[\"registry.terraform.io/hashicorp/azurerm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net/virtualNetworkLinks/www-storage-dns-link",
+            "name": "www-storage-dns-link",
+            "private_dns_zone_name": "privatelink.blob.core.windows.net",
+            "registration_enabled": false,
+            "resolution_policy": "Default",
+            "resource_group_name": "04-T1-www",
+            "tags": {},
+            "timeouts": null,
+            "virtual_network_id": "/subscriptions/99b79efe-ebd6-468c-b39f-5669acb259e1/resourceGroups/04-T1-www/providers/Microsoft.Network/virtualNetworks/leegh-vnet0"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "identity": {
+            "name": "www-storage-dns-link",
+            "private_dns_zone_name": "privatelink.blob.core.windows.net",
+            "resource_group_name": "04-T1-www",
+            "subscription_id": "99b79efe-ebd6-468c-b39f-5669acb259e1"
+          },
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInJlYWQiOjMwMDAwMDAwMDAwMCwidXBkYXRlIjoxODAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.network.azurerm_resource_group.www_rg",
+            "module.network.azurerm_virtual_network.www_vnet0",
+            "module.storage.azurerm_private_dns_zone.storage_dns_zone"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.storage",
+      "mode": "managed",
+      "type": "random_string",
+      "name": "sa_suffix",
+      "provider": "provider[\"registry.terraform.io/hashicorp/random\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "id": "nfga29",
+            "keepers": null,
+            "length": 6,
+            "lower": true,
+            "min_lower": 0,
+            "min_numeric": 0,
+            "min_special": 0,
+            "min_upper": 0,
+            "number": true,
+            "numeric": true,
+            "override_special": null,
+            "result": "nfga29",
+            "special": false,
+            "upper": false
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}

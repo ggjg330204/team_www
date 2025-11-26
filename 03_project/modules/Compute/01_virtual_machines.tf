@@ -137,7 +137,7 @@ resource "azurerm_linux_virtual_machine" "www_dbvm" {
 resource "azurerm_linux_virtual_machine" "www_vnet1_web1vm" {
   name                  = "${var.teamuser}-vnet1-web1vm"
   resource_group_name   = var.rgname
-  location              = var.loca
+  location              = var.loca_replica
   size                  = "Standard_B4as_v2"
   admin_username        = "www"
   network_interface_ids = [var.nic_id["web1_v1_nic"]]
