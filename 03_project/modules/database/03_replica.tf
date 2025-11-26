@@ -11,7 +11,7 @@ resource "azurerm_mysql_flexible_server" "www_replica" {
   version             = "8.0.21"
   create_mode         = "Replica"
   source_server_id    = azurerm_mysql_flexible_server.www_mysql.id
-  
+
   depends_on = [time_sleep.wait_for_primary]
 }
 

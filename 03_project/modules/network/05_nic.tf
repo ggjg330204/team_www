@@ -1,4 +1,4 @@
-#vnet0 nic
+# vnet0 NIC (Korea Central)
 resource "azurerm_network_interface" "www_bas_nic" {
   name                = "${var.teamuser}-bas-nic"
   resource_group_name = azurerm_resource_group.www_rg.name
@@ -59,7 +59,7 @@ resource "azurerm_network_interface" "www_db_nic" {
   }
 }
 
-#vnet1 nic
+# vnet1 NIC (Korea South)
 resource "azurerm_network_interface" "www_app_nic" {
   name                = "${var.teamuser}app-nic"
   resource_group_name = azurerm_resource_group.www_rg.name

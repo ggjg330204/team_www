@@ -5,7 +5,7 @@ resource "azurerm_storage_account" "www_sa" {
   account_tier             = "Standard"
   account_replication_type = "GRS"
 
-  # Private Endpoint없으면 주석처리 해야함
+  # Private Endpoint가 없으면 이 블록을 주석 처리해야 합니다.
   network_rules {
     default_action             = "Deny"
     ip_rules                   = ["61.108.60.26"]
@@ -20,11 +20,11 @@ resource "azurerm_storage_account" "www_sa" {
 
   blob_properties {
     versioning_enabled = true
-    
+
     delete_retention_policy {
       days = 7
     }
-    
+
     container_delete_retention_policy {
       days = 7
     }
