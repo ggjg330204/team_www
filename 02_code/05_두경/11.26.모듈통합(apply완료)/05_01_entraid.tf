@@ -1,0 +1,24 @@
+# 1. PM (Project Manager) - 이기훈
+data "azuread_user" "pm_user" {
+  user_principal_name = "student420@mscsschool.onmicrosoft.com"
+}
+
+# 2. Network Admin - 이하연
+data "azuread_user" "network_admin" {
+  user_principal_name = "student424@mscsschool.onmicrosoft.com"
+}
+
+# 3. Compute Admin - 배하영
+data "azuread_user" "compute_admin" {
+  user_principal_name = "student411@mscsschool.onmicrosoft.com"
+}
+
+# 4. DB & Storage Admin - 이두경
+data "azuread_user" "db_admin" {
+  user_principal_name = "student421@mscsschool.onmicrosoft.com"
+}
+
+# 5. Security Admin - 정현지
+data "azuread_user" "security_admin" {
+  user_principal_name = "student426@mscsschool.onmicrosoft.com"
+}
