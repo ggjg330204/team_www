@@ -1,0 +1,29 @@
+resource "azurerm_subnet_network_security_group_association" "www_asso_subnsg_bas" {
+  subnet_id                 = var.subnet_bas.id
+  network_security_group_id = var.www_nsg_ssh.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "www_asso_subnsg_web1" {
+  subnet_id                 = var.subnet_web1.id
+  network_security_group_id = var.www_nsg_http.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "www_asso_subnsg_web2" {
+  subnet_id                 = var.subnet_web2.id
+  network_security_group_id = var.www_nsg_http.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "www_asso_subnsg_db" {
+  subnet_id                 = var.subnet_db.id
+  network_security_group_id = var.www_nsg_db.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "www_v1_asso_subnsg_web1" {
+  subnet_id                 = var.v1_subnet_web1.id
+  network_security_group_id = var.www_v1_nsg_http.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "www_v1_asso_subnsg_vmss" {
+  subnet_id                 = var.v1_subnet_vmss.id
+  network_security_group_id = var.www_v1_nsg_http.id
+}
