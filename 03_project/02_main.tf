@@ -1,9 +1,9 @@
 locals {
-  rg_name     = "04-t1-leegh"
+  teamuser = "leegh"
+  rg_name  = "04-t1-${local.teamuser}"
   location    = "koreacentral"
   location_replica = "Korea South"
   db_password = "It12345!"
-  teamuser    = "leegh"
 }
 
 module "network" {
@@ -30,7 +30,7 @@ module "compute" {
 module "storage" {
   source = "./modules/Storage"
 
-  rgname            = module.network.rg_name
+  rgname            = local.rg_name
   loca              = local.location
   storage_subnet_id = module.network.storage_subnet_id
   vnet_id           = module.network.vnet_id
@@ -39,7 +39,7 @@ module "storage" {
 module "db" {
   source = "./modules/Database"
 
-  rgname                    = module.network.rg_name
+  rgname                    = local.rg_name
   loca                      = local.location
   db_subnet_id              = module.network.db_subnet_id
   db_password               = local.db_password
@@ -51,7 +51,7 @@ module "db" {
 module "security" {
   source = "./modules/Security"
 
-  rgname   = module.network.rg_name
+  rgname   = local.rg_name
   loca     = local.location
   teamuser = local.teamuser
   subid    = var.subid
