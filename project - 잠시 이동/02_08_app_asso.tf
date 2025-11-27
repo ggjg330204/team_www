@@ -11,4 +11,3 @@ resource "azurerm_network_interface_application_gateway_backend_address_pool_ass
   backend_address_pool_id = tolist(azurerm_application_gateway.www_appgw.backend_address_pool)[0].id
   depends_on = [azurerm_network_interface.www_web2_v1_nic]
 }
-

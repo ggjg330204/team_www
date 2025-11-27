@@ -46,7 +46,7 @@ probe {
     path                        = "/health.html" 
     
     interval                    = 30
-    timeout                     = 30
+    timeout                     = 60
     unhealthy_threshold         = 3
 
   }

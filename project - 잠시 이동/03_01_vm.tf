@@ -34,6 +34,7 @@ resource "azurerm_linux_virtual_machine" "www_basvm" {
   boot_diagnostics {
     storage_account_uri = null
   }
+  depends_on = [ azurerm_nat_gateway.www_nat ]
 }
 
 resource "azurerm_linux_virtual_machine" "www_web1vm" {
@@ -69,6 +70,7 @@ resource "azurerm_linux_virtual_machine" "www_web1vm" {
   boot_diagnostics {
     storage_account_uri = null
   }
+  depends_on = [ azurerm_nat_gateway.www_nat ]
 }
 
 resource "azurerm_linux_virtual_machine" "www_web2vm" {
@@ -104,6 +106,7 @@ resource "azurerm_linux_virtual_machine" "www_web2vm" {
   boot_diagnostics {
     storage_account_uri = null
   }
+  depends_on = [ azurerm_nat_gateway.www_nat ]
 }
 
 resource "azurerm_linux_virtual_machine" "www_dbvm" {
@@ -139,6 +142,7 @@ resource "azurerm_linux_virtual_machine" "www_dbvm" {
   boot_diagnostics {
     storage_account_uri = null
   }
+  depends_on = [ azurerm_nat_gateway.www_nat ]
 }
 
 resource "azurerm_linux_virtual_machine" "www_vnet1_web1vm" {
@@ -149,7 +153,7 @@ resource "azurerm_linux_virtual_machine" "www_vnet1_web1vm" {
   admin_username        = "www"
   network_interface_ids = [azurerm_network_interface.www_web1_v1_nic.id]
   depends_on = [
-    azurerm_network_interface.www_web1_v1_nic
+    azurerm_nat_gateway.www_nat_v1
   ]
   admin_ssh_key {
     username = "www"

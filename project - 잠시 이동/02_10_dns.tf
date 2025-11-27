@@ -13,6 +13,14 @@ resource "azurerm_dns_a_record" "www_public" {
   records             = [azurerm_public_ip.www_appip.ip_address]
 }
 
+resource "azurerm_dns_a_record" "www_baspip" {
+  name                = "bas"
+  zone_name           = azurerm_dns_zone.public.name
+  resource_group_name = azurerm_resource_group.www_rg.name
+  ttl                 = 300
+  records             = [azurerm_public_ip.www_basip.ip_address]
+}
+
 # 1-2. 루트(@) 레코드 -> AppGateway Public IP 연결
 resource "azurerm_dns_a_record" "root_public" {
   name                = "@"
