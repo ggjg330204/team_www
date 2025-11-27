@@ -1,0 +1,329 @@
+## 3. 🗄️ 데이터베이스 연결 확인
+
+**주의**: 이 단계는 **웹 서버(Web VM)** 에 접속한 상태에서 진행해야 합니다.
+
+### 3.1 MySQL 접속
+웹 서버에서 아래 명령어로 MySQL에 접속해 봅니다.
+```bash
+# 1. SSL 인증서 다운로드 (필수)
+wget https://dl.cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem
+
+# 2. 접속 시도
+mysql -h <MySQL_주소> -u www -p --ssl-ca=DigiCertGlobalRootG2.crt.pem
+```
+- **비밀번호**: `terraform.tfvars`에 설정한 `db_password`를 입력하세요.
+- **테스트**: `SHOW DATABASES;` 를 입력하여 데이터베이스 목록이 보이면 연결 성공입니다.
+
+### 3.2 Redis 캐시 접속
+웹 서버에서 Redis 연결을 테스트합니다.
+```bash
+# 접속 시도 (SSL 포트 6380)
+redis-cli -h <Redis_주소> -p 6380 -a <Redis_키> --tls
+```
+- **테스트**: `PING` 이라고 입력했을 때 `PONG` 이라고 대답하면 정상입니다. 🏓
+
+---
+
+## 4. ☁️ 스토리지 및 서버리스 기능
+
+### 4.1 이미지 업로드 테스트 (Azure Storage)
+1. **Azure Portal**에 로그인합니다.
+2. **Storage Account** (`www...`)를 찾아 들어갑니다.
+3. **Containers** 메뉴에서 `images` 컨테이너를 클릭합니다.
+4. **Upload** 버튼을 눌러 아무 이미지 파일(jpg, png)이나 업로드해 보세요.
+
+### 4.2 자동 이미지 리사이징 (참고)
+*현재 Event Grid 구독 설정은 Azure Portal에서 수동으로 연결해야 할 수 있습니다.*
+1. 이미지를 업로드하면 Event Grid가 트리거되어 Function이 실행됩니다.
+2. **Containers** 메뉴의 `thumbnails` 컨테이너에 리사이징된 이미지가 생성되는지 확인합니다.
+
+---
+
+## 5. 🛡️ 보안 및 모니터링
+
+### 5.1 보안 점수 확인 (Defender for Cloud)
+1. Azure Portal 검색창에 **"Microsoft Defender for Cloud"** 를 검색합니다.
+2. 배포된 리소스들이 보호되고 있는지 확인합니다. (VM, SQL, Storage 등)
+
+### 5.2 알림 테스트 (Metric Alerts)
+1. Azure Portal > **Monitor** > **Alerts** 로 이동합니다.
+2. `Alert rules`를 클릭하여 `High-CPU-VMSS` 등의 규칙이 잘 만들어져 있는지 확인합니다.
+
+---
+
+## 6. 🐳 컨테이너 레지스트리 (ACR)
+
+Docker 이미지를 저장하는 공간입니다.
+```bash
+# 로그인
+az acr login --name <ACR_이름>
+
+# 테스트용 이미지 업로드
+docker pull hello-world
+docker tag hello-world <ACR_주소>/hello-world:v1
+docker push <ACR_주소>/hello-world:v1
+```
+- Azure Portal의 **Container registries** > **Repositories** 에서 `hello-world`가 보이면 성공입니다.
+
+---
+
+## 7. 📊 부하 테스트 및 모니터링 검증
+
+### 7.1 k6 부하 테스트
+
+**k6 설치** (Windows):
+```powershell
+# Chocolatey를 이용한 설치
+choco install k6
+
+# 또는 Scoop을 이용한 설치
+scoop install k6
+```
+
+**부하 테스트 스크립트** (`load_test.js`):
+```javascript
+// 웹 서비스 부하 테스트
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '30s', target: 10 },  // 10명으로 증가
+    { duration: '1m', target: 50 },   // 50명으로 증가
+    { duration: '30s', target: 100 }, // 100명으로 증가
+    { duration: '1m', target: 0 },    // 천천히 종료
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<500'], // 95%가 500ms 이하
+    http_req_failed: ['rate<0.01'],   // 실패율 1% 이하
+  },
+};
+
+export default function () {
+  const url = __ENV.TARGET_URL || 'http://LOAD_BALANCER_IP';
+  
+  const res = http.get(url);
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'response time < 500ms': (r) => r.timings.duration < 500,
+  });
+  
+  sleep(1);
+}
+```
+
+**실행**:
+```powershell
+# 환경변수 설정 후 실행
+$env:TARGET_URL = "http://<LOAD_BALANCER_IP>"
+k6 run load_test.js
+```
+
+**확인할 지표**:
+- ✅ `http_req_duration` P95 < 500ms
+- ✅ `http_req_failed` < 1%
+- ✅ Auto-Scaling 트리거 (CPU > 70%)
+
+### 7.2 Apache Bench (간단한 부하 테스트)
+
+```powershell
+# Apache Bench 설치 (Apache httpd에 포함)
+# Windows: https://www.apachelounge.com/download/ 에서 다운로드
+
+# 부하 테스트 실행
+ab -n 1000 -c 10 http://<LOAD_BALANCER_IP>/
+
+# -n 1000: 총 1000개 요청
+# -c 10: 동시 10개 연결
+```
+
+**결과 해석**:
+- `Requests per second`: 초당 처리 요청 수 (높을수록 좋음)
+- `Time per request`: 평균 응답 시간 (낮을수록 좋음)
+- `Failed requests`: 실패한 요청 수 (0이어야 함)
+
+### 7.3 가용성 테스트 (PowerShell 스크립트)
+
+**자동 가용성 체크** (`availability_test.ps1`):
+```powershell
+# 웹 서비스 가용성 모니터링 (5분마다 체크)
+param(
+    [string]$Url = "http://<LOAD_BALANCER_IP>",
+    [int]$IntervalSeconds = 300
+)
+
+while ($true) {
+    try {
+        $response = Invoke-WebRequest -Uri $Url -TimeoutSec 10 -UseBasicParsing
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        
+        if ($response.StatusCode -eq 200) {
+            Write-Host "[$timestamp] ✅ OK - Status: $($response.StatusCode)" -ForegroundColor Green
+        } else {
+            Write-Host "[$timestamp] ⚠️ WARNING - Status: $($response.StatusCode)" -ForegroundColor Yellow
+        }
+    }
+    catch {
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        Write-Host "[$timestamp] ❌ FAILED - Error: $($_.Exception.Message)" -ForegroundColor Red
+    }
+    
+    Start-Sleep -Seconds $IntervalSeconds
+}
+```
+
+**실행**:
+```powershell
+.\availability_test.ps1 -Url "http://<LOAD_BALANCER_IP>" -IntervalSeconds 60
+```
+
+### 7.4 Log Analytics 쿼리 (KQL)
+
+**Azure Portal** → **Log Analytics Workspace** → **Logs**에서 실행:
+
+**1. NSG Flow 로그 분석 (비정상 트래픽 탐지)**:
+```kql
+AzureNetworkAnalytics_CL
+| where TimeGenerated > ago(1h)
+| summarize Count=count() by SrcIP_s, DestPort_d, FlowStatus_s
+| where Count > 100
+| order by Count desc
+```
+
+**2. 웹 서버 응답 시간 분석**:
+```kql
+AppRequests
+| where TimeGenerated > ago(1h)
+| summarize 
+    AvgDuration=avg(DurationMs),
+    P95Duration=percentile(DurationMs, 95),
+    P99Duration=percentile(DurationMs, 99),
+    FailureRate=countif(Success == false) * 100.0 / count()
+by bin(TimeGenerated, 5m)
+| render timechart
+```
+
+**3. MySQL 연결 실패 로그**:
+```kql
+AzureDiagnostics
+| where ResourceType == "MYSQL"
+| where Category == "MySqlSlowLogs" or Category == "MySqlAuditLogs"
+| where TimeGenerated > ago(1h)
+| where Message contains "failed" or Message contains "error"
+```
+
+### 7.5 Azure Monitor CLI (메트릭 확인)
+
+**설치**:
+```powershell
+# Azure CLI 확장 설치
+az extension add --name monitor-control-service
+```
+
+**VMSS CPU 사용률 확인**:
+```powershell
+az monitor metrics list `
+  --resource "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/www-rg/providers/Microsoft.Compute/virtualMachineScaleSets/my-vmss" `
+  --metric "Percentage CPU" `
+  --start-time (Get-Date).AddHours(-1).ToString('yyyy-MM-ddTHH:mm:ss') `
+  --end-time (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss') `
+  --interval PT1M `
+  --aggregation Average
+```
+
+**MySQL 연결 수 확인**:
+```powershell
+az monitor metrics list `
+  --resource "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/www-rg/providers/Microsoft.DBforMySQL/flexibleServers/www-mysql-server-*" `
+  --metric "active_connections" `
+  --aggregation Average
+```
+
+### 7.6 보안 검증
+
+**NSG 규칙 테스트**:
+```powershell
+# Bastion 외부에서 직접 VMSS SSH 접속 시도 (차단되어야 함)
+Test-NetConnection -ComputerName <VMSS_PRIVATE_IP> -Port 22 -InformationLevel Detailed
+# 결과: TcpTestSucceeded: False (차단됨)
+
+# HTTP/HTTPS 접속 테스트 (허용되어야 함)
+Test-NetConnection -ComputerName <LOAD_BALANCER_IP> -Port 80 -InformationLevel Detailed
+# 결과: TcpTestSucceeded: True (허용됨)
+```
+
+**Private Endpoint 연결 확인**:
+```powershell
+# Web VM에서 MySQL Private Endpoint로 연결 테스트
+# (Web VM에 SSH 접속한 상태에서)
+nslookup <MYSQL_SERVER>.mysql.database.azure.com
+# 결과: Private IP (172.16.1.x)가 반환되어야 함
+
+# Public IP 조회 시도 (비활성화되어야 함)
+ping <MYSQL_SERVER>.mysql.database.azure.com
+# 결과: Private IP로만 응답
+```
+
+### 7.7 데이터베이스 백업/복구 테스트
+
+**Data Factory Pipeline 수동 트리거**:
+```powershell
+# Azure CLI로 Data Factory Pipeline 실행
+az datafactory pipeline create-run `
+  --resource-group www-rg `
+  --factory-name www-adf `
+  --name mysql-backup-pipeline
+
+# Pipeline 실행 상태 확인
+az datafactory pipeline-run show `
+  --resource-group www-rg `
+  --factory-name www-adf `
+  --run-id <RUN_ID>
+```
+
+**백업 파일 확인**:
+```powershell
+# Storage Account에 백업 파일이 생성되었는지 확인
+az storage blob list `
+  --account-name <STORAGE_ACCOUNT_NAME> `
+  --container-name backup `
+  --query "[?contains(name, 'www_sql_backup')].{Name:name, Size:properties.contentLength, Modified:properties.lastModified}"
+```
+
+**MySQL 레플리카 동기화 확인**:
+```sql
+-- Primary 서버에서 실행
+SHOW MASTER STATUS;
+
+-- Replica 서버에서 실행
+SHOW SLAVE STATUS\G
+
+-- Seconds_Behind_Master 값이 1초 이하면 정상 동기화
+```
+
+### 7.8 Metric Alert 트리거 테스트
+
+**CPU 부하 생성** (Web VM에서):
+```bash
+# CPU 100% 부하 생성 (3분 이상 유지)
+stress-ng --cpu 4 --timeout 300s
+
+# 또는 간단한 무한 루프
+yes > /dev/null &
+# 종료: killall yes
+```
+
+**Alert 확인**:
+1. Azure Portal → **Monitor** → **Alerts**
+2. 3-5분 후 `High-CPU-VMSS` Alert 발생 확인
+3. Email/SMS 알림 수신 확인
+4. Auto-Scaling 동작 확인 (VMSS 인스턴스 증가)
+
+---
+
+## ❓ 문제가 생겼나요?
+
+
+- **접속이 안 돼요**: `terraform output` 명령어로 IP가 맞는지 다시 확인해 주세요.
+- **DB 연결 실패**: Web VM 내부에서만 접속 가능합니다. 로컬 PC에서는 접속할 수 없습니다 (보안 정책).
+- **권한 오류**: `az login`이 되어 있는지 확인해 주세요.
