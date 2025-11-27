@@ -6,7 +6,6 @@ variable "subid" {
 
 variable "rgname" {
   type    = string
-  default = "04-jhj"
 }
 
 variable "loca" {
@@ -20,7 +19,6 @@ variable "loca" {
 
 variable "vnet" {
   type = string
-  default = "jhj-vnet"
 }
 
 
@@ -62,35 +60,35 @@ variable "teamuser" {
 
 variable "subnet_bas.id" {
   type = string
-  default = "azurerm_subnet.www_sub_bas.id"
+  default = "azurerm_subnet.www_bas.id"
 }
 
 variable "subnet_web1.id" {
   type = string
-  default = "azurerm_subnet.www_sub_web1.id"
+  default = "azurerm_subnet.www_web1.id"
 }
 
 variable "subnet_web2.id" {
   type = string
-  default = "azurerm_subnet.www_sub_web2.id"
+  default = "azurerm_subnet.www_web2.id"
 }
 
 variable "subnet_db.id" {
   type = string
-  default = "azurerm_subnet.www_sub_db.id"
+  default = "azurerm_subnet.www_db.id"
 }
 
 variable "v1_subnet_web1.id" {
   type = string
-  default = "azurerm_subnet.www_v1_sub_web1.id"
+  default = "azurerm_subnet.www_web1_v1.id"
 }
 
 variable "v1_subnet_web2.id" {
   type = string
-  default = "azurerm_subnet.www_v1_sub_web2.id"
+  default = "azurerm_subnet.www_web2_v1.id"
 }
 
 variable "v1_subnet_vmss.id" {
   type = string
-  default = "azurerm_subnet.www_v1_sub_vmss.id"
+  default = "azurerm_subnet.www_vmss.id"
 }

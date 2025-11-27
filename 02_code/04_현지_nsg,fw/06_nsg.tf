@@ -10,9 +10,9 @@ resource "azurerm_network_security_group" "www_nsg_ssh" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefixes    = ["61.108.60.26", "10.0.0.0/16", "192.168.0.0./16"]
+    source_address_prefixes    = ["61.108.60.26", "10.0.0.0/16", "172.17.0.0/16", "10.1.0.0/16", "172.16.0.0/16"]
     source_port_range          = "*"
-    destination_address_prefix = "10.0.0.0/16"
+    destination_address_prefixes = ["10.0.0.0/16", "10.1.0.0/16"]
     destination_port_range     = "22"
   }
 }
@@ -28,9 +28,9 @@ resource "azurerm_network_security_group" "www_nsg_http" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefixes    = ["61.108.60.26", "10.0.0.0/16", "192.168.0.0./16"]
+    source_address_prefixes    = ["61.108.60.26", "10.0.0.0/16", "172.17.0.0/16", "10.1.0.0/16", "172.16.0.0/16"]
     source_port_range          = "*"
-    destination_address_prefix = "10.0.0.0/16"
+    destination_address_prefixes = ["10.0.0.0/16", "10.1.0.0/16"]
     destination_port_range     = "22"
   }
 
@@ -58,9 +58,9 @@ resource "azurerm_network_security_group" "www_nsg_db" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefixes    = ["61.108.60.26", "10.0.0.0/16", "192.168.0.0./16"]
+    source_address_prefixes    = ["61.108.60.26", "10.0.0.0/16", "172.17.0.0/16", "10.1.0.0/16", "172.16.0.0/16"]
     source_port_range          = "*"
-    destination_address_prefix = "10.0.0.0/16"
+    destination_address_prefixes = ["10.0.0.0/16", "10.1.0.0/16"]
     destination_port_range     = "22"
   }
 
@@ -88,9 +88,9 @@ resource "azurerm_network_security_group" "www_v1_nsg_http" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefixes    = ["61.108.60.26", "10.0.0.0/16", "192.168.0.0./16"]
+    source_address_prefixes    = ["61.108.60.26", "10.0.0.0/16", "172.17.0.0/16", "10.1.0.0/16", "172.16.0.0/16"]
     source_port_range          = "*"
-    destination_address_prefix = "10.0.0.0/16"
+    destination_address_prefixes = ["10.0.0.0/16", "10.1.0.0/16"]
     destination_port_range     = "22"
   }
 
