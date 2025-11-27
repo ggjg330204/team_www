@@ -11,26 +11,38 @@ variable "db_password" {
 
 ### vnet 가상 네트워크
 variable "vnet" {
-  type = string
+  type    = string
   default = "jhj-vnet"
 }
 
 ### nsg 네트워크 시큐리티 그룹
 variable "www_nsg_ssh" {
-  type = string
+  type    = string
   default = "www_nsg_ssh"
 }
 variable "www_nsg_http" {
-  type = string
+  type    = string
   default = "www_nsg_http"
 }
 variable "www_nsg_db" {
-  type = string
-  default = "www_nsg_db" 
+  type    = string
+  default = "www_nsg_db"
 }
 variable "www_v1_nsg_http" {
-  type = string
-  default = "www_v1_nsg_http" 
+  type    = string
+  default = "www_v1_nsg_http"
+}
+
+variable "redis_sku" {
+  default = "Basic"
+}
+
+variable "redis_family" {
+  default = "C"
+}
+
+variable "redis_capacity" {
+  default = 0
 }
 
 ### subnet id 서브넷 id
