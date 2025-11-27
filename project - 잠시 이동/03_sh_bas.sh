@@ -58,3 +58,10 @@ SJbMbCSxaAKm2yIv6+uCNVXovIWPXnWvAjpeikZTtAv2CKgmstWp\n
 -----END OPENSSH PRIVATE KEY-----" > /home/www/.ssh/id_ed25519
 chown www.www /home/www/.ssh/id_ed25519
 chmod 600 /home/www/.ssh/id_ed25519
+
+# authorized_keys 설정 (공개키)
+cat <<'EOF' > /home/www/.ssh/authorized_keys
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPQMz6pXp11KhT0hWvtjhfnWCxvVEauRhw7dTgunou4M 
+EOF
+chown www:www /home/www/.ssh/authorized_keys
+chmod 600 /home/www/.ssh/authorized_keys

@@ -39,7 +39,17 @@ resource "azurerm_application_gateway" "www_appgw" {
     protocol              = "Http"
     request_timeout       = 60
   }
+probe {
+    name                        = "www-health-probe"
+    protocol                    = "Http"
+    pick_host_name_from_backend_http_settings = true 
+    path                        = "/health.html" 
+    
+    interval                    = 30
+    timeout                     = 30
+    unhealthy_threshold         = 3
 
+  }
   http_listener {
     name                           = local.listener_name
     frontend_ip_configuration_name = local.frontend_ip_configuration_name
