@@ -44,9 +44,16 @@ resource "azurerm_image" "www_image" {
 }
 #shared image gallery 생성
 resource "azurerm_shared_image_gallery" "www_gallery" {
-  name                = "${var.teamuser}wwwgallery"
+  name                = "${var.teamuser}gallery${random_string.gallery_suffix.result}"
   location            = var.loca
   resource_group_name = azurerm_resource_group.www_rg.name
+}
+
+# 갤러리 이름용 난수 생성 (2글자)
+resource "random_string" "gallery_suffix" {
+  length  = 2
+  special = false
+  upper   = false
 }
 #define image in gallery
 resource "azurerm_shared_image" "www_sig_image" {

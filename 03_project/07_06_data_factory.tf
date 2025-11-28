@@ -25,11 +25,14 @@ resource "azurerm_data_factory_linked_custom_service" "mysql_source" {
 
   type_properties_json = <<JSON
 {
-  "connectionString": "Server=${azurerm_mysql_flexible_server.www_mysql.fqdn};Port=3306;Database=${wordpress};Uid=${www};Pwd=${var.db_password};SslMode=Required;"
+  "connectionString": "Server=${azurerm_mysql_flexible_server.www_mysql.fqdn};Port=3306;Database=${azurerm_mysql_flexible_database.www_db.name};Uid=${azurerm_mysql_flexible_server.www_mysql.administrator_login};Pwd=${var.db_password};SslMode=Required;"
 }
 JSON
 
-  depends_on = [azurerm_mysql_flexible_server.www_mysql]
+  depends_on = [
+    azurerm_mysql_flexible_server.www_mysql,
+    azurerm_mysql_flexible_database.www_db
+  ]
 }
 
 resource "azurerm_data_factory_linked_service_azure_blob_storage" "blob_dest" {
