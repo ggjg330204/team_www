@@ -1,0 +1,268 @@
+#! /bin/bash
+set -e # 명령어 실행 중 오류 발생 시 즉시 스크립트 중단
+
+# --- 로깅 설정 ---
+LOG_FILE="/var/log/startup-script.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1"
+}
+
+log "===== VM 초기화 스크립트 시작 ====="
+
+# SELinux 비활성화
+log "SELinux 비활성화를 시도합니다."
+setenforce 0
+grubby --update-kernel ALL --args selinux=0
+log "SELinux 비활성화 완료."
+
+# httpd 패키지 설치
+log "httpd 패키지 설치를 시작합니다."
+sudo dnf install -y httpd
+log "httpd 패키지 설치 완료."
+
+# 'www' 사용자 생성
+log "'www' 사용자 생성을 시도합니다."
+if id -u www &>/dev/null; then
+    log "'www' 사용자가 이미 존재합니다."
+else
+    sudo useradd www && sudo mkdir -p /home/www/.ssh && sudo chown -R www:www /home/www
+    log "'www' 사용자 생성 및 홈 디렉터리 설정 완료."
+fi
+
+# 헬스 체크 파일 생성
+log "헬스 체크 파일을 생성합니다."
+echo $HOSTNAME | sudo tee /var/www/html/health.html > /dev/null
+log "헬스 체크 파일 생성 완료."
+
+# 웹 루트 디렉터리 권한 설정
+log "웹 디렉터리 권한을 설정합니다."
+sudo chown -R apache:apache /var/www/html
+sudo chmod -R 755 /var/www/html
+log "웹 디렉터리 권한 설정 완료."
+
+# httpd 서비스 시작 및 활성화
+log "httpd 서비스를 시작하고 활성화합니다."
+sudo systemctl enable --now httpd
+log "httpd 서비스 시작 및 활성화 완료."
+
+# SSH 키 설정
+log "www 사용자의 SSH 키 설정을 시작합니다."
+PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACD0DM+qV6ddSoU9IVr7Y4X51gsb1RGrkYcO3U4Lp6LuDAAAAJje8/633vP+
+twAAAAtzc2gtZWQyNTUxOQAAACD0DM+qV6ddSoU9IVr7Y4X51gsb1RGrkYcO3U4Lp6LuDA
+AAAEAY4HQXT63XaRsqFwkH3XQYpg7ZU/L4pl6Q09LMTQfa7fQMz6pXp11KhT0hWvtjhfnW
+CxvVEauRhw7dTgunou4MAAAAEGdnamczM0BnbWFpbC5jb20BAgMEBQ==
+-----END OPENSSH PRIVATE KEY-----"
+echo "$PRIVATE_KEY" | sudo tee /home/www/.ssh/id_ed25519 > /dev/null
+sudo chown www:www /home/www/.ssh/id_ed25519
+sudo chmod 600 /home/www/.ssh/id_ed25519
+
+PUBLIC_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPQMz6pXp11KhT0hWvtjhfnWCxvVEauRhw7dTgunou4M"
+echo "$PUBLIC_KEY" | sudo tee /home/www/.ssh/authorized_keys > /dev/null
+sudo chown www:www /home/www/.ssh/authorized_keys
+sudo chmod 600 /home/www/.ssh/authorized_keys
+log "SSH 키 설정 완료."
+
+# index.html 파일 생성
+log "index.html 파일 생성을 시작합니다."
+SERVER_HOSTNAME=$(hostname)
+sudo tee /var/www/html/index.html <<EOF > /dev/null
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEAM_1 홈페이지</title>
+    <style>
+        /* 전체 기본 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            color: #222;
+            background-color: #ffffff; /* body 배경색 흰색 */
+        }
+
+        /* 상단 영역 */
+        header {
+            background-color: #000; /* 기본 검정 (JS에서 변경됨) */
+            color: #fff;
+            padding: 25px 20px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            position: relative;
+        }
+
+        /* 오른쪽 위 호스트네임 표시 */
+        #hostname-display {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 0.9em;
+            color: #fff;
+            background-color: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 5px;
+        }
+
+        /* 섹션 공통 스타일 */
+        section {
+            padding: 60px 20px;
+            max-width: 1000px;
+            margin: auto;
+            color: #222;
+            background-color: #ffffff;
+        }
+
+        section h2 {
+            border-bottom: 3px solid #555;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        /* 사이트 연결 링크 스타일 */
+        .links a {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 10px;
+            padding: 8px 15px;
+            background-color: #444;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .links a:hover {
+            background-color: #222;
+        }
+
+        /* 자료 리스트 */
+        .resources ul {
+            list-style-type: square;
+            padding-left: 20px;
+        }
+
+        .resources ul li a {
+            color: #000;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .resources ul li a:hover {
+            text-decoration: underline;
+            color: #555;
+        }
+
+        /* 반응형 */
+        @media (max-width: 600px) {
+            header { font-size: 1.5em; padding: 20px 10px; }
+            section { padding: 40px 15px; }
+            .links a { padding: 6px 10px; margin-right: 10px; }
+            #hostname-display { font-size: 0.8em; top: 8px; right: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        TEAM_1 HOMEPAGE
+        <div id="hostname-display"></div>
+    </header>
+
+    <section id="home">
+        <h2>홈</h2>
+        <p>환영합니다! TEAM_1 홈페이지에 오신 것을 환영합니다.</p>
+    </section>
+
+    <section id="links">
+        <h2>사이트 연결</h2>
+        <div class="links">
+            <a href="https://github.com/ggjg330204/team_www" target="_blank" title="GitHub 저장소 열기">GitHub</a>
+            <a href="https://docs.google.com/document/d/1yTNmIULeCsDkz-_H1BI9BW3sZb_jHD2bhuKGa77sQXE/edit?usp=sharing" target="_blank" title="Google Docs 열기">Google Docs</a>
+            <a href="https://docs.google.com/presentation/d/1POM2feOR6tb6ollBAfYMIvgkHAtwed9iAOqlzqIHcws/edit?usp=sharing" target="_blank" title="Google Slide 열기">Google Slide</a>
+        </div>
+    </section>
+
+    <section id="resources">
+        <h2>포트폴리오</h2>
+        <div class="resources">
+            <ul>
+                <li><a href="#" title="이기훈 자료 다운로드">이기훈</a></li>
+                <li><a href="#" title="자료 2 다운로드">자료 2</a></li>
+                <li><a href="#" title="자료 3 다운로드">자료 3</a></li>
+            </ul>
+        </div>
+    </section>
+
+    <script>
+        /* ============================================================
+           1) 실제 페이지에서는 서버에서 hostname 주입
+        ============================================================ */
+        const hostname = '${SERVER_HOSTNAME}';
+        // const hostname = "ghl-vmss000003";    // 테스트 시 사용
+        // const hostname = "www-vnet1-web1vm"; // 테스트 시 사용
+
+        document.getElementById("hostname-display").textContent = hostname;
+
+        /* ============================================================
+           2) 색상 배열 (index 1~10)
+        ============================================================ */
+        const rainbowColors = [
+            "#FF9999", // 1
+            "#FFC999", // 2
+            "#FFFF99", // 3
+            "#99FF99", // 4
+            "#9999FF", // 5
+            "#A399C8", // 6
+            "#C899FF", // 7
+            "#FFB3DE", // 8
+            "#B3E0FF", // 9
+            "#FFD6A5"  // 10
+        ];
+
+        let selectedColor = "#000000";
+        let colorIndex = null;
+
+        /* ============================================================
+           3) webXvm → index = X 그대로 (1,2,3 ...)
+        ============================================================ */
+        let webMatch = hostname.match(/web(\d+)vm$/);
+        if (webMatch) {
+            const num = parseInt(webMatch[1], 10); // web3vm → 3
+            colorIndex = num;
+        }
+
+        /* ============================================================
+           4) vmss00000X → index = X + 2 (규칙: 1→3, 2→4, ..., 8→10)
+        ============================================================ */
+        let vmssMatch = hostname.match(/vmss(\d{6})$/);
+        if (vmssMatch) {
+            const num = parseInt(vmssMatch[1], 10); // 000001 → 1
+            colorIndex = num + 2;
+        }
+
+        /* ============================================================
+           5) 색상 최종 적용 (배열 순환)
+        ============================================================ */
+        if (colorIndex !== null && colorIndex > 0) {
+            const safeIndex = (colorIndex - 1) % rainbowColors.length;
+            selectedColor = rainbowColors[safeIndex];
+        }
+
+        document.querySelector('header').style.backgroundColor = selectedColor;
+    </script>
+
+</body>
+</html>
+EOF
+log "index.html 파일 생성 완료."
+
+log "===== 모든 스크립트 실행이 성공적으로 완료되었습니다. ====="
