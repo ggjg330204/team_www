@@ -4,6 +4,8 @@ resource "azurerm_private_endpoint" "www_pe" {
   resource_group_name = azurerm_resource_group.www_rg.name
   subnet_id           = azurerm_subnet.www_db.id
 
+  custom_network_interface_name = "www-mysql-pe-nic"
+
   private_service_connection {
     name                           = "www-mysql-privatelink"
     private_connection_resource_id = azurerm_mysql_flexible_server.www_mysql.id
@@ -27,4 +29,5 @@ resource "azurerm_private_dns_zone_virtual_network_link" "www_dns_link" {
   resource_group_name   = azurerm_resource_group.www_rg.name
   private_dns_zone_name = azurerm_private_dns_zone.www_dns_zone.name
   virtual_network_id    = azurerm_virtual_network.www_vnet0.id
+  registration_enabled  = false
 }

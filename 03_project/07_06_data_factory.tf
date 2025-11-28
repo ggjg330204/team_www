@@ -1,14 +1,12 @@
 resource "azurerm_data_factory" "www_adf" {
-  name                = "www-adf-${random_string.adf_suffix.result}"
-  location            = var.loca
-  resource_group_name = azurerm_resource_group.www_rg.name
+  name                            = "www-adf-${random_string.adf_suffix.result}"
+  location                        = var.loca
+  resource_group_name             = azurerm_resource_group.www_rg.name
+  public_network_enabled          = true
+  managed_virtual_network_enabled = true
 
   identity {
     type = "SystemAssigned"
-  }
-
-  tags = {
-    purpose = "MySQL Backup Pipeline"
   }
 }
 

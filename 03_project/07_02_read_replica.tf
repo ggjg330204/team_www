@@ -20,7 +20,13 @@ resource "azurerm_mysql_flexible_server" "www_replica" {
   zone                   = "2"
   create_mode            = "Replica"
   source_server_id       = azurerm_mysql_flexible_server.www_mysql.id
-  depends_on             = [time_sleep.wait_for_primary]
+
+  storage {
+    auto_grow_enabled = true
+    size_gb           = 64
+  }
+
+  depends_on = [time_sleep.wait_for_primary]
 }
 
 resource "azurerm_mysql_flexible_server" "www_replica_2" {
@@ -33,5 +39,11 @@ resource "azurerm_mysql_flexible_server" "www_replica_2" {
   zone                   = "1"
   create_mode            = "Replica"
   source_server_id       = azurerm_mysql_flexible_server.www_mysql.id
-  depends_on             = [time_sleep.wait_for_primary]
+
+  storage {
+    auto_grow_enabled = true
+    size_gb           = 64
+  }
+
+  depends_on = [time_sleep.wait_for_primary]
 }
