@@ -20,16 +20,91 @@ sudo tee /var/www/html/index.html <<EOF > /dev/null
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TEAM_1 홈페이지</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; line-height: 1.6; color: #222; background-color: #ffffff; }
-        header { background-color: #000; color: #fff; padding: 25px 20px; text-align: center; font-size: 2em; font-weight: bold; position: relative; }
-        #hostname-display { position: absolute; top: 10px; right: 20px; font-size: 0.9em; color: #fff; background-color: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 5px; }
-        section { padding: 60px 20px; max-width: 1000px; margin: auto; color: #222; background-color: #ffffff; }
-        section h2 { border-bottom: 3px solid #555; padding-bottom: 10px; margin-bottom: 25px; font-size: 1.8em; }
-        .links a { display: inline-block; margin-right: 15px; margin-bottom: 10px; padding: 8px 15px; background-color: #444; color: #fff; text-decoration: none; border-radius: 5px; font-weight: 500; transition: 0.3s; }
-        .links a:hover { background-color: #222; }
-        .resources ul { list-style-type: square; padding-left: 20px; }
-        .resources ul li a { color: #000; text-decoration: none; transition: 0.3s; }
-        .resources ul li a:hover { text-decoration: underline; color: #555; }
+        /* 전체 기본 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            color: #222;
+            background-color: #ffffff; /* body 배경색 흰색 */
+        }
+
+        /* 상단 영역 */
+        header {
+            background-color: #000; /* 기본 검정 (JS에서 변경됨) */
+            color: #fff;
+            padding: 25px 20px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            position: relative;
+        }
+
+        /* 오른쪽 위 호스트네임 표시 */
+        #hostname-display {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 0.9em;
+            color: #fff;
+            background-color: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 5px;
+        }
+
+        /* 섹션 공통 스타일 */
+        section {
+            padding: 60px 20px;
+            max-width: 1000px;
+            margin: auto;
+            color: #222;
+            background-color: #ffffff;
+        }
+
+        section h2 {
+            border-bottom: 3px solid #555;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        /* 사이트 연결 링크 스타일 */
+        .links a {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 10px;
+            padding: 8px 15px;
+            background-color: #444;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .links a:hover {
+            background-color: #222;
+        }
+
+        /* 자료 리스트 */
+        .resources ul {
+            list-style-type: square;
+            padding-left: 20px;
+        }
+
+        .resources ul li a {
+            color: #000;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .resources ul li a:hover {
+            text-decoration: underline;
+            color: #555;
+        }
+
+        /* 반응형 */
         @media (max-width: 600px) {
             header { font-size: 1.5em; padding: 20px 10px; }
             section { padding: 40px 15px; }
@@ -39,54 +114,82 @@ sudo tee /var/www/html/index.html <<EOF > /dev/null
     </style>
 </head>
 <body>
+
     <header>
         TEAM_1 HOMEPAGE
         <div id="hostname-display"></div>
     </header>
+
     <section id="home">
         <h2>홈</h2>
         <p>환영합니다! TEAM_1 홈페이지에 오신 것을 환영합니다.</p>
     </section>
+
     <section id="links">
         <h2>사이트 연결</h2>
         <div class="links">
             <a href="https://github.com/ggjg330204/team_www" target="_blank" title="GitHub 저장소 열기">GitHub</a>
             <a href="https://docs.google.com/document/d/1yTNmIULeCsDkz-_H1BI9BW3sZb_jHD2bhuKGa77sQXE/edit?usp=sharing" target="_blank" title="Google Docs 열기">Google Docs</a>
-            <a href="https://docs.google.com/presentation/d/1POM2feOR6tb6ollBAfYMIvgkHAtwed9iAOqlzqIHcws/edit?usp=sharing" target="_blank" title="Google Slide 열기">Google Slide</a>
+            <a href="https://docs.google.com/presentation/d/1023rV6HVXmOczvLDnT7QpIm6KHIS0QxUEWnrc9dNAa8/edit?slide=id.p1#slide=id.p1" target="_blank" title="Google Slide 열기">Google Slide</a>
         </div>
     </section>
+
     <section id="resources">
         <h2>포트폴리오</h2>
         <div class="resources">
             <ul>
-                <li><a href="#" title="이기훈 자료 다운로드">이기훈</a></li>
-                <li><a href="#" title="자료 2 다운로드">자료 2</a></li>
-                <li><a href="#" title="자료 3 다운로드">자료 3</a></li>
+                <li><a href="#" title="이하연 자료 다운로드">이하연</a></li>
+                <li><a href="#" title="배하영 자료 다운로드">배하영</a></li>
+                <li><a href="#" title="이두경 자료 다운로드">이두경</a></li>
+                <li><a href="#" title="정현지 자료 다운로드">정현지</a></li>
+                <li><a href="#" title="이하연 자료 다운로드">이기훈</a></li>
             </ul>
         </div>
     </section>
+
     <script>
         const hostname = '${SERVER_HOSTNAME}';
+        // const hostname = "ghl-vmss000003";    // 테스트 시 사용
+        // const hostname = "www-vnet1-web1vm"; // 테스트 시 사용
+
         document.getElementById("hostname-display").textContent = hostname;
-        const rainbowColors = ["#FF9999","#FFC999","#FFFF99","#99FF99","#9999FF","#A399C8","#C899FF","#FFB3DE","#B3E0FF","#FFD6A5"];
+
+        const rainbowColors = [
+            "#FF9999", // 1
+            "#FFC999", // 2
+            "#FFFF99", // 3
+            "#99FF99", // 4
+            "#9999FF", // 5
+            "#A399C8", // 6
+            "#C899FF", // 7
+            "#FFB3DE", // 8
+            "#B3E0FF", // 9
+            "#FFD6A5"  // 10
+        ];
+
         let selectedColor = "#000000";
         let colorIndex = null;
+
         let webMatch = hostname.match(/web(\d+)vm$/);
         if (webMatch) {
-            const num = parseInt(webMatch[1], 10);
+            const num = parseInt(webMatch[1], 10); // web3vm → 3
             colorIndex = num;
         }
+
         let vmssMatch = hostname.match(/vmss(\d{6})$/);
         if (vmssMatch) {
-            const num = parseInt(vmssMatch[1], 10);
+            const num = parseInt(vmssMatch[1], 10); // 000001 → 1
             colorIndex = num + 2;
         }
+
         if (colorIndex !== null && colorIndex > 0) {
             const safeIndex = (colorIndex - 1) % rainbowColors.length;
             selectedColor = rainbowColors[safeIndex];
         }
+
         document.querySelector('header').style.backgroundColor = selectedColor;
     </script>
+
 </body>
 </html>
 EOF

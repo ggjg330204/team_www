@@ -72,6 +72,12 @@ resource "azurerm_shared_image_version" "www_version" {
   image_name          = azurerm_shared_image.www_sig_image.name
 
   target_region {
+    name                   = "koreacentral"
+    regional_replica_count = 1
+    storage_account_type   = "Standard_LRS"
+  }
+
+  target_region {
     name                   = "koreasouth"
     regional_replica_count = 1
     storage_account_type   = "Standard_LRS"
