@@ -1,6 +1,4 @@
 #! /bin/bash
-set -e # 명령어 실행 중 오류 발생 시 즉시 스크립트 중단
-
 # --- 로깅 설정 ---
 LOG_FILE="/var/log/startup-script.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -205,18 +203,12 @@ sudo tee /var/www/html/index.html <<EOF > /dev/null
     </section>
 
     <script>
-        /* ============================================================
-           1) 실제 페이지에서는 서버에서 hostname 주입
-        ============================================================ */
         const hostname = '${SERVER_HOSTNAME}';
         // const hostname = "ghl-vmss000003";    // 테스트 시 사용
         // const hostname = "www-vnet1-web1vm"; // 테스트 시 사용
 
         document.getElementById("hostname-display").textContent = hostname;
 
-        /* ============================================================
-           2) 색상 배열 (index 1~10)
-        ============================================================ */
         const rainbowColors = [
             "#FF9999", // 1
             "#FFC999", // 2
@@ -233,27 +225,18 @@ sudo tee /var/www/html/index.html <<EOF > /dev/null
         let selectedColor = "#000000";
         let colorIndex = null;
 
-        /* ============================================================
-           3) webXvm → index = X 그대로 (1,2,3 ...)
-        ============================================================ */
         let webMatch = hostname.match(/web(\d+)vm$/);
         if (webMatch) {
             const num = parseInt(webMatch[1], 10); // web3vm → 3
             colorIndex = num;
         }
 
-        /* ============================================================
-           4) vmss00000X → index = X + 2 (규칙: 1→3, 2→4, ..., 8→10)
-        ============================================================ */
         let vmssMatch = hostname.match(/vmss(\d{6})$/);
         if (vmssMatch) {
             const num = parseInt(vmssMatch[1], 10); // 000001 → 1
             colorIndex = num + 2;
         }
 
-        /* ============================================================
-           5) 색상 최종 적용 (배열 순환)
-        ============================================================ */
         if (colorIndex !== null && colorIndex > 0) {
             const safeIndex = (colorIndex - 1) % rainbowColors.length;
             selectedColor = rainbowColors[safeIndex];
