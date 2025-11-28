@@ -3,26 +3,26 @@ setenforce 0
 grubby --update-kernel ALL --args selinux=0
 
 # 패키지 설치
-dnf install -y wget httpd php php-gd php-opcache php-mysqlnd php-pecl-redis5 lynx mysql unzip
+sudo dnf install -y wget httpd php php-gd php-opcache php-mysqlnd php-pecl-redis5 lynx mysql unzip
 
 # 워드프레스 설치 및 설정
-wget https://ko.wordpress.org/wordpress-6.8.3-ko_KR.tar.gz
-tar xvfz wordpress-6.8.3-ko_KR.tar.gz
-cp -ar wordpress/* /var/www/html
-sed -i 's/DirectoryIndex index.html/DirectoryIndex index.php/g' /etc/httpd/conf/httpd.conf
-cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+sudo wget https://ko.wordpress.org/wordpress-6.8.3-ko_KR.tar.gz
+sudo tar xvfz wordpress-6.8.3-ko_KR.tar.gz
+sudo cp -ar wordpress/* /var/www/html
+sudo sed -i 's/DirectoryIndex index.html/DirectoryIndex index.php/g' /etc/httpd/conf/httpd.conf
+sudo cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
 # ... (DB 설정 및 Redis 설정 코드 생략) ...
 
 # ----------------------------------------------------
 # 🔑 [수정 1] 필수: 웹 서비스 시작 전에 권한 설정 (주석 해제 및 순서 변경)
 # ----------------------------------------------------
-chown -R apache:apache /var/www/html
-chmod -R 755 /var/www/html
+sudo chown -R apache:apache /var/www/html
+sudo chmod -R 755 /var/www/html
 
 # health.html 파일 생성 및 권한 설정
 echo $HOSTNAME > /var/www/html/health.html
 # health.html 파일이 Apache가 접근 가능하도록 명확히 권한 설정
-chown apache:apache /var/www/html/health.html 
+sudo chown apache:apache /var/www/html/health.html 
 
 # ----------------------------------------------------
 # 🔑 [수정 2] 서비스 시작 (권한 설정 이후)

@@ -1,51 +1,75 @@
 #! /bin/bash
+set -e # 명령어 실행 중 오류 발생 시 즉시 스크립트 중단
+
+# --- 로깅 설정 ---
+LOG_FILE="/var/log/startup-script.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1"
+}
+
+log "===== VM 초기화 스크립트 시작 ====="
+
+# SELinux 비활성화
+log "SELinux 비활성화를 시도합니다."
 setenforce 0
 grubby --update-kernel ALL --args selinux=0
-sudo dnf install -y wget httpd php php-gd php-opcache php-mysqlnd
-wget https://ko.wordpress.org/wordpress-6.8.3-ko_KR.tar.gz
-tar xvfz wordpress-6.8.3-ko_KR.tar.gz
-cp -ar wordpress/* /var/www/html
-sed -i 's/DirectoryIndex index.html/DirectoryIndex index.php/g' /etc/httpd/conf/httpd.conf
-cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
-sed -i 's/database_name_here/wordpress/g' /var/www/html/wp-config.php
-sed -i 's/username_here/www/g' /var/www/html/wp-config.php
-sed -i 's/password_here/It12345!/g' /var/www/html/wp-config.php
-sed -i 's/localhost/10.0.4.4/g' /var/www/html/wp-config.php
-echo $HOSTNAME > /var/www/html/health.html
+log "SELinux 비활성화 완료."
 
-# 방화벽 설정
-sudo firewall-cmd --zone=public --add-port=22/tcp --permanent
-sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
-sudo firewall-cmd --reload
+# httpd 패키지 설치
+log "httpd 패키지 설치를 시작합니다."
+sudo dnf install -y httpd
+log "httpd 패키지 설치 완료."
 
-# 권한 설정 (httpd 시작 전에 반드시 필요)
-chown -R apache:apache /var/www/html
-chmod -R 755 /var/www/html
+# 'www' 사용자 생성
+log "'www' 사용자 생성을 시도합니다."
+if id -u www &>/dev/null; then
+    log "'www' 사용자가 이미 존재합니다."
+else
+    sudo useradd www && sudo mkdir -p /home/www/.ssh && sudo chown -R www:www /home/www
+    log "'www' 사용자 생성 및 홈 디렉터리 설정 완료."
+fi
 
-# httpd 서비스 시작 (방화벽 및 권한 설정 후)
+# 헬스 체크 파일 생성
+log "헬스 체크 파일을 생성합니다."
+echo $HOSTNAME | sudo tee /var/www/html/health.html > /dev/null
+log "헬스 체크 파일 생성 완료."
+
+# 웹 루트 디렉터리 권한 설정
+log "웹 디렉터리 권한을 설정합니다."
+sudo chown -R apache:apache /var/www/html
+sudo chmod -R 755 /var/www/html
+log "웹 디렉터리 권한 설정 완료."
+
+# httpd 서비스 시작 및 활성화
+log "httpd 서비스를 시작하고 활성화합니다."
 sudo systemctl enable --now httpd
-## id_ed25519
-echo -e "-----BEGIN OPENSSH PRIVATE KEY-----
+log "httpd 서비스 시작 및 활성화 완료."
+
+# SSH 키 설정
+log "www 사용자의 SSH 키 설정을 시작합니다."
+PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
 QyNTUxOQAAACD0DM+qV6ddSoU9IVr7Y4X51gsb1RGrkYcO3U4Lp6LuDAAAAJje8/633vP+
 twAAAAtzc2gtZWQyNTUxOQAAACD0DM+qV6ddSoU9IVr7Y4X51gsb1RGrkYcO3U4Lp6LuDA
 AAAEAY4HQXT63XaRsqFwkH3XQYpg7ZU/L4pl6Q09LMTQfa7fQMz6pXp11KhT0hWvtjhfnW
 CxvVEauRhw7dTgunou4MAAAAEGdnamczM0BnbWFpbC5jb20BAgMEBQ==
------END OPENSSH PRIVATE KEY-----" > /home/www/.ssh/id_ed25519
-chown www:www /home/www/.ssh/id_ed25519
-chmod 600 /home/www/.ssh/id_ed25519
+-----END OPENSSH PRIVATE KEY-----"
+echo "$PRIVATE_KEY" | sudo tee /home/www/.ssh/id_ed25519 > /dev/null
+sudo chown www:www /home/www/.ssh/id_ed25519
+sudo chmod 600 /home/www/.ssh/id_ed25519
 
-# authorized_keys 설정 (공개키)
-cat <<'EOF' > /home/www/.ssh/authorized_keys
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPQMz6pXp11KhT0hWvtjhfnWCxvVEauRhw7dTgunou4M 
-EOF
-chown www:www /home/www/.ssh/authorized_keys
-chmod 600 /home/www/.ssh/authorized_keys
+PUBLIC_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPQMz6pXp11KhT0hWvtjhfnWCxvVEauRhw7dTgunou4M"
+echo "$PUBLIC_KEY" | sudo tee /home/www/.ssh/authorized_keys > /dev/null
+sudo chown www:www /home/www/.ssh/authorized_keys
+sudo chmod 600 /home/www/.ssh/authorized_keys
+log "SSH 키 설정 완료."
 
-
+# index.html 파일 생성
+log "index.html 파일 생성을 시작합니다."
 SERVER_HOSTNAME=$(hostname)
-
-cat <<EOF > /var/www/html/index.html
+sudo tee /var/www/html/index.html <<EOF > /dev/null
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -163,7 +187,7 @@ cat <<EOF > /var/www/html/index.html
         <div class="links">
             <a href="https://github.com/ggjg330204/team_www" target="_blank" title="GitHub 저장소 열기">GitHub</a>
             <a href="https://docs.google.com/document/d/1yTNmIULeCsDkz-_H1BI9BW3sZb_jHD2bhuKGa77sQXE/edit?usp=sharing" target="_blank" title="Google Docs 열기">Google Docs</a>
-            <a href="https://docs.google.com/presentation/d/1POM2feOR6tb6ollBAfYMIvgkHAtwed9iAOqlzqIHcws/edit?usp=sharing" target="_blank" title="Google Slide 열기">Google Slide</a>
+            <a href="https://docs.google.com/presentation/d/1023rV6HVXmOczvLDnT7QpIm6KHIS0QxUEWnrc9dNAa8/edit?slide=id.p1#slide=id.p1" target="_blank" title="Google Slide 열기">Google Slide</a>
         </div>
     </section>
 
@@ -171,9 +195,11 @@ cat <<EOF > /var/www/html/index.html
         <h2>포트폴리오</h2>
         <div class="resources">
             <ul>
-                <li><a href="#" title="이기훈 자료 다운로드">이기훈</a></li>
-                <li><a href="#" title="자료 2 다운로드">자료 2</a></li>
-                <li><a href="#" title="자료 3 다운로드">자료 3</a></li>
+                <li><a href="#" title="이하연 자료 다운로드">이하연</a></li>
+                <li><a href="#" title="배하영 자료 다운로드">배하영</a></li>
+                <li><a href="#" title="이두경 자료 다운로드">이두경</a></li>
+                <li><a href="#" title="정현지 자료 다운로드">정현지</a></li>
+                <li><a href="#" title="이하연 자료 다운로드">이기훈</a></li>
             </ul>
         </div>
     </section>
@@ -182,7 +208,7 @@ cat <<EOF > /var/www/html/index.html
         /* ============================================================
            1) 실제 페이지에서는 서버에서 hostname 주입
         ============================================================ */
-        const hostname = '${SERVER_HOSTNAME}';  
+        const hostname = '${SERVER_HOSTNAME}';
         // const hostname = "ghl-vmss000003";    // 테스트 시 사용
         // const hostname = "www-vnet1-web1vm"; // 테스트 시 사용
 
@@ -229,7 +255,7 @@ cat <<EOF > /var/www/html/index.html
            5) 색상 최종 적용 (배열 순환)
         ============================================================ */
         if (colorIndex !== null && colorIndex > 0) {
-            const safeIndex = (colorIndex - 1) % rainbowColors.length; 
+            const safeIndex = (colorIndex - 1) % rainbowColors.length;
             selectedColor = rainbowColors[safeIndex];
         }
 
@@ -239,3 +265,6 @@ cat <<EOF > /var/www/html/index.html
 </body>
 </html>
 EOF
+log "index.html 파일 생성 완료."
+
+log "===== 모든 스크립트 실행이 성공적으로 완료되었습니다. ====="

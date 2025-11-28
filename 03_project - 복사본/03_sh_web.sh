@@ -55,14 +55,12 @@ cat <<EOF > /var/www/html/index.html
             padding: 0;
             line-height: 1.6;
             color: #222;
-            /* **[변경됨]** body 배경색을 흰색으로 고정 (CSS에서 직접 설정) */
-            background-color: #ffffff; 
+            background-color: #ffffff; /* body 배경색 흰색 */
         }
 
         /* 상단 영역 */
         header {
-            /* **[변경됨]** 기본 배경색 설정 (JS에서 호스트네임에 따라 변경될 예정) */
-            background-color: #000; 
+            background-color: #000; /* 기본 검정 (JS에서 변경됨) */
             color: #fff;
             padding: 25px 20px;
             text-align: center;
@@ -89,8 +87,7 @@ cat <<EOF > /var/www/html/index.html
             max-width: 1000px;
             margin: auto;
             color: #222;
-            /* **[참고]** 섹션 자체는 흰색 배경을 유지 */
-            background-color: #ffffff; 
+            background-color: #ffffff;
         }
 
         section h2 {
@@ -177,68 +174,62 @@ cat <<EOF > /var/www/html/index.html
     </section>
 
     <script>
-        // =============================================
-        // 1. 테스트용 호스트네임 (PC 1대에서 테스트할 때)
-        //const TEST_HOSTNAME = "www-web"; 
-        //const TEST_HOSTNAME = "www-vmss000001"; 
-        //const TEST_HOSTNAME = "www-vmss000003"; 
-        // TEST_HOSTNAME 값을 바꿔가며 색상 확인 가능 (예: 'www-vmss000001' -> 빨강)
-        // =============================================
+        /* ============================================================
+           1) 실제 페이지에서는 서버에서 hostname 주입
+        ============================================================ */
+        const hostname = '${SERVER_HOSTNAME}';  
+        // const hostname = "ghl-vmss000003";    // 테스트 시 사용
+        // const hostname = "www-vnet1-web1vm"; // 테스트 시 사용
 
-        // 2. 실제 페이지에서는 서버에서 호스트네임을 주입
-        const hostname = '${SERVER_HOSTNAME}'; // 실제 서버에서 주입 시 주석 해제
-        // const hostname = TEST_HOSTNAME; // 테스트 시 주석 해제
-
-        // 아래 라인 하나로 테스트/실제 쉽게 전환 가능
-        //const hostname = TEST_HOSTNAME;
-
-        // 오른쪽 위 호스트네임 표시
         document.getElementById("hostname-display").textContent = hostname;
 
-        // 무지개 색상 배열
- const rainbowColors = [
-        "#FF9999", // 0: 연한 빨강
-            "#FFC999", // 1: 연한 주황
-            "#FFFF99", // 2: 연한 노랑
-            "#99FF99", // 3: 연한 초록
-            "#9999FF", // 4: 연한 파랑
-            "#A399C8", // 5: 연한 남색
-            "#C899FF"  // 6: 연한 보라
-        ];
+        /* ============================================================
+           2) 색상 배열 (index 1~10)
+        ============================================================ */
+        const rainbowColors = [
+            "#FF9999", // 1
+            "#FFC999", // 2
+            "#FFFF99", // 3
+            "#99FF99", // 4
+            "#9999FF", // 5
+            "#A399C8", // 6
+            "#C899FF", // 7
+            "#FFB3DE", // 8
+            "#B3E0FF", // 9
+            "#FFD6A5"  // 10
+        ];
 
-        let selectedColor = "#000000"; // 기본 검정색
-        let instanceNumber = null; // 인스턴스 번호를 저장할 변수
+        let selectedColor = "#000000";
+        let colorIndex = null;
 
-        // 1. www- 접두사에 관계없이 [접두사]-vmss[6자리 숫자] 패턴 처리
-        if (/-vmss\d{6}$/.test(hostname)) {
-            // 호스트네임 끝 6자리 숫자를 추출
-            const match = hostname.match(/\d{6}$/);
-            if (match) {
-                // 6자리 숫자를 정수로 변환 (예: 000001 -> 1)
-                instanceNumber = parseInt(match[0], 10);
-            }
-        } 
-        
-        // 2. www- 접두사에 관계없이 [접두사]-web[숫자]vm 패턴 처리
-        else if (/-web\d+vm$/.test(hostname)) {
-            // web과 vm 사이에 있는 숫자를 추출
-            const match = hostname.match(/web(\d+)vm$/);
-            if (match && match[1]) {
-                // 숫자를 정수로 변환 (예: web1vm -> 1)
-                instanceNumber = parseInt(match[1], 10);
-            }
-        }
-        
-        // 인스턴스 번호가 유효할 경우 색상 할당
-        if (instanceNumber !== null && instanceNumber > 0) {
-            // 숫자를 배열 길이로 나눈 나머지로 인덱스 결정 (순환)
-            // 인덱스는 0부터 시작하므로, 1번 인스턴스는 0번 인덱스에 매핑되도록 -1을 사용
-            const colorIndex = (instanceNumber - 1) % rainbowColors.length;
-            selectedColor = rainbowColors[colorIndex];
+        /* ============================================================
+           3) webXvm → index = X 그대로 (1,2,3 ...)
+        ============================================================ */
+        let webMatch = hostname.match(/web(\d+)vm$/);
+        if (webMatch) {
+            const num = parseInt(webMatch[1], 10); // web3vm → 3
+            colorIndex = num;
         }
 
-        // **[변경됨]** body가 아닌 header 배경색 적용
-        document.querySelector('header').style.backgroundColor = selectedColor;    </script>
+        /* ============================================================
+           4) vmss00000X → index = X + 2 (규칙: 1→3, 2→4, ..., 8→10)
+        ============================================================ */
+        let vmssMatch = hostname.match(/vmss(\d{6})$/);
+        if (vmssMatch) {
+            const num = parseInt(vmssMatch[1], 10); // 000001 → 1
+            colorIndex = num + 2;
+        }
+
+        /* ============================================================
+           5) 색상 최종 적용 (배열 순환)
+        ============================================================ */
+        if (colorIndex !== null && colorIndex > 0) {
+            const safeIndex = (colorIndex - 1) % rainbowColors.length; 
+            selectedColor = rainbowColors[safeIndex];
+        }
+
+        document.querySelector('header').style.backgroundColor = selectedColor;
+    </script>
 
 </body>
 </html>

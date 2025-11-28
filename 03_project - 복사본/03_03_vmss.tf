@@ -21,6 +21,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "www_vmss" {
     public_key = file("./id_ed25519.pub")
   }
 
+  user_data = base64encode(file("03_sh_web.sh"))
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "StandardSSD_LRS"

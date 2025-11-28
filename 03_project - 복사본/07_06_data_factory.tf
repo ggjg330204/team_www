@@ -25,7 +25,7 @@ resource "azurerm_data_factory_linked_custom_service" "mysql_source" {
 
   type_properties_json = <<JSON
 {
-  "connectionString": "Server=${azurerm_mysql_flexible_server.www_mysql.fqdn};Port=3306;Database=${wordpress};Uid=${www};Pwd=${var.db_password};SslMode=Required;"
+  "connectionString": "Server=${azurerm_mysql_flexible_server.www_mysql.fqdn};Port=3306;Database="wordpress";Uid="www";Pwd=${var.db_password};SslMode=Required;"
 }
 JSON
 
