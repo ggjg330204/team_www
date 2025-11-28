@@ -88,12 +88,6 @@ resource "azurerm_shared_image_version" "www_version" {
   managed_image_id = azurerm_image.www_image.id
 
   target_region {
-    name                   = "koreacentral"
-    regional_replica_count = 1
-    storage_account_type   = "Standard_LRS"
-  }
-
-  target_region {
     name                   = "koreasouth"
     regional_replica_count = 1
     storage_account_type   = "Standard_LRS"
