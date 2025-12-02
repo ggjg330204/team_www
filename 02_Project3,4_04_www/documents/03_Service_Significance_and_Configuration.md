@@ -1,6 +1,6 @@
 # [상세 보고서] Azure 클라우드 인프라 서비스 구성 및 기술적 의의
 
-본 문서는 프로젝트에 구축된 Azure 클라우드 인프라의 모든 서비스와 리소스에 대해, 단순한 설정 나열을 넘어 **기술적 도입 배경, 아키텍처 설계의 근거, 보안 및 운영상의 이점, 그리고 상세 구성 값**을 심층적으로 기술합니다.
+본 문서는 프로젝트에 구축된 Azure 클라우드 인프라의 모든 서비스와 리소스에 대해, 단순한 설정 나열을 넘어 **기술적 도입 배경, 아키텍처 설계의 근거, 보안 및 운영상의 이점, 그리고 상세 구성 값**을 심층적으로 기술합니다. 본 자료는 100페이지 분량의 기술 보고서 또는 아키텍처 명세서의 핵심 챕터로 활용될 수 있도록 작성되었습니다.
 
 ---
 
@@ -67,8 +67,8 @@ Project Root
 | | `azurerm_dns_zone` | 1 | Public DNS Zone (04www.cloud) |
 | | `azurerm_private_dns_zone` | 3+ | Private DNS Zone (MySQL, Storage 등) |
 | | `azurerm_traffic_manager_profile` | 1 | 글로벌 트래픽 관리 |
-| **Compute** | `azurerm_linux_virtual_machine_scale_set` | 1 | 자동 확장 웹 서버 그룹 |
-| | `azurerm_linux_virtual_machine` | 2 | 관리/테스트 VM, Bastion VM |
+| **Compute** | `azurerm_linux_virtual_machine_scale_set` | 2 | Web VMSS (web-vmss), WAS VMSS (was-vmss) |
+| | `azurerm_linux_virtual_machine` | 1 | 관리/골든 이미지용 VM (webvm) |
 | | `azurerm_container_group` | 1 | ACI (Serverless 컨테이너 인스턴스) |
 | | `azurerm_shared_image_gallery` | 1 | 커스텀 이미지 갤러리 |
 | | `azurerm_shared_image` | 1 | 이미지 정의 |
@@ -499,4 +499,3 @@ Spoke VNet 내에서 실제 애플리케이션 트래픽을 처리하고 분산�
 ## 12. 결론
 
 본 인프라는 단순한 기능 구현을 넘어, 엔터프라이즈 환경에서 요구되는 **보안, 안정성, 확장성**을 모두 충족하도록 설계되었습니다. 모든 리소스는 **Terraform** 코드로 정의되어 있어 언제든 동일한 환경을 재구축할 수 있으며(Disaster Recovery), 모듈화된 구조 덕분에 향후 서비스 확장에 유연하게 대응할 수 있습니다.
-

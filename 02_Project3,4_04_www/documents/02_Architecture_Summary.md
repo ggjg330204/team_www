@@ -56,7 +56,8 @@ graph TD
                 nat["NAT Gateway"]
                 
                 subgraph Compute ["Compute Resources"]
-                    vmss["VM Scale Set<br/>(Auto-Scaling)"]
+                    webvmss["Web VMSS<br/>(web-vmss)"]
+                    wasvmss["WAS VMSS<br/>(was-vmss)"]
                     aci["Azure Container<br/>(Instances)"]
                 end
             end
@@ -95,36 +96,41 @@ graph TD
     fd == "HTTPS (443)" ==> appgw
     
     appgw -- "Routing" --> lb
-    lb -- "Balancing" --> vmss
+    lb -- "Balancing" --> webvmss
+    lb -- "Balancing" --> wasvmss
 
     admin -- "HTTPS" --> bas
-    bas -. "Peering (SSH)" .-> vmss
+    bas -. "Peering (SSH)" .-> webvmss
+    bas -. "Peering (SSH)" .-> wasvmss
     bas -. "Peering (SSH)" .-> aci
 
-    vmss -- "Update" --> nat
+    webvmss -- "Update" --> nat
+    wasvmss -- "Update" --> nat
     nat -- "SNAT" --> fw
     fw -- "Filter" --> internet
 
     %% Data Access
-    vmss == "Private Link" ==> pe_db
-    vmss == "Private Link" ==> pe_redis
-    vmss == "Private Link" ==> pe_cosmos
-    vmss == "Private Link" ==> pe_st
-    vmss -. "Secrets" .-> pe_kv
+    webvmss == "Private Link" ==> pe_db
+    webvmss == "Private Link" ==> pe_redis
+    webvmss == "Private Link" ==> pe_st
+    wasvmss == "Private Link" ==> pe_db
+    wasvmss == "Private Link" ==> pe_cosmos
+    wasvmss -. "Secrets" .-> pe_kv
     
     %% Logic Flow
-    vmss -- "Upload" --> st
+    webvmss -- "Upload" --> st
     st -. "Trigger" .-> func
     func -- "Process" --> st
     func -- "Message" --> sb
-    sb -. "Subscribe" .-> vmss
+    sb -. "Subscribe" .-> wasvmss
     
     %% ETL Flow
     adf -. "Backup" .-> db
     adf -. "Archive" .-> st
 
     acr -. "Pull" .-> aci
-    acr -. "Pull" .-> vmss
+    acr -. "Pull" .-> webvmss
+    acr -. "Pull" .-> wasvmss
 
     fw <== "Peering" ==> appgw
     
@@ -142,7 +148,7 @@ graph TD
     %% 2. 클래스 적용
     class fw,bas hub;
     class appgw web;
-    class lb,nat,vmss,aci,func,sb app;
+    class lb,nat,webvmss,wasvmss,aci,func,sb app;
     class db,redis,st,kv,acr,cosmos,adf data;
     class user,admin,internet user;
     class tm,fd global;
@@ -168,7 +174,7 @@ graph TD
 - **역할**: 보안 및 관리의 중앙 거점. 모든 인바운드/아웃바운드 트래픽의 관문 역할을 수행할 수 있습니다.
 - **주요 리소스**:
   - **Azure Firewall**: 네트워크 트래픽 제어 및 위협 차단.
-  - **Bastion Host**: 관리자가 내부 서버에 안전하게 접속하기 위한 SSH/RDP 진입점 (Public IP 노출 최소화).
+  - **Azure Bastion (PaaS)**: 관리자가 내부 서버에 안전하게 접속하기 위한 완전 관리형 Bastion 서비스 (별도 VM 불필요).
 
 ### 2.2 Spoke VNet (Korea Central)
 - **역할**: 실제 애플리케이션 및 데이터 서비스가 구동되는 공간.
@@ -184,13 +190,14 @@ graph TD
 
 ### 3.1 Management Layer (관리 계층)
 - **NAT Gateway**: VMSS 인스턴스들이 외부 패키지 업데이트 등을 위해 인터넷으로 나갈 때 사용하는 아웃바운드 전용 게이트웨이. 고정 IP를 제공하여 보안 화이트리스트 관리에 용이합니다.
-- **Bastion Host**: 외부에서 내부의 Private IP를 가진 VM에 안전하게 접속할 수 있도록 지원합니다.
+- **Azure Bastion (PaaS)**: 브라우저 또는 Azure CLI를 통해 Private IP를 가진 VM에 안전하게 접속할 수 있도록 지원합니다.
 
 ### 3.2 Application Layer (애플리케이션 계층)
 - **Application Gateway (WAF)**: L7 로드밸런서로, 웹 해킹(SQL Injection, XSS 등)을 차단하는 웹 방화벽(WAF) 역할을 수행하며 HTTPS 트래픽을 처리합니다.
 - **Load Balancer (L4)**: 트래픽을 VMSS 인스턴스들로 부하 분산합니다.
-- **VM Scale Set (VMSS)**: 트래픽 부하에 따라 자동으로 서버 수(인스턴스)를 늘리거나 줄이는(Auto-scaling) 웹 서버 그룹입니다.
-- **Web VM**: 테스트 및 관리 목적으로 사용되는 단일 웹 서버 인스턴스입니다.
+- **Web VMSS (web-vmss)**: 웹 서버 역할을 수행하는 Auto-scaling 그룹입니다.
+- **WAS VMSS (was-vmss)**: WAS(Web Application Server) 역할을 수행하는 Auto-scaling 그룹입니다.
+- **WebVM**: 골든 이미지 제작 및 테스트 목적으로 사용되는 단일 VM입니다.
 
 ### 3.3 Data Layer (데이터 계층)
 - **MySQL Flexible Server**:

@@ -1,74 +1,114 @@
-output "out_01_load_balancer_public_ip" {
-  description = "웹서비스 접속 IP (Load Balancer) - 브라우저에 입력하여 접속하세요."
-  value       = module.network_central.lb_public_ip
-}
-
-output "out_03_traffic_manager_fqdn" {
-  description = "글로벌 트래픽매니저 도메인 - 전세계 어디서든 최적의 경로로 접속됩니다."
+# ============================================
+# 1. 🌐 웹 서비스 접속
+# ============================================
+output "out_01_web_url" {
+  description = "🌐 웹 서비스 주소 (Traffic Manager)"
   value       = "http://${azurerm_traffic_manager_profile.main.fqdn}"
 }
 
-output "out_06_aci_ip" {
-  description = "ACI (Azure Container Instance) 접속 IP"
-  value       = module.compute.aci_ip
+# ============================================
+# 2. 🔑 관리자 접속 (Azure Bastion)
+# ============================================
+output "out_10_bastion_vmss_command" {
+  description = "🔑 VMSS 인스턴스 SSH 접속 (터널링 방식)"
+  value       = "1️⃣ az network bastion tunnel --name ${module.hub.bastion_host_name} --resource-group ${azurerm_resource_group.rg.name} --target-resource-id <VMSS_인스턴스_ID> --resource-port 22 --port 50022\n2️⃣ 새 터미널: ssh -p 50022 www@localhost"
 }
 
-output "out_10_azure_bastion_connect" {
-  description = "[안내] Azure Bastion 접속 방법"
-  value       = "Azure Portal > VM 선택 > Connect > Bastion을 통해 안전하게 접속하세요."
+output "out_11_vmss_list_command" {
+  description = "📋 Web VMSS 인스턴스 목록 확인 (ID 복사용)"
+  value       = "az vmss list-instances --name web-vmss --resource-group ${azurerm_resource_group.rg.name} --query \"[].id\" --output tsv"
 }
 
-output "out_12_vmss_instance_list" {
-  description = "[명령어] VMSS 인스턴스 목록 및 IP 확인"
-  value       = "az vmss nic list --resource-group ${azurerm_resource_group.rg.name} --vmss-name my-vmss --query \"[].ipConfigurations[0].{Instance:id, PrivateIP:privateIpAddress}\" --output table"
+output "out_12_was_vmss_list_command" {
+  description = "📋 WAS VMSS 인스턴스 목록 확인 (ID 복사용)"
+  value       = "az vmss list-instances --name was-vmss --resource-group ${azurerm_resource_group.rg.name} --query \"[].id\" --output tsv"
 }
 
-output "out_13_vmss_ssh_nat_pool" {
-  description = "[명령어] VMSS 인스턴스 SSH 접속 (NAT Pool 사용, 포트 50001부터)"
-  value       = "ssh -i ./ssh/id_rsa_school -p 50001 www@${module.network_central.lb_public_ip}"
+# ============================================
+# 3. 🗄️ 데이터베이스 접속 정보
+# ============================================
+output "out_20_mysql_connection" {
+  description = "🗄️ MySQL 접속 정보"
+  value = {
+    host     = module.database.mysql_server_fqdn
+    port     = 3306
+    database = "www_sql"
+    username = "www"
+    note     = "VMSS/WebVM에서만 접속 가능 (Private Endpoint)"
+  }
 }
 
-output "out_20_resource_group" {
-  description = "리소스그룹 이름"
-  value       = azurerm_resource_group.rg.name
+output "out_21_redis_connection" {
+  description = "⚡ Redis 접속 정보"
+  value = {
+    hostname = module.database.redis_hostname
+    port     = module.database.redis_ssl_port
+    note     = "Primary Key는 Azure Portal에서 확인"
+  }
+  sensitive = false
 }
 
-output "out_21_mysql_fqdn" {
-  description = "MySQL 데이터베이스 주소 (내부 접속용)"
-  value       = module.database.mysql_server_fqdn
-}
-
-output "out_22_redis_hostname" {
-  description = "Redis 캐시 호스트주소"
-  value       = module.database.redis_hostname
-}
-
-output "out_23_storage_account" {
-  description = "스토리지 계정 이름 (이미지/백업 저장소)"
+# ============================================
+# 4. 📦 스토리지 및 컨테이너
+# ============================================
+output "out_30_storage_account" {
+  description = "📦 Blob Storage 계정 이름"
   value       = module.storage.storage_account_name
 }
 
-output "out_24_keyvault_name" {
-  description = "Key Vault 이름 (비밀번호/키 암호화)"
-  value       = module.security.keyvault_name
-}
-
-output "out_25_acr_login_server" {
-  description = "컨테이너 레지스트리 주소 (Docker 이미지 저장소)"
+output "out_31_acr_server" {
+  description = "🐳 ACR 로그인 서버"
   value       = module.container_registry.acr_login_server
 }
 
-output "out_30_webvm_private_ip" {
-  description = "웹서버 내부 IP"
-  value       = module.compute.webvm_private_ip
+output "out_32_aci_ip" {
+  description = "☁️ ACI 컨테이너 Public IP"
+  value       = module.compute.aci_ip
 }
 
-output "out_31_db_private_ip" {
-  description = "데이터베이스 내부 IP"
-  value       = module.database.mysql_private_endpoint_ip
+# ============================================
+# 5. 🛠️ 관리 리소스
+# ============================================
+output "out_40_resource_group" {
+  description = "📂 리소스 그룹 이름"
+  value       = azurerm_resource_group.rg.name
 }
 
-output "out_99_dns_name_servers" {
-  description = "도메인 등록 업체에 설정해야 할 네임서버 목록"
-  value       = azurerm_dns_zone.public.name_servers
+output "out_41_key_vault" {
+  description = "� Key Vault 이름"
+  value       = module.security.keyvault_name
+}
+
+output "out_42_log_analytics" {
+  description = "📊 Log Analytics Workspace ID"
+  value       = module.security.log_analytics_workspace_id
+}
+
+# ============================================
+# 6. 📝 주요 안내사항
+# ============================================
+output "out_99_important_notes" {
+  description = "⚠️ 중요 안내사항"
+  value = <<-EOT
+  
+  ✅ 접속 확인 체크리스트:
+  
+  1. 웹 서비스 동작 확인:
+     - Traffic Manager: ${azurerm_traffic_manager_profile.main.fqdn}
+     - CDN 캐시 확인: Front Door 엔드포인트 접속
+  
+  2. VMSS 인스턴스 접속:
+     - 인스턴스 목록 확인 후 Bastion 터널링으로 접속
+  
+  3. 데이터베이스 연결 테스트:
+     - MySQL: VMSS에서 mysql -h ${module.database.mysql_server_fqdn} -u www -p
+     - Redis: VMSS에서 redis-cli 테스트
+  
+  4. 스토리지 확인:
+     - az storage blob list --account-name ${module.storage.storage_account_name}
+  
+  5. 컨테이너 레지스트리:
+     - az acr login --name ${replace(module.container_registry.acr_login_server, ".azurecr.io", "")}
+  
+  EOT
 }

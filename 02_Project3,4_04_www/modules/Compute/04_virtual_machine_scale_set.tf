@@ -1,5 +1,5 @@
 resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
-  name                = "my-vmss"
+  name                = "web-vmss"
   resource_group_name = var.rgname
   location            = var.loca
   sku                 = "Standard_D2s_v3"

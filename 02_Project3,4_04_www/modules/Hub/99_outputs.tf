@@ -14,3 +14,7 @@ output "bastion_public_ip" {
 output "bastion_subnet_id" {
   value = azurerm_subnet.bastion_subnet.id
 }
+
+output "bastion_host_name" {
+  value = azurerm_bastion_host.hub_bastion.name
+}

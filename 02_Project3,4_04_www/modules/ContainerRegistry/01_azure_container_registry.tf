@@ -1,5 +1,11 @@
+resource "random_string" "acr_suffix" {
+  length  = 4
+  special = false
+  upper   = false
+}
+
 resource "azurerm_container_registry" "main" {
-  name                = "wwwcontainerregistry"
+  name                = "wwwacr${random_string.acr_suffix.result}"
   resource_group_name = var.rgname
   location            = var.loca
   sku                 = "Premium"

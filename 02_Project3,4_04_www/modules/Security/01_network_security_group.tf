@@ -28,7 +28,7 @@ resource "azurerm_network_security_group" "nsg_db" {
     ManagedBy   = "Terraform"
   }
 }
-# 2. Azure PaaS Bastion용 NSG (AzureBastionSubnet용)
+
 resource "azurerm_network_security_group" "nsg_hub_bastion" {
   name                = "hub-nsg-bastion"
   location            = var.loca
@@ -40,7 +40,6 @@ resource "azurerm_network_security_group" "nsg_hub_bastion" {
   }
 }
 
-# PaaS Bastion Inbound Rules
 resource "azurerm_network_security_rule" "hub_bas_https_inbound" {
   name                        = "AllowHttpsInbound"
   priority                    = 120
@@ -97,7 +96,6 @@ resource "azurerm_network_security_rule" "hub_bas_host_communication" {
   network_security_group_name = azurerm_network_security_group.nsg_hub_bastion.name
 }
 
-# PaaS Bastion Outbound Rules
 resource "azurerm_network_security_rule" "hub_bas_ssh_rdp_outbound" {
   name                        = "AllowSshRdpOutbound"
   priority                    = 100
@@ -172,7 +170,7 @@ resource "azurerm_network_security_rule" "web_ssh_internal" {
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
-  source_address_prefix       = "10.0.1.0/24"
+  source_address_prefixes     = ["10.0.1.0/24", "10.1.1.0/24"]
   source_port_range           = "*"
   destination_address_prefix  = "*"
   destination_port_range      = "22"

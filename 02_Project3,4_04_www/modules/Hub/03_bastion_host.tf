@@ -9,6 +9,10 @@ resource "azurerm_bastion_host" "hub_bastion" {
   name                = "hub-bastion"
   location            = var.loca
   resource_group_name = var.rgname
+  sku                 = "Standard"
+  tunneling_enabled   = true
+  file_copy_enabled   = true
+
   ip_configuration {
     name                 = "configuration"
     subnet_id            = azurerm_subnet.bastion_subnet.id
