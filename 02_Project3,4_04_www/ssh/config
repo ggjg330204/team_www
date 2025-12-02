@@ -1,0 +1,15 @@
+﻿# Azure VM SSH 설정
+# 학교와 집 두 곳의 SSH 키를 모두 시도합니다
+Host azure-* *.azure.com *.cloudapp.azure.com
+    IdentityFile ~/.ssh/id_rsa_school
+    IdentityFile ~/.ssh/id_rsa_home
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+    StrictHostKeyChecking accept-new
+
+# 기타 모든 호스트에 대해서도 키를 시도
+Host *
+    IdentityFile ~/.ssh/id_rsa_school
+    IdentityFile ~/.ssh/id_rsa_home
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
