@@ -64,7 +64,7 @@ Project Root
 | | `azurerm_lb_nat_pool` | 1 | SSH NAT Pool (VMSS 직접 접속용) |
 | | `azurerm_nat_gateway` | 1 | 아웃바운드 전용 게이트웨이 |
 | | `azurerm_public_ip` | 3+ | AppGW, LB, NAT용 공인 IP |
-| | `azurerm_dns_zone` | 1 | Public DNS Zone (hamap.shop) |
+| | `azurerm_dns_zone` | 1 | Public DNS Zone (04www.cloud) |
 | | `azurerm_private_dns_zone` | 3+ | Private DNS Zone (MySQL, Storage 등) |
 | | `azurerm_traffic_manager_profile` | 1 | 글로벌 트래픽 관리 |
 | **Compute** | `azurerm_linux_virtual_machine_scale_set` | 1 | 자동 확장 웹 서버 그룹 |
@@ -173,17 +173,37 @@ Hub 모듈은 전체 클라우드 네트워크의 **중추 신경망**이자 **�
     - **Network Rules (L4)**:
         - `Allow-DNS`: UDP/53 (도메인 이름 해석)
         - `Allow-NTP`: UDP/123 (서버 시간 동기화 - 로그 정확성 및 인증 토큰 유효성 보장)
+- **Firewall Policy (정책)**:
+    - **Application Rules (L7)**:
+        - `Allow-Windows-Update`: `*.windowsupdate.com`, `*.update.microsoft.com` (서버 보안 패치를 위한 필수 허용)
+        - `Allow-Azure-Management`: `management.azure.com`, `login.microsoftonline.com` (Azure API 호출 및 인증)
+    - **Network Rules (L4)**:
+        - `Allow-DNS`: UDP/53 (도메인 이름 해석)
+        - `Allow-NTP`: UDP/123 (서버 시간 동기화 - 로그 정확성 및 인증 토큰 유효성 보장)
+- **Diagnostic Settings (진단 로그)**:
+    - **상태**: 수동 설정 필요 (Terraform 순환 종속성 문제로 코드에서 제외됨)
+    - **Destination**: Log Analytics Workspace
+    - *근거*: 방화벽 로그를 중앙 집중식으로 수집하여 Sentinel에서 실시간 위협 탐지 및 분석에 활용합니다.
 
 ### 4.2 Azure Bastion (보안 원격 접속)
 **[기술적 도입 배경 및 의의]**
 - **공격 표면(Attack Surface) 제거**: 관리용 포트(SSH 22, RDP 3389)를 공용 인터넷에 노출시키는 것은 해킹의 주된 표적이 됩니다. Bastion은 이러한 포트를 외부에 노출하지 않고, Azure Portal을 통한 HTTPS(443) 터널링으로 안전한 접속을 제공합니다.
-- **JIT(Just-In-Time) 접근 가능성**: 필요할 때만 접속을 허용하고 모든 접속 이력을 감사 로그로 남길 수 있어 컴플라이언스 준수에 유리합니다.
+- **관리 편의성**: 별도의 Jumpbox VM을 관리(패치, 업데이트)할 필요가 없는 완전 관리형 PaaS 서비스입니다.
 
 **[상세 구성 및 설정 근거]**
 - **SKU**: `Standard`
-    - *근거*: Basic SKU와 달리 **네이티브 클라이언트(Native Client)** 접속을 지원하여, 개발자가 익숙한 로컬 터미널(PowerShell, Bash)에서 `ssh` 명령어로 직접 접속할 수 있는 편의성을 제공합니다. 또한 **파일 복사/붙여넣기** 기능을 지원하여 운영 효율성을 높입니다.
+    - *근거*: VNet Peering을 통한 연결 및 파일 전송 기능을 지원하기 위해 Standard SKU를 선택했습니다.
 - **Subnet**: `AzureBastionSubnet` (필수 지정 이름)
-    - *근거*: Bastion 서비스가 배포되기 위한 전용 서브넷으로, 최소 `/26` 이상의 CIDR이 권장됩니다.
+    - *근거*: Bastion 서비스가 배포되기 위한 전용 서브넷입니다.
+- **NSG Rules**:
+    - **Inbound**: HTTPS(443), GatewayManager(443), AzureLoadBalancer(443), BastionHostCommunication(8080, 5701)
+    - **Outbound**: SSH(22), RDP(3389), AzureCloud(443), BastionCommunication(8080, 5701), SessionInformation(80)
+    - *근거*: Azure Bastion 서비스가 정상적으로 작동하기 위한 필수 통신 규칙입니다.
+
+**[접속 흐름]**
+1. 관리자가 Azure Portal에 로그인
+2. 대상 VM(Private IP만 보유) 선택 후 'Connect' > 'Bastion' 클릭
+3. 브라우저에서 바로 SSH/RDP 세션 연결 (별도 클라이언트 불필요)
 
 ---
 
@@ -368,15 +388,14 @@ Spoke VNet 내에서 실제 애플리케이션 트래픽을 처리하고 분산�
 - **통합 보안 관리**: Subscription 레벨에서 모든 리소스의 보안 상태를 모니터링하고, 보안 권장사항을 제공합니다.
 - **위협 탐지**: 이상 행위 및 공격 시도를 실시간으로 탐지하여 알림합니다.
 
-**[상세 구성 및 설정 근거]**
-- **Virtual Machines**: `Standard Tier`
-    - *근거*: VM에 대한 고급 위협 탐지 및 취약점 평가 제공.
-- **SQL Servers**: `Standard Tier`
-    - *근거*: 데이터베이스 보안 위협 탐지 및 권장사항 제공.
-- **Storage Accounts**: `Standard Tier` + `DefenderForStorageV2` subplan
-    - *근거*: 최신 Defender for Storage V2를 사용하여 Blob, File, Queue에 대한 향상된 위협 탐지 제공. Classic 플랜 대비 성능 및 기능 개선.
-- **Key Vaults**: `Standard Tier`
-    - *근거*: 비밀 정보 접근 이상 행위 탐지.
+**[배포 및 관리 방식]**
+- **관리 주체**: Azure Portal을 통한 수동 관리
+    - *근거*: Security Center의 Subscription Pricing 및 Contact 리소스는 구독 레벨에서 이미 존재하며, Azure가 관리하는 특수한 리소스입니다. Terraform으로 관리 시 "already exists" 오류가 발생하므로, 멱등성을 보장하기 위해 Terraform 외부에서 관리합니다.
+- **적용된 계획**:
+    - **Virtual Machines**: `Standard Tier` - VM에 대한 고급 위협 탐지
+    - **SQL Servers**: `Standard Tier` - 데이터베이스 보안 위협 탐지
+    - **Storage Accounts**: `Standard Tier` + `DefenderForStorageV2` - Blob, File, Queue 향상된 위협 탐지
+    - **Key Vaults**: `Standard Tier` - 비밀 정보 접근 이상 행위 탐지
 
 ### 9.4 Diagnostic Settings (진단 설정)
 **[기술적 도입 배경 및 의의]**
@@ -413,12 +432,33 @@ Spoke VNet 내에서 실제 애플리케이션 트래픽을 처리하고 분산�
 - **AI 기반 위협 탐지**: 머신러닝을 활용하여 단순한 규칙 기반 탐지로는 놓칠 수 있는 정교한 공격 패턴을 식별합니다.
 
 **[구현된 탐지 규칙 (Analytics Rules)]**
+
+**[온보딩 및 구성]**
+- **Log Analytics Solution**: `SecurityInsights`
+    - *근거*: Sentinel 기능을 활성화하기 위한 마켓플레이스 솔루션.
+- **Workspace Onboarding**: `azurerm_sentinel_log_analytics_workspace_onboarding`
+    - *근거*: Log Analytics Workspace를 Microsoft Sentinel에 명시적으로 온보딩하여, 알림 규칙 생성 전에 완전한 초기화를 보장합니다.
+- **Dependency Chain**: Solution → Onboarding → Alert Rules
+    - *근거*: Terraform이 올바른 순서로 리소스를 생성하도록 `depends_on`을 명시하여 배포 오류를 방지합니다.
+
+**[탐지 규칙]**
 1.  **SSH Brute Force Detection**:
     - **로직**: 5분 이내에 5회 이상 SSH 로그인 실패 시 경고 발생.
     - **대응**: 공격자 IP 차단 및 관리자 알림.
 2.  **Malicious IP Communication**:
-    - **로직**: Azure Firewall 로그를 분석하여, 위협 인텔리전스(Threat Intelligence)에 등록된 악성 IP와의 통신 시도 탐지.
-    - **대응**: 즉시 차단 및 침해 사고 조사(Forensic) 개시.
+    - **상태**: ⚠️ **비활성화** (enabled = false)
+    - **사유**: Azure Firewall 로그 스키마를 실제 데이터로 확인 필요. `msg_s` 등의 필드명이 정확하지 않을 수 있음.
+    - **TODO**: 
+        1. Azure Portal → Log Analytics Workspace → Logs에서 다음 쿼리 실행:
+           ```kql
+           AzureDiagnostics
+           | where ResourceType contains "FIREWALL"
+           | take 10
+           ```
+        2. 실제 로그 스키마 확인 (필드명, 데이터 형식 등)
+        3. 작동하는 KQL 쿼리 작성 및 테스트
+        4. Terraform 코드(`modules/Security/07_sentinel_rules.tf`)에 반영
+        5. `enabled = true`로 변경하여 활성화
 3.  **Sensitive File Access**:
     - **로직**: `/etc/passwd`, `/etc/shadow` 등 시스템 중요 파일에 대한 접근 시도 탐지.
     - **대응**: 내부자 위협 또는 권한 상승 시도로 간주하여 정밀 감사 수행.
