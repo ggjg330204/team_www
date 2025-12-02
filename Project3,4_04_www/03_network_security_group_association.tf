@@ -14,9 +14,10 @@ resource "azurerm_subnet_network_security_group_association" "storage_nsg_assoc"
   subnet_id                 = module.network_central.subnet_ids["www-stor"]
   network_security_group_id = module.security.nsg_db_id
 }
-resource "azurerm_subnet_network_security_group_association" "bastion_nsg_assoc" {
-  subnet_id                 = module.network_central.subnet_ids["www-nat"]
-  network_security_group_id = module.security.nsg_bas_id
+# 2. PaaS Bastion용 NSG 연결 (AzureBastionSubnet)
+resource "azurerm_subnet_network_security_group_association" "hub_bastion_nsg_assoc" {
+  subnet_id                 = module.hub.bastion_subnet_id
+  network_security_group_id = module.security.nsg_hub_bastion_id
 }
 resource "azurerm_subnet_network_security_group_association" "was_nsg_assoc" {
   subnet_id                 = module.network_central.subnet_ids["www-was"]

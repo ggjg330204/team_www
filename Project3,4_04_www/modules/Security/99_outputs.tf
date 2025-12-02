@@ -7,8 +7,8 @@ output "nsg_http_id" {
 output "nsg_db_id" {
   value = azurerm_network_security_group.nsg_db.id
 }
-output "nsg_bas_id" {
-  value = azurerm_network_security_group.nsg_bas.id
+output "nsg_hub_bastion_id" {
+  value = azurerm_network_security_group.nsg_hub_bastion.id
 }
 output "log_analytics_workspace_id" {
   value = azurerm_log_analytics_workspace.law.id

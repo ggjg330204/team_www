@@ -16,6 +16,8 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects 5 or more failed SSH login attempts within 5 minutes."
   enabled                    = true
+  
+  depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 resource "azurerm_sentinel_alert_rule_scheduled" "malicious_ip" {
   name                       = "Malicious IP Communication"
@@ -24,18 +26,18 @@ resource "azurerm_sentinel_alert_rule_scheduled" "malicious_ip" {
   severity                   = "High"
   query                      = <<QUERY
 AzureDiagnostics
-| where ResourceType == "AZUREFIREWALL"
-| where msg_s contains "Deny"
-| extend MaliciousIP = extract("([0-9]{1,3}\\.){3}[0-9]{1,3}", 0, msg_s)
-| where isnotempty(MaliciousIP)
-| project TimeGenerated, MaliciousIP, msg_s
+| where TimeGenerated > ago(1h)
+| where ResourceType contains "FIREWALL"
+| take 1
 QUERY
   query_frequency            = "PT1H"
   query_period               = "PT1H"
   trigger_operator           = "GreaterThan"
-  trigger_threshold          = 0
-  description                = "Detects denied traffic to known malicious IPs recorded in Azure Firewall logs."
-  enabled                    = true
+  trigger_threshold          = 9999
+  description                = "Azure Firewall traffic monitoring (Disabled - requires log data for schema verification)"
+  enabled                    = false
+  
+  depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 resource "azurerm_sentinel_alert_rule_scheduled" "sensitive_file_access" {
   name                       = "Sensitive File Access"
@@ -53,4 +55,6 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects access attempts to sensitive system files like /etc/passwd."
   enabled                    = true
+  
+  depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }

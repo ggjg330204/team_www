@@ -39,24 +39,7 @@ module "network_central" {
   enable_ssl      = false
   hub_vnet_id     = module.hub.hub_vnet_id
 }
-resource "azurerm_public_ip" "bastion_vm_pip" {
-  name                = "bastion-vm-pip"
-  location            = "Korea Central"
-  resource_group_name = azurerm_resource_group.rg.name
-  allocation_method   = "Static"
-  sku                 = "Standard"
-}
-resource "azurerm_network_interface" "bastion_nic" {
-  name                = "bastion-vm-nic"
-  location            = "Korea Central"
-  resource_group_name = azurerm_resource_group.rg.name
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = module.network_central.subnet_ids["www-nat"]
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.bastion_vm_pip.id
-  }
-}
+
 module "compute" {
   source         = "./modules/Compute"
   rgname         = azurerm_resource_group.rg.name
@@ -71,7 +54,6 @@ module "compute" {
   was_lb_backend_pool_id = module.network_central.was_lb_backend_pool_id
   was_lb_private_ip      = module.network_central.was_lb_private_ip
   was_lb_probe_id        = module.network_central.was_lb_probe_id
-  bastion_nic_id         = azurerm_network_interface.bastion_nic.id
   db_host                = module.database.mysql_server_fqdn
   db_user                = "www"
   db_password            = var.db_password

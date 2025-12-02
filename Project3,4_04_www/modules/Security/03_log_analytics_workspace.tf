@@ -22,6 +22,12 @@ resource "azurerm_log_analytics_solution" "sentinel" {
     product   = "OMSGallery/SecurityInsights"
   }
 }
+
+resource "azurerm_sentinel_log_analytics_workspace_onboarding" "sentinel_onboarding" {
+  workspace_id = azurerm_log_analytics_workspace.law.id
+  
+  depends_on = [azurerm_log_analytics_solution.sentinel]
+}
 resource "azurerm_log_analytics_solution" "security" {
   solution_name         = "Security"
   location              = var.loca

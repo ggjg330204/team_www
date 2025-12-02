@@ -5,6 +5,7 @@ resource "azurerm_public_ip" "appgw_pip" {
   resource_group_name = var.rgname
   allocation_method   = "Static"
   sku                 = "Standard"
+  domain_name_label   = "www-appgw-${var.rgname}"
   zones = ["1", "2"]
   tags = {
     Environment = "Production"

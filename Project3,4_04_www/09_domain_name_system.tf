@@ -1,5 +1,5 @@
 resource "azurerm_dns_zone" "public" {
-  name                = "hamap.shop"
+  name                = "04www.cloud"
   resource_group_name = azurerm_resource_group.rg.name
   tags = {
     Environment = "Production"
@@ -22,7 +22,7 @@ resource "azurerm_dns_a_record" "root_public" {
   records             = [module.network_central.lb_public_ip]
 }
 resource "azurerm_private_dns_zone" "private" {
-  name                = "hamap.shop"
+  name                = "04www.cloud"
   resource_group_name = azurerm_resource_group.rg.name
   tags = {
     Environment = "Production"

@@ -53,9 +53,6 @@ resource "azurerm_lb_rule" "vmss_lb_rule" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.bpepool.id]
   frontend_ip_configuration_name = "PublicIPAddress"
   probe_id                       = azurerm_lb_probe.vmss_probe.id
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 resource "azurerm_lb_nat_pool" "ssh_nat_pool" {
   resource_group_name            = var.rgname
@@ -105,7 +102,4 @@ resource "azurerm_lb_rule" "was_lb_rule" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.was_backend_pool.id]
   frontend_ip_configuration_name = "InternalIPAddress"
   probe_id                       = azurerm_lb_probe.was_probe.id
-  lifecycle {
-    create_before_destroy = true
-  }
 }

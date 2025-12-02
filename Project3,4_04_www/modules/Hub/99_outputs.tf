@@ -10,3 +10,7 @@ output "firewall_private_ip" {
 output "bastion_public_ip" {
   value = azurerm_public_ip.bastion_pip.ip_address
 }
+
+output "bastion_subnet_id" {
+  value = azurerm_subnet.bastion_subnet.id
+}
