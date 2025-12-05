@@ -27,6 +27,11 @@ log "패키지 설치 (Apache, PHP, Redis, MySQL Client)..."
 dnf install -y epel-release
 dnf install -y httpd php php-mysqlnd php-gd php-json php-mbstring php-redis mysql git
 
+# [멱등성] OpenSSH 업데이트 (OpenSSL 버전 불일치 문제 방지)
+log "OpenSSH 패키지 업데이트..."
+dnf update -y openssh-server openssh-clients || true
+systemctl restart sshd || true
+
 # 3. Redis 세션 설정
 log "PHP 세션 -> Redis 설정"
 # Terraform 변수 사용하므로 EOF 사용, 따옴표는 이스케이프 처리

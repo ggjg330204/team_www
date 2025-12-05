@@ -31,9 +31,14 @@ firewall-cmd --zone=public --add-service=http --permanent
 firewall-cmd --zone=public --add-service=https --permanent
 firewall-cmd --reload
 
-# 3. Nginx 설치
-log "Nginx 패키지 설치"
-dnf install -y nginx
+# 3. Nginx 및 유틸리티 설치
+log "패키지 설치 (Nginx, Redis, MySQL Client)"
+dnf install -y nginx redis mysql
+
+# [멱등성] OpenSSH 업데이트 (OpenSSL 버전 불일치 문제 방지)
+log "OpenSSH 패키지 업데이트..."
+dnf update -y openssh-server openssh-clients || true
+systemctl restart sshd || true
 
 # 4. [Observability] Nginx 메인 설정 (JSON 로깅 적용)
 # Sentinel / Log Analytics가 파싱하기 쉽도록 JSON 포맷으로 로그를 남깁니다.

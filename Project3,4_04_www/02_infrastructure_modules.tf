@@ -145,6 +145,7 @@ module "dns" {
   frontdoor_endpoint_id        = module.edge.frontdoor_endpoint_id
   www_domain_validation_token  = module.edge.www_custom_domain_validation_token
   apex_domain_validation_token = module.edge.apex_custom_domain_validation_token
+  mail_server_ip               = module.compute.mail_vm_public_ip
 }
 
 module "governance" {
