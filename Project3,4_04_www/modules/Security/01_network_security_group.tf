@@ -170,7 +170,20 @@ resource "azurerm_network_security_rule" "web_ssh_internal" {
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
-  source_address_prefixes     = ["10.0.1.0/24", "10.1.1.0/24"]
+  source_address_prefixes     = ["10.0.1.0/24", "10.1.1.0/24", "192.168.0.0/16"]
+  source_port_range           = "*"
+  destination_address_prefix  = "*"
+  destination_port_range      = "22"
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_http.name
+}
+resource "azurerm_network_security_rule" "web_ssh_nat_pool" {
+  name                        = "allow-ssh-nat-pool"
+  priority                    = 105
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_address_prefixes     = var.ssh_allowed_ips
   source_port_range           = "*"
   destination_address_prefix  = "*"
   destination_port_range      = "22"
@@ -186,6 +199,19 @@ resource "azurerm_network_security_rule" "web_allow_lb" {
   source_address_prefix       = "AzureLoadBalancer"
   source_port_range           = "*"
   destination_address_prefix  = "*"
+  destination_port_range      = "*"
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_http.name
+}
+resource "azurerm_network_security_rule" "web_allow_vnet" {
+  name                        = "allow-vnet-internal"
+  priority                    = 115
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_address_prefix       = "VirtualNetwork"
+  source_port_range           = "*"
+  destination_address_prefix  = "VirtualNetwork"
   destination_port_range      = "*"
   resource_group_name         = var.rgname
   network_security_group_name = azurerm_network_security_group.nsg_http.name
@@ -213,6 +239,45 @@ resource "azurerm_network_security_rule" "web_dns_outbound" {
   source_port_range           = "*"
   destination_address_prefix  = "Internet"
   destination_port_range      = "53"
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_http.name
+}
+resource "azurerm_network_security_rule" "web_smtp_inbound" {
+  name                        = "allow-smtp-inbound"
+  priority                    = 130
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+  destination_address_prefix  = "*"
+  destination_port_ranges     = ["25", "587"]
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_http.name
+}
+resource "azurerm_network_security_rule" "web_imap_inbound" {
+  name                        = "allow-imap-inbound"
+  priority                    = 140
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+  destination_address_prefix  = "*"
+  destination_port_range      = "993"
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_http.name
+}
+resource "azurerm_network_security_rule" "web_smtp_outbound" {
+  name                        = "allow-smtp-outbound"
+  priority                    = 120
+  direction                   = "Outbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+  destination_address_prefix  = "Internet"
+  destination_port_ranges     = ["25", "587"]
   resource_group_name         = var.rgname
   network_security_group_name = azurerm_network_security_group.nsg_http.name
 }

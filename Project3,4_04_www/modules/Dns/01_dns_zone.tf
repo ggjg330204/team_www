@@ -45,3 +45,33 @@ resource "azurerm_dns_a_record" "root_public" {
   ttl                 = 300
   target_resource_id  = var.frontdoor_endpoint_id
 }
+
+resource "azurerm_dns_mx_record" "mail" {
+  name                = "@"
+  zone_name           = azurerm_dns_zone.public.name
+  resource_group_name = var.rgname
+  ttl                 = 300
+  record {
+    preference = 10
+    exchange   = "mail.04www.cloud."
+  }
+}
+
+resource "azurerm_dns_a_record" "mail" {
+  name                = "mail"
+  zone_name           = azurerm_dns_zone.public.name
+  resource_group_name = var.rgname
+  ttl                 = 300
+  records             = [var.mail_server_ip]
+}
+
+resource "azurerm_dns_txt_record" "spf" {
+  name                = "spf"
+  zone_name           = azurerm_dns_zone.public.name
+  resource_group_name = var.rgname
+  ttl                 = 300
+  record {
+    value = "v=spf1 a mx ip4:${var.mail_server_ip} -all"
+  }
+}
+

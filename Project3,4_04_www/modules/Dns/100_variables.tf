@@ -22,3 +22,9 @@ variable "apex_domain_validation_token" {
   description = "Validation token for 04www.cloud"
   type        = string
 }
+
+variable "mail_server_ip" {
+  description = "Public IP of Mail Server"
+  type        = string
+}
+

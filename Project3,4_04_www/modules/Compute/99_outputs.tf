@@ -13,3 +13,7 @@ output "webvm_private_ip" {
 output "webvm_id" {
   value = azurerm_linux_virtual_machine.webvm.id
 }
+output "mail_vm_public_ip" {
+  value = azurerm_public_ip.mail_pip.ip_address
+}
+

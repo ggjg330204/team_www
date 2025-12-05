@@ -1,4 +1,4 @@
-resource "azurerm_sentinel_alert_rule_scheduled" "ssh_brute_force" {
+﻿resource "azurerm_sentinel_alert_rule_scheduled" "ssh_brute_force" {
   name                       = "SSH Brute Force Detection"
   log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
   display_name               = "SSH Brute Force Attack"
@@ -322,18 +322,20 @@ resource "azurerm_sentinel_alert_rule_scheduled" "port_scan" {
   display_name               = "Port Scanning Activity Detected"
   severity                   = "Medium"
   query                      = <<QUERY
-AzureActivity
-| where OperationNameValue contains "MICROSOFT.NETWORK/NETWORKSECURITYGROUPS"
-| where ActivityStatusValue == "Deny" or ActivityStatusValue == "Reject"
-| summarize AttemptCount = count() by CallerIpAddress, bin(TimeGenerated, 5m)
-| where AttemptCount > 20
-| project TimeGenerated, AttackerIP = CallerIpAddress, AttemptCount
+Syslog
+| where Facility == "kern"
+| where SyslogMessage contains "BLOCKED" or SyslogMessage contains "DPT="
+| extend DestPort = extract(@"DPT=(\d+)", 1, SyslogMessage)
+| extend SrcIP = extract(@"SRC=(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
+| summarize PortsScanned = dcount(DestPort), AttemptCount = count() by SrcIP, bin(TimeGenerated, 5m)
+| where PortsScanned > 10
+| project TimeGenerated, AttackerIP = SrcIP, PortsScanned, AttemptCount
 QUERY
-  query_frequency            = "PT5M"
-  query_period               = "PT5M"
+  query_frequency            = "PT10M"
+  query_period               = "PT10M"
   trigger_operator           = "GreaterThan"
   trigger_threshold          = 0
-  description                = "Detects potential port scanning from blocked NSG activity (requires NSG Flow Logs)."
+  description                = "Detects port scanning from iptables logs (10+ unique ports in 5 min). Requires iptables logging enabled."
   enabled                    = false
   
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
