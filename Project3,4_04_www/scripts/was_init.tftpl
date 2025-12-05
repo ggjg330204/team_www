@@ -1,0 +1,1214 @@
+#!/bin/bash
+# WAS VMSS 초기화 스크립트 (Syntax Safe & Full Feature Edition)
+# 작성일: 2025-12-04
+# Terraform 변수: ${db_host}, ${db_ro_host}, ${db_user}, ${db_password}, ${db_name}, ${redis_host}, ${redis_key}, ${app_insights_key}
+
+# App Insight Key 저장
+echo "${app_insights_key}" > /etc/lupang_app_insights_key
+chmod 600 /etc/lupang_app_insights_key
+
+# 1. 로깅 및 환경 설정
+LOG_FILE="/var/log/was_init.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
+log "=========================================="
+log "Lupang WAS 초기화 (Syntax Safe Version)"
+log "=========================================="
+
+# 2. 시스템 보안 및 패키지 설치
+setenforce 0 || true
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config || true
+
+log "패키지 설치 (Apache, PHP, Redis, MySQL Client)..."
+dnf install -y epel-release
+dnf install -y httpd php php-mysqlnd php-gd php-json php-mbstring php-redis mysql git
+
+# 3. Redis 세션 설정
+log "PHP 세션 -> Redis 설정"
+# Terraform 변수 사용하므로 EOF 사용, 따옴표는 이스케이프 처리
+sed -i 's/session.save_handler = files/session.save_handler = redis/g' /etc/php.ini
+cat <<EOF > /etc/php.d/50-redis.ini
+; Redis Session Setup
+extension=redis.so
+session.save_path = "tcp://${redis_host}:${redis_port}?auth=${redis_key}"
+EOF
+sed -i 's/expose_php = On/expose_php = Off/g' /etc/php.ini
+
+# 4. 디렉토리 및 로그 파일
+mkdir -p /var/www/html/uploads
+chmod -R 755 /var/www/html
+chmod 777 /var/www/html/uploads
+
+touch /var/log/lupang_app.json
+chmod 666 /var/log/lupang_app.json
+
+# 5. Health Check (DB 연결만 체크 - Redis SSL 문제 우회)
+cat <<EOF > /var/www/html/health.php
+<?php
+\$conn = new mysqli("${db_host}", "${db_user}", "${db_password}", "${db_name}");
+
+if (\$conn->connect_error) { 
+    http_response_code(500); 
+    echo "DB Down"; 
+} else { 
+    http_response_code(200); 
+    echo "WAS-OK"; 
+}
+?>
+EOF
+
+# 6. DB 설정 및 로깅 (Terraform 변수 사용 -> PHP 변수 이스케이프 필요)
+cat <<EOF > /var/www/html/db_config.php
+<?php
+\$db_host_wr = "${db_host}";
+\$db_host_ro = "${db_ro_host}";
+\$db_user    = "${db_user}";
+\$db_pass    = "${db_password}";
+\$db_name    = "${db_name}";
+
+// Read/Write Splitting Logic
+function getDbConnection(\$type = 'read') {
+    global \$db_host_wr, \$db_host_ro, \$db_user, \$db_pass, \$db_name;
+    \$host = (\$type === 'write') ? \$db_host_wr : \$db_host_ro;
+    
+    // Replica 없으면 Primary 사용
+    if (empty("\$db_host_ro")) \$host = \$db_host_wr;
+
+    \$conn = new mysqli(\$host, \$db_user, \$db_pass, \$db_name);
+    if (\$conn->connect_error) {
+        writeLog('DB_ERROR', 'CRITICAL', "Connection Failed", ['error' => \$conn->connect_error]);
+        die("Service Error");
+    }
+    return \$conn;
+}
+
+// JSON Logging with Trace ID
+function writeLog(\$action, \$level, \$msg, \$extra = []) {
+    \$headers = getallheaders();
+    \$trace_id = \$headers['X-Request-Id'] ?? 'no-trace-id';
+    \$logEntry = [
+        'timestamp' => date('c'),
+        'trace_id'  => \$trace_id,
+        'client_ip' => \$_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        'uri'       => \$_SERVER['REQUEST_URI'] ?? 'unknown',
+        'action'    => \$action,
+        'level'     => \$level,
+        'message'   => \$msg,
+        'details'   => \$extra
+    ];
+    file_put_contents('/var/log/lupang_app.json', json_encode(\$logEntry) . "\n", FILE_APPEND);
+}
+?>
+EOF
+
+# 6.5. [DB] 테이블 자동 생성 및 초기 데이터 시딩
+log "데이터베이스 테이블 생성 및 초기 데이터 시딩..."
+cat <<EOSQL > /tmp/init_db.sql
+USE ${db_name};
+
+-- Users Table
+CREATE TABLE IF NOT EXISTS users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    real_name VARCHAR(100),
+    phone VARCHAR(20),
+    address TEXT,
+    role ENUM('user', 'admin') DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Products Table
+CREATE TABLE IF NOT EXISTS products (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    price INT NOT NULL,
+    stock INT DEFAULT 100,
+    image_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Orders Table
+CREATE TABLE IF NOT EXISTS orders (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    total_amount INT NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Order Items Table
+CREATE TABLE IF NOT EXISTS order_items (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    price INT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- Insert Default Admin User (비밀번호: admin1234)
+INSERT IGNORE INTO users (id, username, password, real_name, phone, address, role) VALUES
+(1, 'admin', 'admin1234', '관리자', '010-0000-0000', '서울특별시 강남구 테헤란로 123', 'admin');
+
+-- Insert Test Users
+INSERT IGNORE INTO users (id, username, password, real_name, phone, address, role) VALUES
+(2, 'hacker', '1234', '김해커', '010-1234-5678', '서울특별시 서초구 반포대로 58', 'user'),
+(3, 'joker', 'joker123', '박조커', '010-9999-9999', '서울특별시 송파구 올림픽로 300', 'user');
+
+-- Insert Sample Products (크리스마스 상품)
+INSERT IGNORE INTO products (id, name, description, price, stock, image_url) VALUES
+(1, '프리미엄 크리스마스 트리 세트', '2.1m 대형 트리와 오너먼트 200개 포함.\n최고급 PVC 재질로 오래 사용 가능합니다.', 189000, 50, 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=600'),
+(2, '4K 스마트 TV 65인치', 'LG OLED 패널 탑재, HDR10+ 지원.\n크리스마스 한정 특가!', 1590000, 30, 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=600'),
+(3, '무선 블루투스 이어폰 Pro', '노이즈 캔슬링 ANC 기능 탑재.\n24시간 장시간 재생 가능.', 159000, 200, 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=600'),
+(4, '게이밍 노트북 RTX 4070', 'Intel i9 13세대 / 32GB RAM / 1TB SSD.\n240Hz 고주사율 디스플레이.', 2390000, 15, 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'),
+(5, '캠핑용 텐트 (6인용)', '방수 기능 강화, 통풍 최적화.\n가족 캠핑에 최적화된 대형 텐트.', 320000, 80, 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600'),
+(6, '스마트워치 Pro Max', '심박수 / 혈압 / 수면 모니터링.\nIP68 방수, 7일 배터리.', 450000, 120, 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=600');
+EOSQL
+
+# MySQL에 실행
+mysql -h "${db_host}" -u "${db_user}" -p"${db_password}" "${db_name}" < /tmp/init_db.sql 2>&1 | tee -a "$LOG_FILE"
+rm -f /tmp/init_db.sql
+log "데이터베이스 초기화 완료"
+
+# ==============================================================================
+# 여기서부터는 Terraform 변수가 없는 순수 PHP 파일들입니다.
+# cat <<'EOF' (따옴표)를 사용하여 $ 문자를 이스케이프 하지 않아도 되게 만듭니다.
+# ==============================================================================
+
+# 7. [Design] Header (CSS 풀버전 & 취약한 쿠키 로직)
+cat <<'EOF' > /var/www/html/header.php
+<?php
+if(session_status() === PHP_SESSION_NONE) session_start();
+include_once 'db_config.php';
+
+$currentUser = null;
+
+// [VULNERABILITY] 취약한 인증 로직
+// Base64만 디코딩하면 바로 신뢰함 (서명 검증 없음)
+if (isset($_COOKIE['lupang_token'])) {
+    $decoded = base64_decode($_COOKIE['lupang_token']);
+    $json = json_decode($decoded, true);
+    
+    if ($json && isset($json['username'])) {
+        $currentUser = $json;
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUPANG | Premium Shopping</title>
+    <!-- 폰트 및 아이콘 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        /* [Lupang Dark Theme Design System] */
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-sub: #a0a0a0;
+            --accent: #e60023; /* Lupang Red */
+            --border-color: #333;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        /* Navbar */
+        .navbar-lupang {
+            background-color: rgba(18, 18, 18, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .logo:hover { color: #ff2f4f; }
+
+        /* Search Bar */
+        .search-container { position: relative; width: 100%; max-width: 500px; }
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 1px solid #444;
+            background-color: #2c2c2c;
+            color: white;
+            outline: none;
+            padding-right: 50px;
+        }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(230, 0, 35, 0.3); }
+        .search-btn {
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--text-sub);
+        }
+        .search-btn:hover { color: var(--accent); }
+
+        /* Nav Icons */
+        .nav-item-custom {
+            color: var(--text-sub);
+            font-size: 0.9rem;
+            text-decoration: none;
+            margin-left: 20px;
+            transition: 0.3s;
+            text-align: center;
+        }
+        .nav-item-custom:hover { color: white; }
+        .nav-item-custom i { display: block; font-size: 1.2rem; margin-bottom: 4px; }
+
+        /* Cards */
+        .product-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid var(--border-color);
+            height: 100%;
+            cursor: pointer;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            border-color: #555;
+        }
+        .card-img-wrapper {
+            height: 250px;
+            background-color: #333;
+            overflow: hidden;
+            position: relative;
+        }
+        .card-img-top {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        .product-card:hover .card-img-top { transform: scale(1.05); }
+        
+        .card-body { padding: 1.2rem; }
+        .product-title {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .product-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .rocket-badge {
+            font-size: 0.75rem;
+            color: #00ff88;
+            border: 1px solid #00ff88;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 8px;
+        }
+        .btn-lupang {
+            background-color: var(--accent); color: white; border: none; font-weight: bold;
+        }
+        .btn-lupang:hover { background-color: #ff2f4f; color: white; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="navbar-lupang sticky-top">
+    <div class="container d-flex justify-content-between align-items-center">
+        <!-- Logo -->
+        <a href="index.php" class="logo">LUPANG</a>
+
+        <!-- Search -->
+        <div class="search-container mx-4 d-none d-md-block">
+            <form action="search.php" method="GET">
+                <input type="text" name="q" class="search-input" placeholder="찾고 싶은 상품을 검색해보세요!">
+                <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+            </form>
+        </div>
+
+        <!-- Right Nav -->
+        <div class="d-flex align-items-center">
+            <?php if($currentUser): ?>
+                <a href="mypage.php" class="nav-item-custom">
+                    <div style="position:relative; display:inline-block;">
+                        <i class="fas fa-user"></i>
+                        <?php if(isset($currentUser['role']) && $currentUser['role'] === 'admin'): ?>
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width:10px; height:10px;"></span>
+                        <?php endif; ?>
+                    </div>
+                    <span><?php echo htmlspecialchars($currentUser['username']); ?></span>
+                </a>
+                <a href="logout.php" class="nav-item-custom">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>로그아웃</span>
+                </a>
+            <?php else: ?>
+                <a href="login.php" class="nav-item-custom">
+                    <i class="fas fa-user-circle"></i>
+                    <span>로그인</span>
+                </a>
+            <?php endif; ?>
+            <a href="cart.php" class="nav-item-custom">
+                <i class="fas fa-shopping-cart"></i>
+                <span>장바구니</span>
+            </a>
+        </div>
+    </div>
+</header>
+<div class="container mt-4 mb-5" style="min-height: 800px;">
+EOF
+
+# 8. [Design] Footer (순수 HTML)
+cat <<'EOF' > /var/www/html/footer.php
+</div> <!-- end container -->
+
+<footer style="background-color: #0a0a0a; padding: 4rem 0; border-top: 1px solid #222; margin-top: auto;">
+    <div class="container text-center">
+        <div class="mb-4">
+            <span class="logo fs-4">LUPANG</span>
+        </div>
+        <div class="row justify-content-center mb-4 text-secondary small">
+            <div class="col-md-8">
+                <p>
+                    (주)루팡 | 대표이사: 아르센 뤼팽 | 서울특별시 강남구 테헤란로 123<br>
+                    사업자등록번호: 123-45-67890 | 통신판매업신고: 2025-서울강남-00000<br>
+                    고객센터: 1588-0000 (평일 09:00 ~ 18:00)
+                </p>
+                <p class="mt-3 text-danger">
+                    ※ 본 사이트는 모의해킹 실습을 위해 구축된 가상 환경입니다.<br>
+                    실제 개인정보를 입력하지 마십시오.
+                </p>
+            </div>
+        </div>
+        <div class="text-secondary opacity-50 small">
+            Copyright © 2025 LUPANG Corp. All rights reserved.
+        </div>
+    </div>
+</footer>
+</body>
+</html>
+EOF
+
+# 9. [Page] Index (Read Replica 사용, Design 적용)
+cat <<'EOF' > /var/www/html/index.php
+<?php include 'header.php'; ?>
+
+<!-- Hero Banner -->
+<div class="rounded-4 overflow-hidden shadow-lg mb-5 position-relative" style="height: 400px;">
+    <img src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80" 
+         alt="It's Christmas" style="width:100%; height:100%; object-fit:cover; filter: brightness(0.7);">
+    <div class="position-absolute top-50 start-0 translate-middle-y ms-5 text-white">
+        <h1 class="display-4 fw-black mb-3" style="font-weight: 900; text-shadow: 0 4px 10px rgba(0,0,0,0.5);">It's<br>Christmas</h1>
+        <p class="fs-4 mb-4" style="text-shadow: 0 2px 5px rgba(0,0,0,0.5);">모든 상품 특별 할인<br>크리스마스 기념 세일.</p>
+        <button class="btn btn-lupang btn-lg px-5 rounded-pill shadow">쇼핑 시작하기</button>
+    </div>
+</div>
+
+<!-- Section Title -->
+<div class="d-flex align-items-center mb-4">
+    <h3 class="fw-bold m-0 me-3">오늘의 추천 상품</h3>
+    <span class="badge bg-danger">HOT</span>
+</div>
+
+<!-- Product Grid -->
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    <?php
+    $conn = getDbConnection('read');
+    $sql = "SELECT * FROM products";
+    $result = $conn->query($sql);
+
+    if ($result && $result->num_rows > 0) {
+        while($row = $result->fetch_assoc()) {
+            $discount = rand(10, 40);
+            $img = $row['image_url'] ? $row['image_url'] : 'https://dummyimage.com/300x300/333/fff';
+            ?>
+            <div class="col">
+                <div class="product-card" onclick="location.href='product.php?id=<?php echo $row['id']; ?>'">
+                    <div class="card-img-wrapper">
+                        <img src="<?php echo $img; ?>" class="card-img-top" alt="<?php echo htmlspecialchars($row['name']); ?>">
+                    </div>
+                    <div class="card-body">
+                        <h5 class="product-title"><?php echo htmlspecialchars($row['name']); ?></h5>
+                        <div class="mb-2">
+                            <span class="product-price"><?php echo number_format($row['price']); ?>원</span>
+                            <small class="text-decoration-line-through text-secondary ms-2"><?php echo number_format($row['price'] * 1.2); ?></small>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-danger fw-bold"><?php echo $discount; ?>% OFF</span>
+                            <span class="rocket-badge" style="color:#a0a0a0; border-color:#a0a0a0;">
+                                <i class="fas fa-ghost"></i> 팬텀배송
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php
+        }
+    } else {
+        echo '<div class="col-12 text-center text-secondary py-5">등록된 상품이 없습니다.</div>';
+    }
+    ?>
+</div>
+
+<!-- Special Section -->
+<div class="row mt-5 g-4">
+    <div class="col-md-6">
+        <div class="p-4 rounded-4" style="background: linear-gradient(45deg, #1e1e1e, #2a2a2a); border: 1px solid #333;">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h4 class="fw-bold">루팡블랙 멤버십</h4>
+                    <p class="text-sub">지금 가입하고 첫 달 무료 체험하세요.</p>
+                </div>
+                <i class="fas fa-shipping-fast text-primary fs-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="p-4 rounded-4" style="background: linear-gradient(45deg, #2a1e1e, #3a1e1e); border: 1px solid #442222;">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h4 class="fw-bold text-danger">타임 세일</h4>
+                    <p class="text-sub">매일 오후 6시, 한정수량 특가오픈!</p>
+                </div>
+                <i class="fas fa-clock text-danger fs-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php include 'footer.php'; ?>
+EOF
+
+# 10. [Page] Login (CSS 수정됨: 글씨 잘 보이게)
+cat <<'EOF' > /var/www/html/login.php
+<?php
+include 'db_config.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $user = $_POST['username'];
+    $pass = $_POST['password'];
+    
+    $conn = getDbConnection('write');
+    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ? AND password = ?");
+    $stmt->bind_param("ss", $user, $pass);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    
+    if ($row = $res->fetch_assoc()) {
+        $tokenData = [
+            'id' => $row['id'], 
+            'username' => $row['username'], 
+            'role' => $row['role']
+        ];
+        
+        $jsonToken = json_encode($tokenData);
+        $base64Token = base64_encode($jsonToken);
+        
+        setcookie('lupang_token', $base64Token, time() + 3600, '/');
+        
+        writeLog('LOGIN_SUCCESS', 'INFO', 'User Logged In', ['username' => $user]);
+        echo "<script>location.href='index.php';</script>";
+    } else {
+        writeLog('LOGIN_FAIL', 'WARN', 'Login Failed', ['username' => $user]);
+        echo "<script>alert('아이디 또는 비밀번호가 틀렸습니다.');</script>";
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인 - Lupang</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #121212; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Noto Sans KR'; }
+        .login-box { width: 400px; padding: 40px; background: #1e1e1e; border-radius: 10px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* [수정됨] 입력창 스타일 강제 적용 (!important) */
+        .form-control { 
+            background-color: #2c2c2c !important; 
+            border: 1px solid #444 !important; 
+            color: #ffffff !important; /* 흰색 글씨 강제 */
+            margin-bottom: 15px; 
+            height: 50px; 
+        }
+        .form-control:focus { 
+            background-color: #333 !important; 
+            color: #ffffff !important; 
+            border-color: #e60023 !important; 
+            box-shadow: none !important; 
+        }
+        /* placeholder 색상 밝게 */
+        .form-control::placeholder { color: #aaa !important; }
+
+        .btn-login { width: 100%; height: 50px; background: #e60023; border: none; font-weight: bold; color: white; margin-top: 10px; }
+        .btn-login:hover { background: #ff2f4f; }
+        .logo { color: #e60023; font-weight: 900; font-size: 2rem; text-align: center; display: block; margin-bottom: 30px; letter-spacing: -1px; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <a href="index.php" class="logo">LUPANG</a>
+        <form method="POST">
+            <input type="text" name="username" class="form-control" placeholder="아이디" required>
+            <input type="password" name="password" class="form-control" placeholder="비밀번호" required>
+            <button type="submit" class="btn btn-login">로그인</button>
+        </form>
+        <div class="mt-4 text-center text-secondary small">
+            <a href="#" class="text-secondary text-decoration-none">아이디 찾기</a> | 
+            <a href="#" class="text-secondary text-decoration-none">비밀번호 찾기</a> | 
+            <a href="#" class="text-white text-decoration-none">회원가입</a>
+        </div>
+        <div class="mt-3 text-center text-muted" style="font-size: 0.8rem;">
+            Test Account: hacker / 1234
+        </div>
+    </div>
+</body>
+</html>
+EOF
+
+# 11. [Page] MyPage (관리자 권한 탈취 확인용)
+cat <<'EOF' > /var/www/html/mypage.php
+<?php include 'header.php'; ?>
+<?php
+if (!$currentUser) {
+    echo "<script>alert('로그인이 필요합니다.'); location.href='login.php';</script>";
+    exit;
+}
+
+$conn = getDbConnection('read');
+$username = $currentUser['username'];
+$stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+$stmt->bind_param("s", $username);
+$stmt->execute();
+$userProfile = $stmt->get_result()->fetch_assoc();
+?>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h3 class="mb-4 fw-bold">마이페이지</h3>
+        
+        <div class="card p-4 mb-4 border-secondary bg-dark shadow-sm">
+            <div class="d-flex align-items-center mb-4 pb-4 border-bottom border-secondary">
+                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-4" style="width: 80px; height: 80px;">
+                    <i class="fas fa-user fs-1 text-white"></i>
+                </div>
+                <div>
+                    <h4 class="mb-1 text-white"><?php echo htmlspecialchars($userProfile['real_name']); ?> 님</h4>
+                    <!-- role 표시: 공격 성공 시 여기가 ADMIN으로 바뀜 -->
+                    <?php if($currentUser['role'] === 'admin'): ?>
+                        <span class="badge bg-danger fs-6">ADMINISTRATOR</span>
+                    <?php else: ?>
+                        <span class="badge bg-secondary">MEMBER</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="text-sub small">아이디</label>
+                    <div class="fs-5"><?php echo htmlspecialchars($userProfile['username']); ?></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="text-sub small">연락처</label>
+                    <div class="fs-5"><?php echo htmlspecialchars($userProfile['phone']); ?></div>
+                </div>
+                <div class="col-12">
+                    <label class="text-sub small">배송지</label>
+                    <div class="fs-5"><?php echo htmlspecialchars($userProfile['address']); ?></div>
+                </div>
+            </div>
+        </div>
+
+        <?php if($currentUser['role'] === 'admin'): ?>
+            <div class="alert alert-danger border-danger d-flex align-items-center p-4">
+                <i class="fas fa-user-shield fs-1 me-4"></i>
+                <div class="flex-grow-1">
+                    <h4 class="alert-heading fw-bold">⚠️ 관리자 권한 확인됨</h4>
+                    <p class="mb-0">관리자 전용 대시보드에 접근할 수 있습니다. 고객 DB 접근 시 로그가 기록됩니다.</p>
+                </div>
+                <a href="admin_dashboard.php" class="btn btn-danger fw-bold ms-3">대시보드 접속</a>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+# 12. [Page] Admin Dashboard (해킹 목표 & Honeypot 로그)
+cat <<'EOF' > /var/www/html/admin_dashboard.php
+<?php include 'header.php'; ?>
+<?php
+// 권한 체크
+if (!$currentUser || $currentUser['role'] !== 'admin') {
+    writeLog('ADMIN_ACCESS_DENIED', 'WARN', 'Unauthorized Access Attempt', ['user' => $currentUser['username'] ?? 'guest']);
+    echo "<div class='container py-5 text-center'>
+            <i class='fas fa-exclamation-triangle text-danger display-1 mb-4'></i>
+            <h2 class='text-danger'>접근 권한이 없습니다.</h2>
+            <p>이 페이지는 관리자만 접근 가능합니다. 모든 시도는 기록됩니다.</p>
+            <a href='index.php' class='btn btn-outline-light mt-3'>홈으로 돌아가기</a>
+          </div>";
+    include 'footer.php';
+    exit;
+}
+
+// 관리자 접근 성공 로그
+writeLog('ADMIN_ACCESS', 'CRITICAL', 'Admin Dashboard Accessed', ['user' => $currentUser['username']]);
+?>
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <h2 class="text-danger fw-bold"><i class="fas fa-cogs"></i> 관리자 대시보드</h2>
+        <span class="badge bg-danger p-2">SECURE LEVEL: HIGH</span>
+    </div>
+
+    <div class="row g-4">
+        <!-- 회원 관리 -->
+        <div class="col-md-4">
+            <div class="card h-100 border-danger">
+                <div class="card-header bg-danger text-white fw-bold"><i class="fas fa-users"></i> 회원 관리</div>
+                <div class="card-body">
+                    <h5 class="card-title">전체 회원 목록 다운로드</h5>
+                    <p class="card-text text-secondary">개인정보를 포함한 전체 고객 DB를 덤프합니다.</p>
+                    <button class="btn btn-outline-danger w-100" onclick="alert('전체 회원 DB (150,000건) 다운로드가 시작됩니다.\n감사 로그에 기록되었습니다.')">
+                        <i class="fas fa-download"></i> DB 다운로드 (.sql)
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 주문 관리 -->
+        <div class="col-md-4">
+            <div class="card h-100 border-secondary">
+                <div class="card-header bg-dark border-secondary fw-bold"><i class="fas fa-shopping-bag"></i> 주문 현황</div>
+                <div class="card-body">
+                    <h3 class="fw-bold">1,204 건</h3>
+                    <p class="text-success">▲ 전일 대비 15% 증가</p>
+                    <button class="btn btn-outline-light w-100">상세 보기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 시스템 상태 -->
+        <div class="col-md-4">
+            <div class="card h-100 border-secondary">
+                <div class="card-header bg-dark border-secondary fw-bold"><i class="fas fa-server"></i> 시스템 상태</div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><span class="badge bg-success">OK</span> Web Server (Nginx)</li>
+                        <li class="mb-2"><span class="badge bg-success">OK</span> WAS (Apache/PHP)</li>
+                        <li class="mb-2"><span class="badge bg-success">OK</span> Database (MySQL)</li>
+                        <li class="mb-2"><span class="badge bg-success">OK</span> Session (Redis)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+# 13. [Page] Product Detail
+cat <<'EOF' > /var/www/html/product.php
+<?php include 'header.php'; ?>
+<?php
+$id = $_GET['id'] ?? 1;
+$conn = getDbConnection('read');
+$stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
+$stmt->bind_param("i", $id);
+$stmt->execute();
+$product = $stmt->get_result()->fetch_assoc();
+?>
+
+<?php if($product): ?>
+<div class="row py-4">
+    <div class="col-md-6 mb-4">
+        <div class="rounded-4 overflow-hidden border border-secondary">
+            <img src="<?php echo $product['image_url'] ?: 'https://dummyimage.com/600x600/333/fff'; ?>" class="img-fluid w-100" alt="<?php echo $product['name']; ?>">
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-2">
+            <span class="badge bg-danger">BEST</span>
+            <span class="badge border border-success text-success">무료배송</span>
+        </div>
+        <h2 class="fw-bold mb-3"><?php echo htmlspecialchars($product['name']); ?></h2>
+        <div class="d-flex align-items-center mb-4">
+            <div class="text-warning me-2">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+            </div>
+            <span class="text-secondary">(4.8 / 5.0)</span>
+            <span class="mx-2 text-secondary">|</span>
+            <span class="text-secondary">리뷰 1,240개</span>
+        </div>
+        
+        <h3 class="text-danger fw-bold mb-4"><?php echo number_format($product['price']); ?>원</h3>
+        
+        <p class="text-secondary lh-lg mb-5">
+            <?php echo nl2br(htmlspecialchars($product['description'])); ?>
+        </p>
+        
+        
+        <div class="d-grid gap-2">
+            <form method="POST" action="cart_action.php">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+                <button type="submit" class="btn btn-outline-light btn-lg w-100 mb-2">
+                    <i class="fas fa-shopping-cart"></i> 장바구니 담기
+                </button>
+            </form>
+            <button class="btn btn-lupang btn-lg" onclick="alert('바로 구매 기능은 개발 예정입니다.')">
+                <i class="fas fa-bolt"></i> 바로 구매하기
+            </button>
+        </div>
+    </div>
+</div>
+<?php else: ?>
+    <div class="alert alert-warning text-center">상품을 찾을 수 없습니다.</div>
+<?php endif; ?>
+<?php include 'footer.php'; ?>
+EOF
+
+# 14. [Active Defense] Fake Admin Honeypot
+cat <<'EOF' > /var/www/html/admin_super.php
+<?php
+include 'db_config.php';
+writeLog('HONEYPOT_TRIGGER', 'CRITICAL', 'Unauthorized Access to Fake Admin', []);
+http_response_code(403);
+?>
+<!DOCTYPE html>
+<html lang="ko">
+<body style="background:black; color:red; text-align:center; padding-top:100px;">
+    <h1>ACCESS DENIED</h1>
+    <p>Your IP has been logged and reported to the security team.</p>
+</body>
+</html>
+EOF
+
+# 15. [Security] Logout
+cat <<'EOF' > /var/www/html/logout.php
+<?php
+setcookie('lupang_token', '', time() - 3600, '/');
+header('Location: index.php');
+?>
+EOF
+
+# 16. [Security] Search
+cat <<'EOF' > /var/www/html/search.php
+<?php include 'header.php'; ?>
+<?php $q = $_GET['q'] ?? ''; ?>
+<div class="container mt-5">
+    <h3>'<span class="text-danger"><?php echo htmlspecialchars($q); ?></span>' 검색 결과</h3>
+    <div class="alert alert-secondary mt-4">검색 결과가 없습니다.</div>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+# [추가] 장바구니 페이지 (Cart - Redis 활용)
+cat <<'EOF' > /var/www/html/cart.php
+<?php 
+include 'header.php';
+
+// 로그인 체크
+if (!$currentUser) {
+    echo "<script>alert('로그인이 필요합니다.'); location.href='login.php';</script>";
+    exit;
+}
+
+// 장바구니 데이터 가져오기 (Redis 세션에서)
+$cart = $_SESSION['cart'] ?? [];
+$total = 0;
+?>
+
+<div class="container py-4">
+    <h2 class="fw-bold mb-4"><i class="fas fa-shopping-cart"></i> 장바구니</h2>
+    
+    <?php if(empty($cart)): ?>
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-5x text-secondary mb-4"></i>
+            <h3 class="text-white mb-3">장바구니가 비어있습니다.</h3>
+            <p class="text-secondary mb-4">원하는 상품을 담아보세요!</p>
+            <a href="index.php" class="btn btn-lupang px-4 py-2">쇼핑 계속하기</a>
+        </div>
+    <?php else: ?>
+        <div class="row">
+            <div class="col-md-8">
+                <?php
+                $conn = getDbConnection('read');
+                foreach($cart as $product_id => $quantity):
+                    $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
+                    $stmt->bind_param("i", $product_id);
+                    $stmt->execute();
+                    $product = $stmt->get_result()->fetch_assoc();
+                    if(!$product) continue;
+                    
+                    $subtotal = $product['price'] * $quantity;
+                    $total += $subtotal;
+                ?>
+                <div class="card mb-3 bg-dark border-secondary">
+                    <div class="row g-0 align-items-center p-3">
+                        <div class="col-md-2">
+                            <img src="<?php echo $product['image_url']; ?>" class="img-fluid rounded" alt="<?php echo $product['name']; ?>">
+                        </div>
+                        <div class="col-md-5 ps-3">
+                            <h5 class="mb-1"><?php echo htmlspecialchars($product['name']); ?></h5>
+                            <p class="text-secondary small mb-2"><?php echo number_format($product['price']); ?>원</p>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <form method="POST" action="cart_action.php" class="d-inline">
+                                    <input type="hidden" name="action" value="decrease">
+                                    <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">-</button>
+                                </form>
+                                <span class="mx-3 fw-bold"><?php echo $quantity; ?></span>
+                                <form method="POST" action="cart_action.php" class="d-inline">
+                                    <input type="hidden" name="action" value="increase">
+                                    <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">+</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <div class="fw-bold text-danger mb-2"><?php echo number_format($subtotal); ?>원</div>
+                            <form method="POST" action="cart_action.php">
+                                <input type="hidden" name="action" value="remove">
+                                <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card bg-dark border-secondary sticky-top" style="top: 100px;">
+                    <div class="card-body">
+                        <h4 class="fw-bold mb-4">결제 금액</h4>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>상품 금액</span>
+                            <span><?php echo number_format($total); ?>원</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>배송비</span>
+                            <span class="text-success">무료</span>
+                        </div>
+                        <hr class="border-secondary">
+                        <div class="d-flex justify-content-between mb-4">
+                            <strong class="fs-5">총 결제금액</strong>
+                            <strong class="fs-5 text-danger"><?php echo number_format($total); ?>원</strong>
+                        </div>
+                        <a href="order.php" class="btn btn-lupang w-100 py-3 mb-2">주문하기</a>
+                        <a href="index.php" class="btn btn-outline-light w-100">쇼핑 계속하기</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+# [추가] 장바구니 액션 처리 (cart_action.php)
+cat <<'EOF' > /var/www/html/cart_action.php
+<?php
+session_start();
+include 'db_config.php';
+
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+}
+
+$action = $_POST['action'] ?? '';
+$product_id = intval($_POST['product_id'] ?? 0);
+
+switch ($action) {
+    case 'add':
+        if (isset($_SESSION['cart'][$product_id])) {
+            $_SESSION['cart'][$product_id]++;
+        } else {
+            $_SESSION['cart'][$product_id] = 1;
+        }
+        writeLog('CART_ADD', 'INFO', 'Product Added to Cart', ['product_id' => $product_id]);
+        break;
+        
+    case 'increase':
+        if (isset($_SESSION['cart'][$product_id])) {
+            $_SESSION['cart'][$product_id]++;
+        }
+        break;
+        
+    case 'decrease':
+        if (isset($_SESSION['cart'][$product_id]) && $_SESSION['cart'][$product_id] > 1) {
+            $_SESSION['cart'][$product_id]--;
+        }
+        break;
+        
+    case 'remove':
+        unset($_SESSION['cart'][$product_id]);
+        writeLog('CART_REMOVE', 'INFO', 'Product Removed from Cart', ['product_id' => $product_id]);
+        break;
+}
+
+header('Location: cart.php');
+?>
+EOF
+
+# [추가] 주문 페이지 (order.php - MySQL 트랜잭션)
+cat <<'EOF' > /var/www/html/order.php
+<?php
+include 'header.php';
+
+// 로그인 체크
+if (!$currentUser) {
+    echo "<script>alert('로그인이 필요합니다.'); location.href='login.php';</script>";
+    exit;
+}
+
+$cart = $_SESSION['cart'] ?? [];
+if (empty($cart)) {
+    echo "<script>alert('장바구니가 비어있습니다.'); location.href='cart.php';</script>";
+    exit;
+}
+
+// POST: 주문 처리
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $conn = getDbConnection('write');
+    $conn->begin_transaction();
+    
+    try {
+        $total = 0;
+        $user_id = $currentUser['id'];
+        
+        // 주문 총액 계산
+        foreach ($cart as $product_id => $quantity) {
+            $stmt = $conn->prepare("SELECT price, stock FROM products WHERE id = ?");
+            $stmt->bind_param("i", $product_id);
+            $stmt->execute();
+            $product = $stmt->get_result()->fetch_assoc();
+            
+            if (!$product || $product['stock'] < $quantity) {
+                throw new Exception("재고가 부족합니다.");
+            }
+            
+            $total += $product['price'] * $quantity;
+        }
+        
+        // 주문 생성
+        $stmt = $conn->prepare("INSERT INTO orders (user_id, total_amount, status) VALUES (?, ?, 'completed')");
+        $stmt->bind_param("ii", $user_id, $total);
+        $stmt->execute();
+        $order_id = $conn->insert_id;
+        
+        // 주문 상품 기록
+        foreach ($cart as $product_id => $quantity) {
+            $stmt = $conn->prepare("SELECT price FROM products WHERE id = ?");
+            $stmt->bind_param("i", $product_id);
+            $stmt->execute();
+            $price = $stmt->get_result()->fetch_assoc()['price'];
+            
+            $stmt = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("iiii", $order_id, $product_id, $quantity, $price);
+            $stmt->execute();
+        }
+        
+        $conn->commit();
+        
+        writeLog('ORDER_SUCCESS', 'INFO', 'Order Completed', ['order_id' => $order_id, 'total' => $total]);
+        $_SESSION['cart'] = [];
+        
+        echo "<script>alert('주문이 완료되었습니다! (주문번호: {$order_id})'); location.href='index.php';</script>";
+        exit;
+        
+    } catch (Exception $e) {
+        $conn->rollback();
+        writeLog('ORDER_FAIL', 'ERROR', 'Order Failed', ['error' => $e->getMessage()]);
+        echo "<script>alert('주문 처리 중 오류: " . $e->getMessage() . "');</script>";
+    }
+}
+
+$conn = getDbConnection('read');
+$total = 0;
+?>
+
+<div class="container py-4">
+    <h2 class="fw-bold mb-4"><i class="fas fa-check-circle text-success"></i> 주문/결제</h2>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header fw-bold">주문 상품 확인</div>
+                <div class="card-body">
+                    <?php foreach($cart as $product_id => $quantity):
+                        $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
+                        $stmt->bind_param("i", $product_id);
+                        $stmt->execute();
+                        $product = $stmt->get_result()->fetch_assoc();
+                        if(!$product) continue;
+                        
+                        $subtotal = $product['price'] * $quantity;
+                        $total += $subtotal;
+                    ?>
+                    <div class="d-flex justify-content-between mb-3 pb-3 border-bottom border-secondary">
+                        <div>
+                            <h6><?php echo htmlspecialchars($product['name']); ?></h6>
+                            <small class="text-secondary"><?php echo number_format($product['price']); ?>원 × <?php echo $quantity; ?>개</small>
+                        </div>
+                        <strong><?php echo number_format($subtotal); ?>원</strong>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card bg-dark border-danger sticky-top" style="top: 100px;">
+                <div class="card-body">
+                    <h4 class="fw-bold mb-4">최종 결제 금액</h4>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>상품 금액</span>
+                        <span><?php echo number_format($total); ?>원</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>배송비</span>
+                        <span class="text-success">무료</span>
+                    </div>
+                    <hr class="border-secondary">
+                    <div class="d-flex justify-content-between mb-4">
+                        <strong class="fs-4">총 결제금액</strong>
+                        <strong class="fs-4 text-danger"><?php echo number_format($total); ?>원</strong>
+                    </div>
+                    
+                    <form method="POST">
+                        <button type="submit" class="btn btn-danger w-100 py-3 fw-bold mb-2">
+                            <i class="fas fa-credit-card"></i> 결제하기
+                        </button>
+                    </form>
+                    <a href="cart.php" class="btn btn-outline-light w-100">장바구니로</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+# [추가] 관리자 회원 관리 페이지 (admin_users.php)
+cat <<'EOF' > /var/www/html/admin_users.php
+<?php include 'header.php'; ?>
+<?php
+if (!$currentUser || $currentUser['role'] !== 'admin') {
+    echo "<script>alert('관리자 권한이 필요합니다.'); location.href='index.php';</script>";
+    exit;
+}
+
+// 회원 삭제 처리
+if (isset($_GET['delete'])) {
+    $delete_id = intval($_GET['delete']);
+    if ($delete_id !== 1) { // Admin 계정은 삭제 불가
+        $conn = getDbConnection('write');
+        $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->bind_param("i", $delete_id);
+        $stmt->execute();
+        writeLog('USER_DELETE', 'WARN', 'User Deleted by Admin', ['deleted_id' => $delete_id]);
+        echo "<script>alert('회원이 삭제되었습니다.'); location.href='admin_users.php';</script>";
+    } else {
+        echo "<script>alert('관리자 계정은 삭제할 수 없습니다.');</script>";
+    }
+}
+
+$conn = getDbConnection('read');
+$result = $conn->query("SELECT * FROM users ORDER BY id ASC");
+?>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-danger"><i class="fas fa-users-cog"></i> 회원 관리</h2>
+        <a href="admin_dashboard.php" class="btn btn-outline-light">대시보드로</a>
+    </div>
+    
+    <div class="card bg-dark border-secondary">
+        <div class="card-body">
+            <table class="table table-dark table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>아이디</th>
+                        <th>이름</th>
+                        <th>연락처</th>
+                        <th>권한</th>
+                        <th>가입일</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while($user = $result->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo $user['id']; ?></td>
+                        <td><?php echo htmlspecialchars($user['username']); ?></td>
+                        <td><?php echo htmlspecialchars($user['real_name']); ?></td>
+                        <td><?php echo htmlspecialchars($user['phone']); ?></td>
+                        <td>
+                            <?php if($user['role'] === 'admin'): ?>
+                                <span class="badge bg-danger">ADMIN</span>
+                            <?php else: ?>
+                                <span class="badge bg-secondary">USER</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo date('Y-m-d', strtotime($user['created_at'])); ?></td>
+                        <td>
+                            <?php if($user['id'] !== 1): ?>
+                                <a href="?delete=<?php echo $user['id']; ?>" 
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('정말 삭제하시겠습니까?')">삭제</a>
+                            <?php else: ?>
+                                <span class="text-secondary small">보호됨</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+# 17. 마무리 및 서비스 시작
+log "파일 권한 및 소유권 설정"
+chown -R apache:apache /var/www/html
+chmod 777 /var/www/html/uploads
+
+log "Apache 서비스 시작"
+systemctl enable httpd
+systemctl restart httpd
+
+echo "INIT_COMPLETED" > /tmp/was_init_complete.txt
+log "WAS 초기화 완료 (Full & Safe Version)"
