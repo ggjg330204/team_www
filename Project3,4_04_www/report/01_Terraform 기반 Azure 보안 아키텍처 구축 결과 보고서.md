@@ -1,5 +1,5 @@
-# Terraform 기반 Azure 보안 아키텍처 구축 프로젝트
-**(Terraform-based Azure Security Architecture Whitepaper)**
+# Terraform 기반 Azure 보안 아키텍처 구축 결과 보고서
+**(Azure Security Architecture Implementation Report)**
 
 ---
 
@@ -624,3 +624,4 @@ AzureDiagnostics
 
 ---
 **[End of Document]**
+
