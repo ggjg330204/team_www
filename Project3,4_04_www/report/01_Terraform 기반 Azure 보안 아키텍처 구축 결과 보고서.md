@@ -3,42 +3,42 @@
 
 ---
 
-## 목차 (Table of Contents)
+## 목차
 
-1.  [서론 (Introduction)](#1-서론-introduction)
+1.  [서론](#1-서론)
     *   1.1 프로젝트 배경 및 필요성
     *   1.2 프로젝트 목표 및 범위
     *   1.3 해결하고자 하는 주요 보안 과제
-2.  [아키텍처 설계 철학 및 원칙 (Design Philosophy)](#2-아키텍처-설계-철학-및-원칙-design-philosophy)
+2.  [아키텍처 설계 철학 및 원칙](#2-아키텍처-설계-철학-및-원칙)
     *   2.1 Zero Trust Security Model
     *   2.2 Immutable Infrastructure (Pets vs Cattle)
     *   2.3 Hub-Spoke Network Topology
-3.  [인프라 아키텍처 상세 구현 (Infrastructure Implementation)](#3-인프라-아키텍처-상세-구현-infrastructure-implementation)
-    *   3.1 전체 아키텍처 조감도 (Overall Architecture)
-    *   3.2 네트워크 인프라 (Network: Hub & Spoke)
-    *   3.3 컴퓨팅 리소스 (Compute: VMSS & HA)
-    *   3.4 데이터 플랫폼 (Data: Persistence & Isolation)
-    *   3.5 로드 밸런싱 및 가속화 (Load Balancing & CDN)
-4.  [보안 엔지니어링 심층 분석 (Security Engineering Deep-Dive)](#4-보안-엔지니어링-심층-분석-security-engineering-deep-dive)
+3.  [인프라 아키텍처 상세 구현](#3-인프라-아키텍처-상세-구현)
+    *   3.1 전체 아키텍처 조감도
+    *   3.2 네트워크 인프라
+    *   3.3 컴퓨팅 리소스
+    *   3.4 데이터 플랫폼
+    *   3.5 로드 밸런싱 및 가속화
+4.  [보안 엔지니어링 심층 분석](#4-보안-엔지니어링-심층-분석)
     *   4.1 Identity & Access Management (IAM)
     *   4.2 Defense-in-Depth (심층 방어 전략)
     *   4.3 Data Protection (암호화 및 키 관리)
     *   4.4 Threat Detection & Response (SIEM/SOAR)
-5.  [보안 관제 및 운영 상세 (Security Operations)](#5-보안-관제-및-운영-상세-security-operations)
-    *   5.1 Microsoft Sentinel 탐지 규칙 (Analytics Rules)
+5.  [보안 관제 및 운영 상세](#5-보안-관제-및-운영-상세)
+    *   5.1 Microsoft Sentinel 탐지 규칙
     *   5.2 자동화된 사고 대응 (SOAR Automation)
     *   5.3 모니터링 및 로깅 아키텍처
-6.  [거버넌스 및 재해 복구 (Governance & DR)](#6-거버넌스-및-재해-복구-governance--dr)
+6.  [거버넌스 및 재해 복구](#6-거버넌스-및-재해-복구)
     *   6.1 RBAC 기반 권한 관리 매트릭스
     *   6.2 재해 복구(DR) 및 비즈니스 연속성 계획(BCP)
     *   6.3 Azure Policy 및 규정 준수
-7.  [결론 및 향후 로드맵 (Conclusion)](#7-결론-및-향후-로드맵-conclusion)
-8.  [부록 A: 주요 Terraform 코드 (Terraform Code)](#8-부록-a-주요-terraform-코드-terraform-code)
-9.  [부록 B: Sentinel KQL 라이브러리 (KQL Library)](#9-부록-b-sentinel-kql-라이브러리-kql-library)
+7.  [결론 및 향후 로드맵](#7-결론-및-향후-로드맵)
+8.  [부록 A: 주요 Terraform 코드](#8-부록-a-주요-terraform-코드)
+9.  [부록 B: Sentinel KQL 라이브러리](#9-부록-b-sentinel-kql-라이브러리)
 
 ---
 
-## 1. 서론 (Introduction)
+## 1. 서론
 
 ### 1.1 프로젝트 배경 및 필요성
 
@@ -76,7 +76,7 @@
 
 ---
 
-## 2. 아키텍처 설계 철학 및 원칙 (Design Philosophy)
+## 2. 아키텍처 설계 철학 및 원칙
 
 본 프로젝트는 단순한 기능 구현을 넘어, 명확한 설계 철학과 원칙에 기반하여 아키텍처를 수립했습니다. 이 철학들은 시스템의 보안성, 안정성, 그리고 운영 효율성을 결정짓는 근간이 됩니다.
 
@@ -104,9 +104,9 @@
 
 ---
 
-## 3. 인프라 아키텍처 상세 구현 (Infrastructure Implementation)
+## 3. 인프라 아키텍처 상세 구현
 
-### 3.1 전체 아키텍처 조감도 (Overall Architecture)
+### 3.1 전체 아키텍처 조감도
 
 ```mermaid
 %%{init: {'theme': 'dark', 'themeVariables': { 'darkMode': true, 'background': '#202124', 'primaryColor': '#55B4AD', 'primaryTextColor': '#fff', 'primaryBorderColor': '#55B4AD', 'lineColor': '#89B2F6'}}}%%
@@ -170,7 +170,7 @@ flowchart TB
     style Data fill:#1a1a1a,stroke:#D99362,stroke-width:2px
 ```
 
-### 3.2 네트워크 인프라 (Network: Hub & Spoke)
+### 3.2 네트워크 인프라 (Hub & Spoke)
 
 네트워크 인프라는 모듈화된 Terraform 코드(`modules/Network`, `modules/Hub`)를 통해 배포됩니다. 각 서브넷은 철저하게 용도에 따라 분리되어 NSG(네트워크 보안 그룹)로 보호받습니다.
 
@@ -195,7 +195,7 @@ Spoke VNet은 3-Tier 아키텍처(Web-App-Data)를 수용하기 위해 세분화
 | `www-data` | 192.168.4.0/24 | **Private Endpoints** | WAS 서브넷(192.168.5.0/24)에서 오는 DB(3306), Redis(6379) 포트만 허용. 인터넷 완전 차단. |
 | `www-nat` | 192.168.8.0/24 | **NAT Gateway** | 아웃바운드 트래픽 고정 IP 할당 및 포트 고갈 방지용. |
 
-### 3.3 컴퓨팅 리소스 (Compute: VMSS & HA)
+### 3.3 컴퓨팅 리소스 (VMSS & HA)
 
 #### 3.3.1 Web/WAS VMSS (Virtual Machine Scale Set)
 *   **자동 확장 (Auto-scaling):** CPU 사용량이 70%를 초과하면 인스턴스를 자동으로 1대 증설(Scale-out)하고, 30% 미만으로 떨어지면 1대 감축(Scale-in)합니다. 최대 10대까지 확장 가능하도록 설정하여 트래픽 폭주에 대응합니다.
@@ -207,7 +207,7 @@ Spoke VNet은 3-Tier 아키텍처(Web-App-Data)를 수용하기 위해 세분화
 *   **Batch Size:** 전체 인스턴스의 20%씩 순차적으로 업데이트합니다.
 *   **Health Check:** 업데이트된 인스턴스가 헬스 체크를 통과해야만 다음 배치를 진행합니다.
 
-### 3.4 데이터 플랫폼 (Data: Persistence & Isolation)
+### 3.4 데이터 플랫폼
 
 #### 3.4.1 MySQL Flexible Server
 *   **Zone Redundant HA:** Primary 서버는 Zone 1에, Standby 서버는 Zone 2에 배치했습니다. 동기식 복제(Synchronous Replication)를 통해 데이터 손실(RPO) 없이 자동 절체(Failover)가 가능합니다.
@@ -216,14 +216,14 @@ Spoke VNet은 3-Tier 아키텍처(Web-App-Data)를 수용하기 위해 세분화
 #### 3.4.2 Key Vault
 *   **중앙 집중식 비밀 관리:** DB 비밀번호, SSL 인증서, API Key 등 모든 민감 정보는 Key Vault에 저장됩니다. 애플리케이션이나 테라폼 코드는 직접 비밀값을 가지지 않으며, 필요할 때 Key Vault 참조를 통해 값을 가져옵니다.
 
-### 3.5 로드 밸런싱 및 가속화 (Load Balancing & CDN)
+### 3.5 로드 밸런싱 및 가속화
 
 *   **Azure Front Door:** 글로벌 CDN 및 GSLB(Global Server Load Balancing) 역할을 수행합니다. 사용자는 가장 가까운 엣지(Edge)로 접속하여 빠른 응답 속도를 경험하며, DDoS 공격은 엣지 단계에서 차단됩니다.
 *   **Application Gateway (WAF v2):** 리전 레벨의 L7 로드 밸런서입니다. URL 경로 기반 라우팅(Path-based Routing)과 SSL 종료(Termination)를 처리하며, 탑재된 WAF가 SQL Injection 등 웹 공격을 방어합니다.
 
 ---
 
-## 4. 보안 엔지니어링 심층 분석 (Security Engineering Deep-Dive)
+## 4. 보안 엔지니어링 심층 분석
 
 ### 4.1 Identity & Access Management (IAM)
 
@@ -270,9 +270,9 @@ Spoke VNet은 3-Tier 아키텍처(Web-App-Data)를 수용하기 위해 세분화
 
 ---
 
-## 5. 보안 관제 및 운영 상세 (Security Operations)
+## 5. 보안 관제 및 운영 상세
 
-### 5.1 Microsoft Sentinel 탐지 규칙 (Analytics Rules)
+### 5.1 Microsoft Sentinel 탐지 규칙
 
 총 15개의 위협 탐지 규칙(Analytics Rules)을 Terraform으로 정의하여 배포했습니다. 이 규칙들은 주기적으로 로그를 스캔하고 이상 징후를 탐지합니다.
 
@@ -315,7 +315,7 @@ Spoke VNet은 3-Tier 아키텍처(Web-App-Data)를 수용하기 위해 세분화
 
 ---
 
-## 6. 거버넌스 및 재해 복구 (Governance & DR)
+## 6. 거버넌스 및 재해 복구
 
 ### 6.1 RBAC 기반 권한 관리 매트릭스
 
@@ -446,13 +446,13 @@ Terraform을 통해 Azure Policy를 배포하여 거버넌스를 강제합니다
 
 ---
 
-## 7. 결론 및 향후 로드맵 (Conclusion)
+## 7. 결론 및 향후 로드맵
 
 본 백서는 **"Terraform 기반 Azure 보안 아키텍처"** 프로젝트의 기술적 성과를 집대성한 문서입니다. 우리는 140개 이상의 Azure 리소스를 코드로 정의하며, **Zero Trust**와 **Defense-in-Depth** 철학을 실제 운영 가능한 수준으로 구현했습니다.
 
 본 프로젝트의 가장 큰 의의는 **"보안이 비즈니스의 걸림돌이 아닌, 안전한 가속 페달"**이 될 수 있음을 증명한 것입니다. 자동화된 보안 검사, 자가 치유되는 인프라, 그리고 빈틈없는 모니터링 체계는 비즈니스 로직이 안전한 환경 위에서 빠르게 혁신할 수 있도록 지원합니다.
 
-### 향후 로드맵 (Future Roadmap)
+### 향후 로드맵
 
 1.  **DevSecOps Pipeline:** 현재 Terraform 실행은 로컬/관리자 PC에서 수행되지만, 향후 GitHub Actions 또는 Azure DevOps 파이프라인으로 이관합니다. 이때 `tfsec`, `checkov` 같은 정적 분석 도구를 파이프라인에 통합하여 코드 배포 전에 보안 취약점을 자동으로 차단하는 체계를 완성할 것입니다.
 2.  **Chaos Engineering:** 시스템의 견고함을 증명하기 위해, 운영 중인 VM을 무작위로 끄거나 네트워크 지연을 발생시키는 카오스 테스트를 도입할 계획입니다.
@@ -460,7 +460,7 @@ Terraform을 통해 Azure Policy를 배포하여 거버넌스를 강제합니다
 
 ---
 
-## 8. 부록 A: 주요 Terraform 코드 (Terraform Code)
+## 8. 부록 A: 주요 Terraform 코드
 
 본 프로젝트의 규모와 기술적 깊이를 보여주는 핵심 Terraform 모듈 코드입니다.
 
@@ -578,7 +578,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
 
 ---
 
-## 9. 부록 B: Sentinel KQL 라이브러리 (KQL Library)
+## 9. 부록 B: Sentinel KQL 라이브러리
 
 Sentinel 탐지 규칙에 사용된 실제 Kusto Query Language(KQL) 코드 모음입니다.
 
@@ -623,5 +623,3 @@ AzureDiagnostics
 ```
 
 ---
-**[End of Document]**
-
