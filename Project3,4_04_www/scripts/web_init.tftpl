@@ -37,6 +37,11 @@ firewall-cmd --reload || true
 log "Installing packages..."
 dnf install -y nginx redis mysql
 
+log "Installing Azure CLI..."
+rpm --import https://packages.microsoft.com/keys/microsoft.asc
+dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm || true
+dnf install -y azure-cli || true
+
 log "Updating OpenSSH..."
 dnf update -y openssh-server openssh-clients || true
 systemctl restart sshd || true
@@ -328,16 +333,53 @@ else
     exit 1
 fi
 
-# Install Nu Shell for improved shell experience
-log "Installing Nu Shell..."
-curl -L https://github.com/nushell/nushell/releases/download/0.88.1/nu-0.88.1-x86_64-unknown-linux-musl.tar.gz -o /tmp/nu.tar.gz
-tar -xzf /tmp/nu.tar.gz -C /tmp
-mv /tmp/nu-0.88.1-x86_64-unknown-linux-musl/nu /usr/local/bin/nu
-chmod +x /usr/local/bin/nu
-echo "/usr/local/bin/nu" >> /etc/shells
-chsh -s /usr/local/bin/nu www || true
-rm -rf /tmp/nu.tar.gz /tmp/nu-0.88.1-x86_64-unknown-linux-musl
-log "Nu Shell installed successfully"
+# Install Nu Shell for improved shell experience (idempotent)
+if [ ! -f /usr/local/bin/nu ]; then
+    log "Installing Nu Shell..."
+    curl -L https://github.com/nushell/nushell/releases/download/0.88.1/nu-0.88.1-x86_64-unknown-linux-musl.tar.gz -o /tmp/nu.tar.gz
+    tar -xzf /tmp/nu.tar.gz -C /tmp
+    mv /tmp/nu-0.88.1-x86_64-unknown-linux-musl/nu /usr/local/bin/nu
+    chmod +x /usr/local/bin/nu
+    rm -rf /tmp/nu.tar.gz /tmp/nu-0.88.1-x86_64-unknown-linux-musl
+else
+    log "Nu Shell already installed, skipping download"
+fi
+grep -q "/usr/local/bin/nu" /etc/shells || echo "/usr/local/bin/nu" >> /etc/shells
+dnf install -y util-linux-user 2>/dev/null || true
+getent passwd www | grep -q "/usr/local/bin/nu" || chsh -s /usr/local/bin/nu www || true
+
+# Configure Nu Shell for www user (idempotent)
+su - www -s /bin/bash -c 'mkdir -p ~/.config/nushell'
+cat <<'NUCONFIG' > /home/www/.config/nushell/config.nu
+# Nu Shell Configuration
+$env.config = {
+    show_banner: false
+}
+NUCONFIG
+
+cat <<'NUENV' > /home/www/.config/nushell/env.nu
+# Nu Shell Environment
+$env.PROMPT_COMMAND = {||
+    let hostname = (hostname | str trim)
+    let path = (pwd | path basename)
+    $"($hostname):($path)> "
+}
+$env.PROMPT_INDICATOR = ""
+
+# Pre-configured environment variables (fallback values)
+$env.WAS_IP = "192.168.5.6"
+
+# Helper function to connect to WAS
+def was [] { ssh www@192.168.5.6 }
+
+# Helper function to connect to MySQL (run on WAS, not Web)
+def mydb [] { 
+    print "MySQL 접속은 WAS 서버에서 실행하세요: mysql -h $env.MYSQL_HOST -u www -p"
+}
+NUENV
+
+chown -R www:www /home/www/.config/nushell
+log "Nu Shell installed successfully with custom prompt"
 
 echo "INIT_COMPLETED" > /tmp/web_init_complete.txt
 chmod 644 /tmp/web_init_complete.txt
