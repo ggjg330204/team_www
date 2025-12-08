@@ -1,4 +1,4 @@
-﻿resource "azurerm_subnet_network_security_group_association" "vmss_nsg_assoc" {
+resource "azurerm_subnet_network_security_group_association" "vmss_nsg_assoc" {
   subnet_id                 = module.network_central.subnet_ids["www-vmss"]
   network_security_group_id = module.security.nsg_http_id
 }

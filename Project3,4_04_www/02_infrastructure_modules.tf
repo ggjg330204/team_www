@@ -1,4 +1,4 @@
-﻿module "hub" {
+module "hub" {
   source            = "./modules/Hub"
   rgname            = azurerm_resource_group.rg.name
   loca              = "Korea Central"
@@ -13,7 +13,7 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke" {
   allow_forwarded_traffic   = true
   allow_gateway_transit     = true
   use_remote_gateways       = false
-  depends_on = [module.network_central]
+  depends_on                = [module.network_central]
 }
 module "network_central" {
   source        = "./modules/Network"
@@ -22,24 +22,24 @@ module "network_central" {
   vnet_name     = "vnet0"
   address_space = ["10.0.0.0/16", "172.16.0.0/16", "192.168.0.0/16"]
   subnets = {
-    "www-nat" = "10.0.1.0/24"
-    "www-db"   = "172.16.1.0/24"
-    "www-stor" = "172.16.2.0/24"
+    "www-nat"   = "10.0.1.0/24"
+    "www-db"    = "172.16.1.0/24"
+    "www-stor"  = "172.16.2.0/24"
     "www-vmss"  = "192.168.1.0/24"
     "www-web"   = "192.168.2.0/24"
     "www-appgw" = "192.168.3.0/24"
     "www-load"  = "192.168.4.0/24"
-    "www-was" = "192.168.5.0/24"
+    "www-was"   = "192.168.5.0/24"
   }
-  enable_appgw    = true
-  enable_nat      = true
-  enable_vpn      = false
-  enable_cross_lb = false
-  enable_ddos     = false
-  enable_ssl    = var.enable_ssl 
-  hub_vnet_id     = module.hub.hub_vnet_id
-  keyvault_id     = module.security.key_vault_id
-  keyvault_name   = module.security.keyvault_name
+  enable_appgw                = true
+  enable_nat                  = true
+  enable_vpn                  = false
+  enable_cross_lb             = false
+  enable_ddos                 = false
+  enable_ssl                  = var.enable_ssl
+  hub_vnet_id                 = module.hub.hub_vnet_id
+  keyvault_id                 = module.security.key_vault_id
+  keyvault_name               = module.security.keyvault_name
   frontdoor_endpoint_hostname = module.edge.frontdoor_endpoint_hostname
   mysql_private_endpoint_ip   = module.database.mysql_private_endpoint_ip
   log_analytics_workspace_id  = module.security.log_analytics_workspace_id
@@ -47,61 +47,61 @@ module "network_central" {
   appgw_identity_principal_id = module.identity.appgw_identity_principal_id
 }
 module "compute" {
-  source         = "./modules/Compute"
-  rgname         = azurerm_resource_group.rg.name
-  loca           = "Korea Central"
-  vm_subnet_id   = module.network_central.subnet_ids["www-web"]
-  vmss_subnet_id = module.network_central.subnet_ids["www-vmss"]
-  was_subnet_id  = module.network_central.subnet_ids["www-was"]
-  admin_username         = "www"
-  admin_password         = var.db_password
-  lb_backend_pool_id     = module.network_central.lb_backend_pool_id
-  lb_probe_id            = module.network_central.lb_probe_id
-  ssh_nat_pool_id        = module.network_central.ssh_nat_pool_id
-  was_lb_backend_pool_id = module.network_central.was_lb_backend_pool_id
-  was_lb_private_ip      = module.network_central.was_lb_private_ip
-  was_lb_probe_id        = module.network_central.was_lb_probe_id
-  db_host                = module.database.mysql_server_fqdn
-  db_user                = "www"
-  db_password            = var.db_password
-  db_name                = "www_sql"
-  db_ro_host        = module.database.mysql_replica_fqdn
-  redis_hostname         = module.database.redis_hostname
-  redis_port             = module.database.redis_ssl_port
-  redis_primary_key      = module.database.redis_primary_key
-  app_insights_key       = module.security.app_insights_instrumentation_key
-  vmss_identity_id       = module.identity.vmss_identity_id
+  source                     = "./modules/Compute"
+  rgname                     = azurerm_resource_group.rg.name
+  loca                       = "Korea Central"
+  vm_subnet_id               = module.network_central.subnet_ids["www-web"]
+  vmss_subnet_id             = module.network_central.subnet_ids["www-vmss"]
+  was_subnet_id              = module.network_central.subnet_ids["www-was"]
+  admin_username             = "www"
+  admin_password             = var.db_password
+  lb_backend_pool_id         = module.network_central.lb_backend_pool_id
+  lb_probe_id                = module.network_central.lb_probe_id
+  ssh_nat_pool_id            = module.network_central.ssh_nat_pool_id
+  was_lb_backend_pool_id     = module.network_central.was_lb_backend_pool_id
+  was_lb_private_ip          = module.network_central.was_lb_private_ip
+  was_lb_probe_id            = module.network_central.was_lb_probe_id
+  db_host                    = module.database.mysql_server_fqdn
+  db_user                    = "www"
+  db_password                = var.db_password
+  db_name                    = "www_sql"
+  db_ro_host                 = module.database.mysql_replica_fqdn
+  redis_hostname             = module.database.redis_hostname
+  redis_port                 = module.database.redis_ssl_port
+  redis_primary_key          = module.database.redis_primary_key
+  app_insights_key           = module.security.app_insights_instrumentation_key
+  vmss_identity_id           = module.identity.vmss_identity_id
   log_analytics_workspace_id = module.security.log_analytics_workspace_id
   data_collection_rule_id    = module.security.data_collection_rule_id
-  ssh_allowed_ips        = var.ssh_allowed_ips
-  domain_name            = var.domain_name
-  key_vault_id           = module.security.key_vault_id
-  key_vault_name         = module.security.keyvault_name
+  ssh_allowed_ips            = var.ssh_allowed_ips
+  domain_name                = var.domain_name
+  key_vault_id               = module.security.key_vault_id
+  key_vault_name             = module.security.keyvault_name
 }
 module "database" {
-  source                    = "./modules/database"
-  rgname                    = azurerm_resource_group.rg.name
-  loca                      = "Korea Central"
-  db_location               = "Korea Central"
-  replica_loca              = "Korea Central"
-  db_subnet_id              = module.network_central.subnet_ids["www-db"]
-  db_password               = var.db_password
-  db_name                   = "www_sql"
-  vnet_id                   = module.network_central.vnet_id
-  storage_connection_string = module.storage.storage_connection_string
+  source                     = "./modules/database"
+  rgname                     = azurerm_resource_group.rg.name
+  loca                       = "Korea Central"
+  db_location                = "Korea Central"
+  replica_loca               = "Korea Central"
+  db_subnet_id               = module.network_central.subnet_ids["www-db"]
+  db_password                = var.db_password
+  db_name                    = "www_sql"
+  vnet_id                    = module.network_central.vnet_id
+  storage_connection_string  = module.storage.storage_connection_string
   log_analytics_workspace_id = module.security.log_analytics_workspace_id
 }
 module "security" {
-  source                     = "./modules/Security"
-  rgname                     = azurerm_resource_group.rg.name
-  loca                       = "Korea Central"
-  subnet_id                  = module.network_central.subnet_ids["www-web"]
-  wwwuser                    = "www"
-  vnet_name                  = module.network_central.vnet_name
-  vmss_id                    = module.compute.vmss_id
-  mysql_server_id            = module.database.mysql_server_id
-  redis_id                   = module.database.redis_id
-  lb_public_ip               = module.network_central.lb_public_ip
+  source          = "./modules/Security"
+  rgname          = azurerm_resource_group.rg.name
+  loca            = "Korea Central"
+  subnet_id       = module.network_central.subnet_ids["www-web"]
+  wwwuser         = "www"
+  vnet_name       = module.network_central.vnet_name
+  vmss_id         = module.compute.vmss_id
+  mysql_server_id = module.database.mysql_server_id
+  redis_id        = module.database.redis_id
+  lb_public_ip    = module.network_central.lb_public_ip
 
   allowed_subnet_ids = [
     module.network_central.subnet_ids["www-web"],
@@ -119,13 +119,13 @@ module "security" {
 }
 
 module "storage" {
-  source            = "./modules/storage"
-  rgname            = azurerm_resource_group.rg.name
-  loca              = "Korea Central"
-  storage_subnet_id = module.network_central.subnet_ids["www-stor"]
-  vnet_id           = module.network_central.vnet_id
+  source                     = "./modules/storage"
+  rgname                     = azurerm_resource_group.rg.name
+  loca                       = "Korea Central"
+  storage_subnet_id          = module.network_central.subnet_ids["www-stor"]
+  vnet_id                    = module.network_central.vnet_id
   log_analytics_workspace_id = module.security.log_analytics_workspace_id
-  allowed_ips       = var.ssh_allowed_ips
+  allowed_ips                = var.ssh_allowed_ips
 }
 
 module "edge" {
@@ -161,9 +161,9 @@ module "identity" {
 }
 
 module "dns" {
-  source                      = "./modules/Dns"
-  rgname                      = azurerm_resource_group.rg.name
-  domain_name                 = var.domain_name
+  source                       = "./modules/Dns"
+  rgname                       = azurerm_resource_group.rg.name
+  domain_name                  = var.domain_name
   frontdoor_endpoint_hostname  = module.edge.frontdoor_endpoint_hostname
   frontdoor_endpoint_id        = module.edge.frontdoor_endpoint_id
   www_domain_validation_token  = module.edge.www_custom_domain_validation_token

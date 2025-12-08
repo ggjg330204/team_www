@@ -21,6 +21,20 @@ log "Starting Mail Server Setup"
 
 export DEBIAN_FRONTEND=noninteractive
 
+# Prevent automatic reboot during package upgrades
+log "Disabling automatic reboot..."
+mkdir -p /etc/needrestart/conf.d
+echo "\$nrconf{restart} = 'a';" > /etc/needrestart/conf.d/50local.conf
+echo "\$nrconf{kernelhints} = 0;" >> /etc/needrestart/conf.d/50local.conf
+
+# Backup SSH authorized_keys for www user (Azure creates this during VM provisioning)
+SSH_BACKUP_DIR="/root/.ssh_backup"
+if [ -d /home/www/.ssh ] && [ -f /home/www/.ssh/authorized_keys ]; then
+    log "Backing up www user SSH keys..."
+    mkdir -p "$SSH_BACKUP_DIR"
+    cp -a /home/www/.ssh "$SSH_BACKUP_DIR/www_ssh"
+fi
+
 # Wait for any existing apt/dpkg processes to finish (cloud-init, unattended-upgrades, etc.)
 wait_for_apt() {
     local max_wait=300
@@ -99,8 +113,8 @@ namespace inbox {
   inbox = yes
 }
 mail_privileged_group = mail
-first_valid_uid = 5000
-last_valid_uid = 6000
+first_valid_uid = 500
+last_valid_uid = 65534
 EOF
 
 
@@ -251,9 +265,10 @@ cat > /etc/roundcube/config.inc.php << 'EOF'
 $config = [];
 $config['db_dsnw'] = 'sqlite:////var/lib/roundcube/db/sqlite.db';
 $config['imap_host'] = 'localhost';
-$config['smtp_host'] = 'localhost:25';
-$config['smtp_user'] = '%u';
-$config['smtp_pass'] = '%p';
+$config['smtp_host'] = 'localhost';
+$config['smtp_port'] = 25;
+$config['smtp_user'] = '';
+$config['smtp_pass'] = '';
 $config['product_name'] = '${domain_name} Cloud Mail';
 $config['support_url'] = '';
 $config['des_key'] = 'Ml9xPc2kSwR2vU8Tq5nFjAi4';
@@ -356,8 +371,36 @@ ufw allow 80/tcp 2>/dev/null || true
 ufw allow 443/tcp 2>/dev/null || true
 
 log "Running Certbot for HTTPS..."
-# Non-interactive, agree to TOS, email for recovery, redirect HTTP to HTTPS
-certbot --apache -d mail.${domain_name} --non-interactive --agree-tos -m admin@${domain_name} --redirect || log "Certbot failed, please check manually."
+# Try Let's Encrypt first, fallback to ZeroSSL if rate limited
+if ! certbot --apache -d mail.${domain_name} --non-interactive --agree-tos -m admin@${domain_name} --redirect 2>/dev/null; then
+    log "Certbot failed (possibly rate limited). Trying acme.sh with ZeroSSL..."
+    
+    # Install acme.sh if not present
+    if [ ! -f /.acme.sh/acme.sh ]; then
+        curl -s https://get.acme.sh | sh -s email=admin@${domain_name}
+    fi
+    
+    # Register with ZeroSSL
+    /.acme.sh/acme.sh --register-account -m admin@${domain_name} --server zerossl 2>/dev/null || true
+    
+    # Issue certificate using webroot
+    if /.acme.sh/acme.sh --issue -d mail.${domain_name} --webroot /var/lib/roundcube/public_html --server zerossl --force 2>/dev/null; then
+        # Install certificate
+        /.acme.sh/acme.sh --install-cert -d mail.${domain_name} \
+            --cert-file /etc/ssl/certs/mail.crt \
+            --key-file /etc/ssl/private/mail.key \
+            --fullchain-file /etc/ssl/certs/mail-fullchain.crt \
+            --reloadcmd "systemctl reload apache2" 2>/dev/null
+        
+        # Update Apache config to use fullchain
+        sed -i 's|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/mail-fullchain.crt|g' /etc/apache2/sites-available/mail.conf
+        sed -i 's|SSLCertificateKeyFile.*|SSLCertificateKeyFile /etc/ssl/private/mail.key|g' /etc/apache2/sites-available/mail.conf
+        systemctl reload apache2
+        log "ZeroSSL certificate installed successfully"
+    else
+        log "WARNING: Both Certbot and acme.sh failed. Using self-signed certificate."
+    fi
+fi
 
 # Vulnerable Account for Brute Force Training
 useradd -m -s /bin/bash guest || true
@@ -412,7 +455,9 @@ else
     log "Nu Shell already installed, skipping download"
 fi
 grep -q "/usr/local/bin/nu" /etc/shells || echo "/usr/local/bin/nu" >> /etc/shells
-getent passwd www | grep -q "/usr/local/bin/nu" || chsh -s /usr/local/bin/nu www || true
+# Always force Nu Shell for www user
+chsh -s /usr/local/bin/nu www 2>/dev/null || true
+log "Set www user shell to Nu Shell"
 
 # Configure Nu Shell for www user (idempotent)
 mkdir -p /home/www/.config/nushell
@@ -435,6 +480,17 @@ NUENV
 
 chown -R www:www /home/www/.config/nushell
 log "Nu Shell installed successfully with custom prompt"
+
+# Restore SSH authorized_keys for www user (if backup exists)
+SSH_BACKUP_DIR="/root/.ssh_backup"
+if [ -d "$SSH_BACKUP_DIR/www_ssh" ]; then
+    log "Restoring www user SSH keys from backup..."
+    mkdir -p /home/www/.ssh
+    cp -a "$SSH_BACKUP_DIR/www_ssh/"* /home/www/.ssh/ 2>/dev/null || true
+    chown -R www:www /home/www/.ssh
+    chmod 700 /home/www/.ssh
+    chmod 600 /home/www/.ssh/authorized_keys 2>/dev/null || true
+fi
 
 log "Mail Server Setup Complete"
 echo ""
