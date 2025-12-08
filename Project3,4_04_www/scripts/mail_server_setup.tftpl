@@ -251,7 +251,7 @@ cat > /etc/roundcube/config.inc.php << 'EOF'
 $config = [];
 $config['db_dsnw'] = 'sqlite:////var/lib/roundcube/db/sqlite.db';
 $config['imap_host'] = 'localhost';
-$config['smtp_host'] = 'localhost';
+$config['smtp_host'] = 'localhost:25';
 $config['smtp_user'] = '%u';
 $config['smtp_pass'] = '%p';
 $config['product_name'] = '${domain_name} Cloud Mail';
