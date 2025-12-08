@@ -320,6 +320,12 @@ chmod g+r /etc/shadow 2>/dev/null || true
 usermod -aG shadow dovecot 2>/dev/null || true
 
 log "Restarting services"
+log "Generating self-signed certificate for initial Apache start..."
+mkdir -p /etc/ssl/private /etc/ssl/certs
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/mail.key -out /etc/ssl/certs/mail.crt -subj "/C=KR/ST=Seoul/L=Seoul/O=Cloud/CN=mail.${domain_name}" 2>/dev/null || true
+chmod 600 /etc/ssl/private/mail.key
+chmod 644 /etc/ssl/certs/mail.crt
+
 systemctl restart postfix
 systemctl restart dovecot
 systemctl restart apache2
