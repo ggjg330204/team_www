@@ -38,3 +38,19 @@ variable "admin_phone" {
   description = "Admin phone number"
   default     = "+821012345678"
 }
+
+variable "azure_ad_tenant_domain" {
+  type        = string
+  description = "Azure AD 테넌트 도메인 (예: mscsschool.onmicrosoft.com)"
+  sensitive   = true
+}
+
+variable "rbac_users" {
+  type = map(object({
+    account_name = string
+    role         = string
+    azure_role   = string
+  }))
+  description = "RBAC 사용자 목록 (PM, 아키텍처검증, 내부보안 등)"
+  sensitive   = true
+}

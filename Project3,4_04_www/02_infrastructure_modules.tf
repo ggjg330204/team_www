@@ -154,10 +154,13 @@ module "container_registry" {
 }
 
 module "identity" {
-  source = "./modules/Identity"
-  rgid   = azurerm_resource_group.rg.id
-  rgname = azurerm_resource_group.rg.name
-  loca   = "Korea Central"
+  source                     = "./modules/Identity"
+  rgid                       = azurerm_resource_group.rg.id
+  rgname                     = azurerm_resource_group.rg.name
+  loca                       = "Korea Central"
+  azure_ad_tenant_domain     = var.azure_ad_tenant_domain
+  rbac_users                 = var.rbac_users
+  log_analytics_workspace_id = module.security.log_analytics_workspace_id
 }
 
 module "dns" {
