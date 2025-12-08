@@ -66,7 +66,7 @@ resource "azurerm_dns_a_record" "mail" {
 }
 
 resource "azurerm_dns_txt_record" "spf" {
-  name                = "spf"
+  name                = "@"
   zone_name           = azurerm_dns_zone.public.name
   resource_group_name = var.rgname
   ttl                 = 300
@@ -75,3 +75,12 @@ resource "azurerm_dns_txt_record" "spf" {
   }
 }
 
+resource "azurerm_dns_txt_record" "dmarc" {
+  name                = "_dmarc"
+  zone_name           = azurerm_dns_zone.public.name
+  resource_group_name = var.rgname
+  ttl                 = 300
+  record {
+    value = "v=DMARC1; p=none; sp=none; rua=mailto:admin@${var.domain_name}"
+  }
+}

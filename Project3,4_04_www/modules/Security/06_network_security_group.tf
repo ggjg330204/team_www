@@ -153,7 +153,7 @@ resource "azurerm_network_security_rule" "hub_bas_get_session_outbound" {
 }
 resource "azurerm_network_security_rule" "web_http_https" {
   name                        = "allow-http-https"
-  priority                    = 100
+  priority                    = 101
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
