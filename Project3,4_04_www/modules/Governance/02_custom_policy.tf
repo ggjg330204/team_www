@@ -12,12 +12,12 @@ resource "azurerm_policy_definition" "secure_transfer" {
   mode         = "Indexed"
   display_name = "Secure Transfer Required (${random_string.policy_suffix.result})"
   description  = "Force Secure Transfer Required to be set to true on Storage Accounts."
-  metadata = <<METADATA
+  metadata     = <<METADATA
     {
       "category": "Storage"
     }
 METADATA
-  policy_rule = <<POLICY_RULE
+  policy_rule  = <<POLICY_RULE
     {
       "if": {
         "allOf": [
@@ -54,12 +54,12 @@ resource "azurerm_policy_definition" "allowed_locations" {
   mode         = "Indexed"
   display_name = "Allowed Locations (${random_string.policy_suffix.result})"
   description  = "This policy enables you to restrict the locations your organization can specify when deploying resources."
-  metadata = <<METADATA
+  metadata     = <<METADATA
     {
       "category": "General"
     }
 METADATA
-  policy_rule = <<POLICY_RULE
+  policy_rule  = <<POLICY_RULE
     {
       "if": {
         "not": {

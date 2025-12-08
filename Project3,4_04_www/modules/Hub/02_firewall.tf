@@ -1,4 +1,4 @@
-﻿resource "azurerm_public_ip" "fw_pip" {
+resource "azurerm_public_ip" "fw_pip" {
   name                = "hub-fw-pip"
   location            = var.loca
   resource_group_name = var.rgname
@@ -12,7 +12,7 @@
   }
   lifecycle {
     create_before_destroy = false
-    ignore_changes = [zones, tags]
+    ignore_changes        = [zones, tags]
   }
 }
 resource "azurerm_firewall" "hub_fw" {

@@ -1,4 +1,4 @@
-﻿resource "azurerm_data_factory" "www_adf" {
+resource "azurerm_data_factory" "www_adf" {
   name                            = "www-adf-${random_string.adf_suffix.result}"
   location                        = var.loca
   resource_group_name             = var.rgname
@@ -17,15 +17,15 @@ resource "random_string" "adf_suffix" {
   upper   = false
 }
 resource "azurerm_data_factory_linked_custom_service" "mysql_source" {
-  name            = "MySQLSource"
-  data_factory_id = azurerm_data_factory.www_adf.id
-  type            = "AzureMySql"
+  name                 = "MySQLSource"
+  data_factory_id      = azurerm_data_factory.www_adf.id
+  type                 = "AzureMySql"
   type_properties_json = <<JSON
 {
   "connectionString": "Server=${azurerm_mysql_flexible_server.www_mysql.fqdn};Port=3306;Database=${var.db_name};Uid=${var.db_user};Pwd=${var.db_password};SslMode=Required;"
 }
 JSON
-  depends_on = [azurerm_mysql_flexible_server.www_mysql]
+  depends_on           = [azurerm_mysql_flexible_server.www_mysql]
 }
 resource "azurerm_data_factory_linked_service_azure_blob_storage" "blob_dest" {
   name              = "BlobStorageDestination"
@@ -35,7 +35,7 @@ resource "azurerm_data_factory_linked_service_azure_blob_storage" "blob_dest" {
 resource "azurerm_data_factory_pipeline" "mysql_backup" {
   name            = "MySQLDailyBackup"
   data_factory_id = azurerm_data_factory.www_adf.id
-  description = "Daily MySQL backup to Blob Storage"
+  description     = "Daily MySQL backup to Blob Storage"
   activities_json = jsonencode([
     {
       name = "CopyMySQLToBlob"
@@ -90,9 +90,9 @@ resource "azurerm_data_factory_trigger_schedule" "daily_backup_trigger" {
   name            = "DailyBackupTrigger"
   data_factory_id = azurerm_data_factory.www_adf.id
   pipeline_name   = azurerm_data_factory_pipeline.mysql_backup.name
-  frequency  = "Day"
-  interval   = 1
-  start_time = "2025-11-25T02:00:00Z"
+  frequency       = "Day"
+  interval        = 1
+  start_time      = "2025-11-25T02:00:00Z"
   schedule {
     hours   = [2]
     minutes = [0]

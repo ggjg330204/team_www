@@ -1,4 +1,4 @@
-﻿resource "azurerm_public_ip" "vpn_pip" {
+resource "azurerm_public_ip" "vpn_pip" {
   count               = var.enable_vpn ? 1 : 0
   name                = "hub-vpn-pip"
   location            = var.loca
@@ -17,11 +17,11 @@ resource "azurerm_virtual_network_gateway" "hub_vpn" {
   name                = "hub-vpn-gateway"
   location            = var.loca
   resource_group_name = var.rgname
-  type     = "Vpn"
-  vpn_type = "RouteBased"
-  sku      = "VpnGw2AZ"
-  active_active = true
-  enable_bgp    = false
+  type                = "Vpn"
+  vpn_type            = "RouteBased"
+  sku                 = "VpnGw2AZ"
+  active_active       = true
+  enable_bgp          = false
   ip_configuration {
     name                          = "vnetGatewayConfig"
     public_ip_address_id          = azurerm_public_ip.vpn_pip[0].id

@@ -1,4 +1,4 @@
-﻿resource "random_string" "replica_suffix" {
+resource "random_string" "replica_suffix" {
   length  = 2
   special = false
   upper   = false

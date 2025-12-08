@@ -1,4 +1,4 @@
-﻿output "function_app_id" {
+output "function_app_id" {
   value = azurerm_linux_function_app.image_processor.id
 }
 output "function_app_name" {

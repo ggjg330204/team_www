@@ -1,11 +1,11 @@
-﻿resource "azurerm_public_ip" "nat_pip" {
+resource "azurerm_public_ip" "nat_pip" {
   count               = var.enable_nat ? 1 : 0
   name                = "www-nat-pip"
   location            = var.loca
   resource_group_name = var.rgname
   allocation_method   = "Static"
   sku                 = "Standard"
-  zones = ["1"]
+  zones               = ["1"]
   tags = {
     Environment = "Production"
     Purpose     = "NAT-Gateway"
@@ -13,7 +13,7 @@
   }
   lifecycle {
     create_before_destroy = false
-    ignore_changes = [zones, tags]
+    ignore_changes        = [zones, tags]
   }
 }
 resource "azurerm_nat_gateway" "nat_gw" {
@@ -23,7 +23,7 @@ resource "azurerm_nat_gateway" "nat_gw" {
   resource_group_name     = var.rgname
   sku_name                = "Standard"
   idle_timeout_in_minutes = 10
-  zones = ["1"]
+  zones                   = ["1"]
   tags = {
     Environment = "Production"
     Purpose     = "NAT-Gateway"

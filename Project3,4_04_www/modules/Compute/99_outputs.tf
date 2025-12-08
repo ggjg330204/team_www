@@ -1,4 +1,4 @@
-﻿output "vmss_id" {
+output "vmss_id" {
   value = azurerm_linux_virtual_machine_scale_set.vmss.id
 }
 output "was_vmss_id" {

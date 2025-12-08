@@ -1,4 +1,4 @@
-﻿resource "azurerm_security_center_subscription_pricing" "vm" {
+resource "azurerm_security_center_subscription_pricing" "vm" {
   tier          = "Standard"
   resource_type = "VirtualMachines"
 }

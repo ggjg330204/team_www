@@ -1,10 +1,10 @@
-﻿resource "azurerm_log_analytics_workspace" "law" {
+resource "azurerm_log_analytics_workspace" "law" {
   name                = "www-law"
   location            = var.loca
   resource_group_name = var.rgname
   sku                 = "PerGB2018"
-  retention_in_days = 90
-  daily_quota_gb = 10
+  retention_in_days   = 90
+  daily_quota_gb      = 10
   tags = {
     Environment = "Production"
     Purpose     = "Monitoring-Logs"
@@ -25,7 +25,7 @@ resource "azurerm_log_analytics_solution" "sentinel" {
 
 resource "azurerm_sentinel_log_analytics_workspace_onboarding" "sentinel_onboarding" {
   workspace_id = azurerm_log_analytics_workspace.law.id
-  
+
   depends_on = [azurerm_log_analytics_solution.sentinel]
 }
 resource "azurerm_log_analytics_solution" "security" {

@@ -1,11 +1,11 @@
-﻿resource "azurerm_public_ip" "lb_pip" {
+resource "azurerm_public_ip" "lb_pip" {
   name                = var.loca == "Korea Central" ? "www-lb-pip" : "www-lb-pip-south"
   location            = var.loca
   resource_group_name = var.rgname
   allocation_method   = "Static"
   sku                 = "Standard"
-  zones = ["1", "2", "3"]
-  domain_name_label = "www-lb-koreacentral"
+  zones               = ["1", "2", "3"]
+  domain_name_label   = "www-lb-koreacentral"
   tags = {
     Environment = "Production"
     Purpose     = "Load-Balancer"
@@ -13,7 +13,7 @@
   }
   lifecycle {
     create_before_destroy = false
-    ignore_changes = [zones, tags]
+    ignore_changes        = [zones, tags]
   }
 }
 resource "azurerm_lb" "vmss_lb" {

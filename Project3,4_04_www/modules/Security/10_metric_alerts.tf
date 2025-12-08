@@ -1,4 +1,4 @@
-﻿resource "azurerm_monitor_action_group" "main" {
+resource "azurerm_monitor_action_group" "main" {
   name                = "www-alerts"
   resource_group_name = var.rgname
   short_name          = "p0-alerts"

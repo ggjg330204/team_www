@@ -1,4 +1,4 @@
-﻿resource "azurerm_virtual_network" "hub_vnet" {
+resource "azurerm_virtual_network" "hub_vnet" {
   name                = "hub-vnet"
   location            = var.loca
   resource_group_name = var.rgname

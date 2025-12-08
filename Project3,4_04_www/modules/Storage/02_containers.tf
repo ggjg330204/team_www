@@ -1,4 +1,4 @@
-﻿resource "azurerm_storage_container" "www_media" {
+resource "azurerm_storage_container" "www_media" {
   name                  = "media"
   storage_account_id    = azurerm_storage_account.www_sa.id
   container_access_type = "private"

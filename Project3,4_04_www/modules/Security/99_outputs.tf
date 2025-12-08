@@ -1,4 +1,4 @@
-﻿output "nsg_ssh_id" {
+output "nsg_ssh_id" {
   value = azurerm_network_security_group.nsg_ssh.id
 }
 output "nsg_http_id" {

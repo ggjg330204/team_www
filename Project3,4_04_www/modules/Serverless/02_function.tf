@@ -1,4 +1,4 @@
-﻿resource "azurerm_service_plan" "function" {
+resource "azurerm_service_plan" "function" {
   name                = "www-function-plan"
   resource_group_name = var.rgname
   location            = var.loca

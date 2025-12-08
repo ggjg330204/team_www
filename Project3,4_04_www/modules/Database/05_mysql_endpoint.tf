@@ -1,4 +1,4 @@
-﻿resource "azurerm_private_endpoint" "mysql_pe" {
+resource "azurerm_private_endpoint" "mysql_pe" {
   name                          = "www-mysql-endpoint"
   location                      = var.loca
   resource_group_name           = var.rgname

@@ -1,4 +1,4 @@
-﻿variable "rgname" {
+variable "rgname" {
   description = "The name of the resource group"
   type        = string
 }
@@ -88,9 +88,9 @@ variable "was_lb_probe_id" {
   description = "The ID of the WAS Load Balancer Health Probe"
   type        = string
 }
-variable "db_ro_host" { 
+variable "db_ro_host" {
   description = "The Hostname of the Read Replica Database"
-  type = string 
+  type        = string
 }
 variable "app_insights_key" {
   description = "The Instrumentation Key for Application Insights"

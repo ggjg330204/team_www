@@ -1,4 +1,4 @@
-﻿resource "azurerm_sentinel_alert_rule_scheduled" "ssh_brute_force" {
+resource "azurerm_sentinel_alert_rule_scheduled" "ssh_brute_force" {
   name                       = "SSH Brute Force Detection"
   log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
   display_name               = "SSH Brute Force Attack"
@@ -19,7 +19,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects 3+ failed SSH login attempts within 5 minutes. Extracts attacker IP and target usernames."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -41,7 +41,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects network security alerts from Defender for Cloud including suspicious IP communication."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -66,7 +66,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects access to sensitive files: /etc/passwd, shadow, sudoers, SSH keys, bash history."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -87,7 +87,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects when Azure RBAC role assignments are created, modified or deleted."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -115,7 +115,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects and classifies web attacks blocked by WAF (SQLi, XSS, etc)."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -140,7 +140,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects logins during off-hours (02:00-05:00 KST). Extracts user and source IP."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -161,7 +161,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects when NSG security rules are created, modified or deleted."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -183,7 +183,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects 5+ failed SMTP authentication attempts in 5 minutes."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -204,7 +204,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects email spoofing via SPF validation failure."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -227,7 +227,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects failed sudo/su privilege escalation attempts."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -253,7 +253,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects execution of suspicious commands (reverse shells, downloaders)."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -276,7 +276,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects attempts to delete or tamper with log files."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -299,7 +299,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects more than 100 HTTP requests per minute from single IP (DDoS/Crawler)."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -324,7 +324,7 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects port scanning from iptables logs (10+ unique ports in 5 min). Requires iptables logging enabled."
   enabled                    = false
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
 
@@ -345,6 +345,6 @@ QUERY
   trigger_threshold          = 0
   description                = "Detects successful login by emergency break-glass accounts."
   enabled                    = true
-  
+
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }

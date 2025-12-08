@@ -1,4 +1,4 @@
-﻿resource "azurerm_cosmosdb_account" "cosmos" {
+resource "azurerm_cosmosdb_account" "cosmos" {
   name                                  = "www-cosmos-${random_string.cosmos_suffix.result}"
   location                              = var.loca
   resource_group_name                   = var.rgname

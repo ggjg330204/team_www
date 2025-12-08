@@ -36,7 +36,7 @@ resource "azurerm_monitor_data_collection_rule" "syslog_dcr" {
         "Alert",
         "Emergency"
       ]
-      name = "syslog-datasource"
+      name    = "syslog-datasource"
       streams = ["Microsoft-Syslog"]
     }
   }

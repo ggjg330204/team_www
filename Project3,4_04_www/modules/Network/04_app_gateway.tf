@@ -105,7 +105,7 @@ resource "azurerm_application_gateway" "appgw" {
     }
   }
   backend_address_pool {
-    name = "www-backend-pool"
+    name  = "www-backend-pool"
     fqdns = [azurerm_public_ip.lb_pip.fqdn]
   }
   backend_http_settings {

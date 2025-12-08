@@ -1,4 +1,4 @@
-﻿resource "azurerm_mysql_flexible_server_configuration" "www_audit" {
+resource "azurerm_mysql_flexible_server_configuration" "www_audit" {
   name                = "audit_log_enabled"
   resource_group_name = var.rgname
   server_name         = azurerm_mysql_flexible_server.www_mysql.name

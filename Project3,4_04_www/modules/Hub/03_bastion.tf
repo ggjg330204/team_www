@@ -1,4 +1,4 @@
-﻿resource "azurerm_public_ip" "bastion_pip" {
+resource "azurerm_public_ip" "bastion_pip" {
   name                = "hub-bastion-pip"
   location            = var.loca
   resource_group_name = var.rgname

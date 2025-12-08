@@ -1,4 +1,4 @@
-﻿output "apim_id" {
+output "apim_id" {
   value = azurerm_api_management.main.id
 }
 output "apim_gateway_url" {

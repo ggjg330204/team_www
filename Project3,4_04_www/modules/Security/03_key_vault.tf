@@ -1,4 +1,4 @@
-﻿data "http" "my_ip" {
+data "http" "my_ip" {
   url = "https://ifconfig.me/ip"
 }
 
@@ -16,10 +16,10 @@ resource "azurerm_key_vault" "kv" {
   rbac_authorization_enabled  = true
 
   network_acls {
-    bypass         = "AzureServices"
-    default_action = "Deny"
+    bypass                     = "AzureServices"
+    default_action             = "Deny"
     virtual_network_subnet_ids = var.allowed_subnet_ids
-    ip_rules = distinct(concat(var.admin_ip_rules, [data.http.my_ip.response_body, "211.227.107.208", "61.108.60.26"]))
+    ip_rules                   = distinct(concat(var.admin_ip_rules, [data.http.my_ip.response_body, "211.227.107.208", "61.108.60.26"]))
   }
 
   tags = {
@@ -33,7 +33,7 @@ resource "azurerm_key_vault_secret" "db_password" {
   name         = "db-password"
   value        = var.db_password
   key_vault_id = azurerm_key_vault.kv.id
-  
+
   depends_on = [azurerm_role_assignment.kv_admin_sp]
 }
 
@@ -55,7 +55,7 @@ resource "azurerm_monitor_diagnostic_setting" "kv_diag" {
   enabled_metric {
     category = "AllMetrics"
   }
-  
+
   lifecycle {
     ignore_changes = all
   }

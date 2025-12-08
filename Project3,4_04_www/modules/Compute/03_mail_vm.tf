@@ -1,10 +1,10 @@
 locals {
   mail_setup_script = templatefile("${path.module}/../../scripts/mail_server_setup.tftpl", {
-    domain_name = var.domain_name
-    db_host     = var.db_host
-    db_name     = "mail_db"
-    db_user     = "mailadmin"
-    db_password = var.db_password
+    domain_name    = var.domain_name
+    db_host        = var.db_host
+    db_name        = "mail_db"
+    db_user        = "mailadmin"
+    db_password    = var.db_password
     key_vault_name = var.key_vault_name
   })
   mail_cloud_init = <<-EOF
@@ -88,11 +88,11 @@ resource "azurerm_linux_virtual_machine" "mail_vm" {
 }
 
 resource "azurerm_virtual_machine_extension" "mail_ama" {
-  name                 = "AzureMonitorLinuxAgent"
-  virtual_machine_id   = azurerm_linux_virtual_machine.mail_vm.id
-  publisher            = "Microsoft.Azure.Monitor"
-  type                 = "AzureMonitorLinuxAgent"
-  type_handler_version = "1.0"
+  name                       = "AzureMonitorLinuxAgent"
+  virtual_machine_id         = azurerm_linux_virtual_machine.mail_vm.id
+  publisher                  = "Microsoft.Azure.Monitor"
+  type                       = "AzureMonitorLinuxAgent"
+  type_handler_version       = "1.0"
   auto_upgrade_minor_version = true
 }
 
@@ -106,7 +106,7 @@ resource "azurerm_network_security_group" "mail_nsg" {
   name                = "mail-nsg"
   location            = var.loca
   resource_group_name = var.rgname
-  tags                = {
+  tags = {
     Service = "Mail Server"
   }
 

@@ -1,4 +1,4 @@
-﻿resource "azurerm_servicebus_namespace" "main" {
+resource "azurerm_servicebus_namespace" "main" {
   name                = "www-servicebus"
   location            = var.loca
   resource_group_name = var.rgname

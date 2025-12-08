@@ -1,4 +1,4 @@
-﻿output "acr_id" {
+output "acr_id" {
   value = azurerm_container_registry.main.id
 }
 output "acr_name" {

@@ -1,43 +1,29 @@
-﻿
-resource "azurerm_role_assignment" "pm_role" {
+resource "azurerm_role_assignment" "pm_owner" {
   scope                = var.rgid
   role_definition_name = "Owner"
-  principal_id         = data.azuread_user.pm_user.object_id
+  principal_id         = data.azuread_user.pm.object_id
 }
 
-resource "azurerm_role_assignment" "pm_reader_role" {
+resource "azurerm_role_assignment" "arch_reader" {
   scope                = var.rgid
   role_definition_name = "Reader"
-  principal_id         = data.azuread_user.pm_user.object_id
+  principal_id         = data.azuread_user.arch_reviewer.object_id
 }
 
-resource "azurerm_role_assignment" "network_role" {
-  scope                = var.rgid
-  role_definition_name = "Network Contributor"
-  principal_id         = data.azuread_user.network_admin.object_id
+resource "azurerm_role_assignment" "sec_external_sentinel" {
+  scope                = var.log_analytics_workspace_id
+  role_definition_name = "Microsoft Sentinel Contributor"
+  principal_id         = data.azuread_user.sec_external.object_id
 }
 
-resource "azurerm_role_assignment" "compute_role" {
-  scope                = var.rgid
-  role_definition_name = "Virtual Machine Contributor"
-  principal_id         = data.azuread_user.compute_admin.object_id
-}
-
-resource "azurerm_role_assignment" "db_role" {
-  scope                = var.rgid
-  role_definition_name = "Contributor"
-  principal_id         = data.azuread_user.db_admin.object_id
-}
-
-
-resource "azurerm_role_assignment" "security_role" {
+resource "azurerm_role_assignment" "sec_internal1_security_admin" {
   scope                = var.rgid
   role_definition_name = "Security Admin"
-  principal_id         = data.azuread_user.security_admin.object_id
+  principal_id         = data.azuread_user.sec_internal1.object_id
 }
 
-resource "azurerm_role_assignment" "operator_role" {
-  scope                = var.rgid
-  role_definition_id   = azurerm_role_definition.operator_role.role_definition_resource_id
-  principal_id         = data.azuread_user.student415.object_id
+resource "azurerm_role_assignment" "sec_internal2_log_analytics" {
+  scope                = var.log_analytics_workspace_id
+  role_definition_name = "Log Analytics Reader"
+  principal_id         = data.azuread_user.sec_internal2.object_id
 }

@@ -1,4 +1,4 @@
-﻿
+
 resource "azurerm_key_vault_certificate" "ssl_cert" {
   name         = "www-ssl-cert"
   key_vault_id = azurerm_key_vault.kv.id
@@ -22,7 +22,7 @@ resource "azurerm_key_vault_certificate" "ssl_cert" {
     x509_certificate_properties {
       subject            = "CN=www.${var.domain_name}"
       validity_in_months = 12
-      
+
       subject_alternative_names {
         dns_names = ["www.${var.domain_name}", "mail.${var.domain_name}", var.domain_name]
       }

@@ -1,4 +1,4 @@
-﻿output "mysql_server_fqdn" {
+output "mysql_server_fqdn" {
   description = "The FQDN of the MySQL Flexible Server"
   value       = azurerm_mysql_flexible_server.www_mysql.fqdn
 }

@@ -1,4 +1,4 @@
-﻿resource "azurerm_network_security_group" "nsg_ssh" {
+resource "azurerm_network_security_group" "nsg_ssh" {
   name                = "www-nsg-ssh"
   location            = var.loca
   resource_group_name = var.rgname

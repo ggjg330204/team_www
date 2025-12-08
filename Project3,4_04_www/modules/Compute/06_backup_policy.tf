@@ -1,4 +1,4 @@
-﻿resource "azurerm_recovery_services_vault" "vault" {
+resource "azurerm_recovery_services_vault" "vault" {
   name                = "www-recovery-vault"
   location            = var.loca
   resource_group_name = var.rgname
@@ -12,7 +12,7 @@ resource "azurerm_backup_policy_vm" "daily" {
   name                = "daily-backup-policy"
   resource_group_name = var.rgname
   recovery_vault_name = azurerm_recovery_services_vault.vault.name
-  timezone = "Korea Standard Time"
+  timezone            = "Korea Standard Time"
   backup {
     frequency = "Daily"
     time      = "02:00"

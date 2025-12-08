@@ -1,4 +1,4 @@
-﻿resource "azurerm_network_ddos_protection_plan" "main" {
+resource "azurerm_network_ddos_protection_plan" "main" {
   count               = var.enable_ddos ? 1 : 0
   name                = "www-ddos-plan"
   location            = var.loca

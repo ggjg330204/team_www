@@ -1,4 +1,4 @@
-﻿resource "azurerm_storage_management_policy" "www_policy" {
+resource "azurerm_storage_management_policy" "www_policy" {
   storage_account_id = azurerm_storage_account.www_sa.id
   rule {
     name    = "media-lifecycle"

@@ -1,4 +1,4 @@
-﻿resource "azurerm_monitor_autoscale_setting" "vmss_autoscale" {
+resource "azurerm_monitor_autoscale_setting" "vmss_autoscale" {
   name                = "vmss-autoscale"
   resource_group_name = var.rgname
   location            = var.loca

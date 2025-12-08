@@ -1,4 +1,4 @@
-﻿variable "rgname" {
+variable "rgname" {
   description = "The name of the resource group"
   type        = string
   default     = "Korea Central"

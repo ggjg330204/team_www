@@ -1,15 +1,15 @@
-﻿resource "random_string" "acr_suffix" {
+resource "random_string" "acr_suffix" {
   length  = 4
   special = false
   upper   = false
 }
 
 resource "azurerm_container_registry" "main" {
-  name                = "wwwacr${random_string.acr_suffix.result}"
-  resource_group_name = var.rgname
-  location            = var.loca
-  sku                 = "Premium"
-  admin_enabled       = false
+  name                    = "wwwacr${random_string.acr_suffix.result}"
+  resource_group_name     = var.rgname
+  location                = var.loca
+  sku                     = "Premium"
+  admin_enabled           = false
   zone_redundancy_enabled = true
   network_rule_set {
     default_action = "Deny"

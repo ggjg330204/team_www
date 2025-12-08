@@ -1,4 +1,4 @@
-﻿resource "azurerm_linux_virtual_machine_scale_set" "was_vmss" {
+resource "azurerm_linux_virtual_machine_scale_set" "was_vmss" {
   name                = "was-vmss"
   resource_group_name = var.rgname
   location            = var.loca
@@ -6,10 +6,10 @@
   instances           = 1
   admin_username      = var.admin_username
 
-  upgrade_mode        = "Rolling"
-  health_probe_id     = var.was_lb_probe_id
-  zones               = ["1", "2"]
-  overprovision       = true
+  upgrade_mode    = "Rolling"
+  health_probe_id = var.was_lb_probe_id
+  zones           = ["1", "2"]
+  overprovision   = true
   rolling_upgrade_policy {
     max_batch_instance_percent              = 20
     max_unhealthy_instance_percent          = 100

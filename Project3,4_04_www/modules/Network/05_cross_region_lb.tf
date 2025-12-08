@@ -1,4 +1,4 @@
-﻿resource "azurerm_public_ip" "cross_region_lb_pip" {
+resource "azurerm_public_ip" "cross_region_lb_pip" {
   count               = var.enable_cross_lb ? 1 : 0
   name                = "cross-region-lb-pip"
   resource_group_name = var.rgname

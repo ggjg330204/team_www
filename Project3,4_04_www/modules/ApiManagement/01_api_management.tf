@@ -1,4 +1,4 @@
-﻿resource "azurerm_api_management" "main" {
+resource "azurerm_api_management" "main" {
   name                = "www-apim"
   location            = var.loca
   resource_group_name = var.rgname

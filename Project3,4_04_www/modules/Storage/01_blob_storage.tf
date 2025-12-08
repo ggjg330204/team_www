@@ -1,4 +1,4 @@
-﻿resource "random_string" "sa_suffix" {
+resource "random_string" "sa_suffix" {
   length  = 4
   special = false
   upper   = false

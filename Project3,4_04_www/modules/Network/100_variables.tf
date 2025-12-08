@@ -1,4 +1,4 @@
-﻿variable "rgname" {
+variable "rgname" {
   type = string
 }
 variable "loca" {

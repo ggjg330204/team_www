@@ -1,4 +1,4 @@
-﻿resource "azurerm_container_group" "aci" {
+resource "azurerm_container_group" "aci" {
   name                = "www-aci"
   location            = var.loca
   resource_group_name = var.rgname

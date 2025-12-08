@@ -1,4 +1,4 @@
-﻿resource "random_string" "mysql_suffix" {
+resource "random_string" "mysql_suffix" {
   length  = 4
   special = false
   upper   = false

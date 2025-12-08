@@ -1,17 +1,17 @@
-﻿resource "random_string" "redis_suffix" {
+resource "random_string" "redis_suffix" {
   length  = 4
   special = false
   upper   = false
 }
 resource "azurerm_redis_cache" "www_redis" {
-  name                          = "${var.redis_name}-${random_string.redis_suffix.result}"
-  location                      = var.loca
-  resource_group_name           = var.rgname
-  capacity                      = 1
-  family                        = "P"
-  sku_name                      = "Premium"
-  non_ssl_port_enabled          = false
-  minimum_tls_version           = "1.2"
+  name                 = "${var.redis_name}-${random_string.redis_suffix.result}"
+  location             = var.loca
+  resource_group_name  = var.rgname
+  capacity             = 1
+  family               = "P"
+  sku_name             = "Premium"
+  non_ssl_port_enabled = false
+  minimum_tls_version  = "1.2"
   redis_configuration {
     maxmemory_policy              = "allkeys-lru"
     maxmemory_reserved            = 10

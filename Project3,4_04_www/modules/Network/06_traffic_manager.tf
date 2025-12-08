@@ -1,4 +1,4 @@
-﻿resource "azurerm_traffic_manager_profile" "www_tm" {
+resource "azurerm_traffic_manager_profile" "www_tm" {
   name                   = "www-tm-${random_string.tm_suffix.result}"
   resource_group_name    = var.rgname
   traffic_routing_method = "Priority"

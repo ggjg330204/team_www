@@ -1,4 +1,4 @@
-﻿resource "azurerm_private_endpoint" "redis_pe" {
+resource "azurerm_private_endpoint" "redis_pe" {
   name                          = "www-redis-endpoint"
   location                      = var.loca
   resource_group_name           = var.rgname

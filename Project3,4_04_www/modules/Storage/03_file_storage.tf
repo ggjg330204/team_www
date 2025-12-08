@@ -1,4 +1,4 @@
-﻿resource "azurerm_storage_account" "premium_sa" {
+resource "azurerm_storage_account" "premium_sa" {
   name                              = "wwwpremiumsa${random_string.premium_sa_suffix.result}"
   resource_group_name               = var.rgname
   location                          = var.loca
