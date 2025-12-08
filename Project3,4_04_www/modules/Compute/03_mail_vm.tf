@@ -46,20 +46,20 @@ resource "azurerm_linux_virtual_machine" "mail_vm" {
   resource_group_name             = var.rgname
   location                        = var.loca
   size                            = "Standard_B2s"
-  admin_username                  = "azureadmin"
+  admin_username                  = "www"
   disable_password_authentication = true
   zone                            = "1"
   network_interface_ids           = [azurerm_network_interface.mail_nic.id]
 
   admin_ssh_key {
-    username   = "azureadmin"
+    username   = "www"
     public_key = file("${path.module}/../../ssh/id_rsa_school.pub")
   }
 
   dynamic "admin_ssh_key" {
     for_each = fileexists("${path.module}/../../ssh/id_rsa_home.pub") ? [1] : []
     content {
-      username   = "azureadmin"
+      username   = "www"
       public_key = file("${path.module}/../../ssh/id_rsa_home.pub")
     }
   }
