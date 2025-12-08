@@ -249,7 +249,7 @@ Spoke VNet은 3-Tier 아키텍처(Web-App-Data)를 수용하기 위해 세분화
 *   **보안 구성:**
     *   **HTTPS (Let's Encrypt):** Certbot을 사용하여 무료 공인 인증서를 발급받고, 90일마다 자동 갱신되도록 설정하여 '안전하지 않음' 경고를 제거했습니다.
     *   **스팸 방지:** SPF (Sender Policy Framework) 레코드를 DNS에 등록하여 발신자 위조를 방지합니다.
-    *   **접근 제어:** NSG를 통해 SMTP(25), IMAP(143), POP3(110), HTTPS(443) 포트만 제한적으로 허용했습니다. SSH(22)는 Bastion에서만 접근 가능합니다.
+    *   **접근 제어:** NSG를 통해 SMTP(25), IMAP(143), POP3(110), HTTPS(443) 포트만 제한적으로 허용했습니다. SSH(22)는 관리자 IP 및 Bastion에서만 접근 가능합니다.
 *   **소프트웨어 스택:** Postfix (SMTP), Dovecot (IMAP/POP3), Roundcube (Webmail), MySQL (사용자 계정 관리).
 
 ### 3.4 데이터 플랫폼
@@ -629,11 +629,11 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   location            = var.location
   sku                 = "Standard_B2s"
   instances           = 2
-  admin_username      = "azureuser"
+  admin_username      = "www"
   upgrade_mode        = "Rolling"
 
   admin_ssh_key {
-    username   = "azureuser"
+    username   = "www"
     public_key = file("~/.ssh/id_rsa.pub")
   }
 
