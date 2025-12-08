@@ -1,0 +1,1879 @@
+#!/bin/bash
+# WAS VMSS Initialization Script
+# Terraform Variables: ${db_host}, ${db_ro_host}, ${db_user}, ${db_password}, ${db_name}, ${redis_host}, ${redis_key}, ${app_insights_key}, ${mail_server_ip}
+
+set -e
+
+exec > >(tee -a "/var/log/was_init.log") 2>&1
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
+error_handler() {
+    log "ERROR: Command '$2' failed on line $1"
+    exit 1
+}
+
+trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
+
+log "Starting WAS Initialization"
+
+echo "${app_insights_key}" > /etc/lupang_app_insights_key
+chmod 600 /etc/lupang_app_insights_key
+
+setenforce 0 || true
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config || true
+
+systemctl enable firewalld || true
+systemctl start firewalld || true
+firewall-cmd --zone=public --add-service=http --permanent || true
+firewall-cmd --zone=public --add-service=ssh --permanent || true
+firewall-cmd --reload || true
+
+log "Installing packages..."
+
+install_with_retry() {
+    local cmd="$1"
+    local max_attempts=5
+    local attempt=1
+    while [ $attempt -le $max_attempts ]; do
+        log "Attempt $attempt: $cmd"
+        if eval "$cmd"; then
+            return 0
+        fi
+        log "Attempt $attempt failed, retrying in 10 seconds..."
+        sleep 10
+        attempt=$((attempt + 1))
+    done
+    log "WARNING: All attempts failed for: $cmd"
+    return 0
+}
+
+install_with_retry "dnf install -y epel-release"
+install_with_retry "dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
+dnf module reset -y php || true
+dnf module enable -y php:remi-8.1 || true
+
+install_with_retry "dnf install -y httpd php php-mysqlnd php-gd php-json php-mbstring php-pecl-redis php-imap mysql git php-pear sshpass"
+systemctl enable --now httpd
+
+log "Updating OpenSSH..."
+dnf update -y openssh-server openssh-clients || true
+systemctl restart sshd || true
+
+log "Configuring PHP usage of Redis..."
+sed -i 's/session.save_handler = files/session.save_handler = redis/g' /etc/php.ini
+cat <<EOF > /etc/php.d/50-redis.ini
+extension=redis.so
+session.save_path = "tcp://${redis_host}:${redis_port}?auth=${redis_key}"
+EOF
+sed -i 's/expose_php = On/expose_php = Off/g' /etc/php.ini
+
+mkdir -p /var/www/html/uploads
+chmod -R 755 /var/www/html
+chmod 777 /var/www/html/uploads
+touch /var/log/lupang_app.json
+chmod 666 /var/log/lupang_app.json
+
+cat <<EOF > /var/www/html/health.php
+<?php
+\$conn = new mysqli("${db_host}", "${db_user}", "${db_password}", "${db_name}");
+
+if (\$conn->connect_error) { 
+    http_response_code(500); 
+    echo "DB Down: " . \$conn->connect_error; 
+} else { 
+    http_response_code(200); 
+    echo "WAS-OK"; 
+}
+?>
+EOF
+
+cat <<EOF > /var/www/html/db_config.php
+<?php
+\$db_host_wr = "${db_host}";
+\$db_host_ro = "${db_ro_host}";
+\$db_user    = "${db_user}";
+\$db_pass    = "${db_password}";
+\$db_name    = "${db_name}";
+
+function getDbConnection(\$type = 'read') {
+    global \$db_host_wr, \$db_host_ro, \$db_user, \$db_pass, \$db_name;
+    \$host = (\$type === 'write') ? \$db_host_wr : \$db_host_ro;
+    
+    if (empty("\$db_host_ro")) \$host = \$db_host_wr;
+
+    \$conn = new mysqli(\$host, \$db_user, \$db_pass, \$db_name);
+    if (\$conn->connect_error) {
+        writeLog('DB_ERROR', 'CRITICAL', "Connection Failed", ['error' => \$conn->connect_error]);
+        die("Service Error");
+    }
+    return \$conn;
+}
+
+function writeLog(\$action, \$level, \$msg, \$extra = []) {
+    \$headers = getallheaders();
+    \$trace_id = \$headers['X-Request-Id'] ?? 'no-trace-id';
+    \$logEntry = [
+        'timestamp' => date('c'),
+        'trace_id'  => \$trace_id,
+        'client_ip' => \$_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        'uri'       => \$_SERVER['REQUEST_URI'] ?? 'unknown',
+        'action'    => \$action,
+        'level'     => \$level,
+        'message'   => \$msg,
+        'details'   => \$extra
+    ];
+    file_put_contents('/var/log/lupang_app.json', json_encode(\$logEntry) . "\n", FILE_APPEND);
+}
+?>
+EOF
+
+log "Configuring Mail..."
+cat <<EOF > /var/www/html/mail_config.php
+<?php
+define('MAIL_HOST', 'mail.${domain_name}');
+define('MAIL_PORT', 25);
+define('MAIL_FROM', 'noreply@${domain_name}');
+define('MAIL_FROM_NAME', 'LUPANG 고객센터');
+
+function sendMail(\$to, \$subject, \$body, \$isHtml = true) {
+    \$headers = [];
+    \$headers[] = 'MIME-Version: 1.0';
+    \$headers[] = \$isHtml ? 'Content-type: text/html; charset=UTF-8' : 'Content-type: text/plain; charset=UTF-8';
+    \$headers[] = 'From: ' . MAIL_FROM_NAME . ' <' . MAIL_FROM . '>';
+    \$headers[] = 'Reply-To: support@${domain_name}';
+    \$headers[] = 'X-Mailer: LUPANG-WAS/1.0';
+    
+    \$result = mail(\$to, \$subject, \$body, implode("\\r\\n", \$headers));
+    
+    if (function_exists('writeLog')) {
+        if (\$result) {
+            writeLog('MAIL_SENT', 'INFO', 'Email sent successfully', ['to' => \$to, 'subject' => \$subject]);
+        } else {
+            writeLog('MAIL_FAILED', 'ERROR', 'Email send failed', ['to' => \$to, 'subject' => \$subject]);
+        }
+    }
+    
+    return \$result;
+}
+?>
+EOF
+
+log "Waiting for DB connection..."
+wait_for_db() {
+    local host="$1"
+    local max=30
+    local i=0
+    while ! mysql -h "$host" -u "${db_user}" -p"${db_password}" -e "SELECT 1" &>/dev/null; do
+        if [ $i -ge $max ]; then
+            log "DB connection timed out."
+            return 1
+        fi
+        log "Waiting for DB ($host)..."
+        sleep 2
+        ((i++))
+    done
+    return 0
+}
+
+wait_for_db "${db_host}"
+
+log "Seeding Database..."
+cat <<EOSQL > /tmp/init_db.sql
+USE ${db_name};
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    real_name VARCHAR(100),
+    phone VARCHAR(20),
+    address TEXT,
+    role ENUM('user', 'admin') DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS products (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    category VARCHAR(50) DEFAULT 'General',
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    price INT NOT NULL,
+    stock INT DEFAULT 100,
+    image_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS cart (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    UNIQUE KEY user_product (user_id, product_id)
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    total_amount INT NOT NULL,
+    status VARCHAR(50) DEFAULT 'paid',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    price INT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE TABLE IF NOT EXISTS board (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS reviews (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    rating INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS wishlist (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    UNIQUE KEY user_product (user_id, product_id)
+);
+
+-- Reset Products (FK bypass for idempotency)
+SET FOREIGN_KEY_CHECKS=0;
+TRUNCATE TABLE products;
+ALTER TABLE products AUTO_INCREMENT = 1;
+
+INSERT INTO products (category, name, description, price, stock, image_url) VALUES
+('Electronics', '프리미엄 크리스마스 트리 세트', '2.1m 대형 트리와 오너먼트 200개 포함. 최고급 PVC 재질.', 189000, 50, 'https://images.unsplash.com/photo-1576919228236-a097c32a5cd4?w=400'),
+('Electronics', '4K 스마트 TV 65인치', 'LG OLED 패널, HDR10+, 스마트 기능.', 1590000, 30, 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400'),
+('Electronics', '무선 블루투스 이어폰 Pro', '노이즈 캔슬링(ANC), 24시간 배터리.', 159000, 200, 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400'),
+('Electronics', '게이밍 노트북 RTX 4070', 'i9-13900H, 32GB RAM, 1TB SSD.', 2390000, 15, 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=400'),
+('Electronics', '기계식 키보드 (청축)', 'RGB 백라이트, 체리 스위치, 알루미늄 바디.', 129000, 100, 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=400'),
+('Fashion', '캐시미어 롱 코트', '100% 캐시미어, 이탈리아 원단.', 450000, 20, 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=400'),
+('Fashion', '프리미엄 가죽 자켓', '천연 양가죽, 핸드메이드.', 320000, 30, 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400'),
+('Fashion', '클래식 워치', '오토매틱 무브먼트, 사파이어 글래스.', 560000, 15, 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=400'),
+('Fashion', '러닝화 Ultra Boost', '최고의 쿠셔닝, 경량화 디자인.', 149000, 80, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'),
+('Fashion', '디자이너 핸드백', '송아지 가죽, 시그니처 로고.', 890000, 10, 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400'),
+('Living', '6인용 캠핑 텐트', '내수압 3000mm, 이중 방충망.', 320000, 40, 'https://images.unsplash.com/photo-1478827536114-da961b7f86d2?w=400'),
+('Living', '무선 청소기 V15', '220AW 흡입력, 레이저 디텍트.', 890000, 50, 'https://images.unsplash.com/photo-1558317374-067fb5f30001?w=400'),
+('Living', '에스프레소 머신', '19Bar 펌프 압력, 스팀 기능.', 650000, 30, 'https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=400'),
+('Living', '원목 식탁 세트', '호두나무 원목, 4인용 의자 포함.', 1200000, 5, 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400'),
+('Food', '프리미엄 한우 세트 1++', '등심, 안심, 채끝 1kg.', 250000, 100, 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400'),
+('Food', '유기농 과일 바구니', '제철 과일 5종, 선물 포장.', 89000, 50, 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400'),
+('Food', '수제 초콜릿 세트', '벨기에산 초콜릿 24구.', 45000, 200, 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=400'),
+('Food', '와인 선물 세트', '프랑스 보르도 레드와인 2병.', 75000, 60, 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400'),
+('Books', '베스트셀러 소설 세트', '2025 상반기 베스트 5권.', 65000, 150, 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400'),
+('Books', 'IT 기술 서적 패키지', '클라우드, 보안, AI 입문서.', 120000, 30, 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400');
+
+SET FOREIGN_KEY_CHECKS=1;
+EOSQL
+
+mysql -h "${db_host}" -u "${db_user}" -p"${db_password}" "${db_name}" < /tmp/init_db.sql 2>&1 | tee -a "/var/log/was_init.log"
+rm -f /tmp/init_db.sql
+
+log "Seeding Users..."
+cat <<'EOPH' > /var/www/html/seed_users.php
+<?php
+include 'db_config.php';
+$conn = getDbConnection('write');
+
+$users = [
+    ['admin@${domain_name}', '${db_password}', '관리자', 'admin'],
+    ['support@${domain_name}', '${db_password}', '고객센터', 'admin'],
+    ['user1@${domain_name}', '${db_password}', 'User 1', 'user'],
+    ['user2@${domain_name}', '${db_password}', 'User 2', 'user'],
+    ['www@${domain_name}', '${db_password}', 'WWW Service', 'admin'],
+    ['guest@${domain_name}', '${db_password}', 'Guest User', 'user']
+];
+
+foreach ($users as $u) {
+    $chk = $conn->prepare("SELECT id FROM users WHERE username=?");
+    $chk->bind_param("s", $u[0]);
+    $chk->execute();
+    if (!$chk->get_result()->fetch_assoc()) {
+        $hash = password_hash($u[1], PASSWORD_BCRYPT);
+        $ins = $conn->prepare("INSERT INTO users (username, password, real_name, role) VALUES (?, ?, ?, ?)");
+        $ins->bind_param("ssss", $u[0], $hash, $u[2], $u[3]);
+        $ins->execute();
+        echo "Seeded: {$u[0]}\n";
+    }
+}
+?>
+EOPH
+php /var/www/html/seed_users.php >> "/var/log/was_init.log"
+rm -f /var/www/html/seed_users.php
+
+log "Deploying Application..."
+
+cat <<'EOF' > /var/www/html/header.php
+<?php
+if(session_status() === PHP_SESSION_NONE) session_start();
+include_once 'db_config.php';
+
+$currentUser = null;
+if (isset($_COOKIE['lupang_token'])) {
+    $decoded = base64_decode($_COOKIE['lupang_token']);
+    $json = json_decode($decoded, true);
+    if ($json && isset($json['username'])) {
+        $currentUser = $json;
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUPANG | Premium Shopping</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-sub: #a0a0a0;
+            --accent: #e60023;
+            --accent-hover: #ff2f4f;
+            --border-color: #333;
+            --success: #00c853;
+            --warning: #ffc107;
+        }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Noto Sans KR', sans-serif; }
+        .navbar-lupang { background-color: rgba(18, 18, 18, 0.98); border-bottom: 1px solid var(--border-color); backdrop-filter: blur(10px); }
+        .logo { font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; color: var(--accent); text-decoration: none; }
+        .logo:hover { color: var(--accent-hover); text-shadow: 0 0 20px rgba(230,0,35,0.5); }
+        .nav-link { color: var(--text-sub); transition: 0.3s; }
+        .nav-link:hover { color: white; }
+        .btn-lupang { background: linear-gradient(135deg, var(--accent), #ff4757); color: white; border: none; transition: all 0.3s; }
+        .btn-lupang:hover { background: linear-gradient(135deg, #ff2f4f, #ff6b81); color: white; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(230,0,35,0.4); }
+        
+        /* Enhanced Card Styles */
+        .product-card { transition: all 0.3s ease; border: 1px solid var(--border-color); overflow: hidden; }
+        .product-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); border-color: var(--accent); }
+        .product-card .card-img-top { transition: transform 0.5s ease; height: 200px; object-fit: cover; }
+        .product-card:hover .card-img-top { transform: scale(1.1); }
+        .product-card .card-img-wrapper { overflow: hidden; position: relative; }
+        .product-card .discount-badge { position: absolute; top: 10px; left: 10px; background: var(--accent); color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; z-index: 10; }
+        .product-card .wishlist-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; transition: all 0.3s; z-index: 10; }
+        .product-card .wishlist-btn:hover { background: var(--accent); transform: scale(1.1); }
+        .product-card .wishlist-btn.active { background: var(--accent); }
+        .product-card .rating { color: #ffc107; font-size: 0.85rem; }
+        
+        /* Search Form */
+        .search-form { max-width: 400px; }
+        .search-form .form-control { background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 25px 0 0 25px; }
+        .search-form .form-control:focus { background: #333; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(230,0,35,0.2); }
+        .search-form .form-control::placeholder { color: #888; }
+        .search-form .btn { border-radius: 0 25px 25px 0; }
+        
+        /* Category Pills */
+        .category-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .category-pill { padding: 8px 20px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 25px; color: var(--text-sub); text-decoration: none; transition: all 0.3s; }
+        .category-pill:hover, .category-pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+        
+        /* Carousel */
+        .hero-carousel .carousel-item { height: 400px; background-size: cover; background-position: center; }
+        .hero-carousel .carousel-caption { background: rgba(0,0,0,0.6); padding: 30px; border-radius: 15px; backdrop-filter: blur(5px); }
+        .hero-carousel .carousel-indicators button { width: 12px; height: 12px; border-radius: 50%; }
+        
+        /* Star Rating */
+        .star-rating { color: #ffc107; }
+        .star-rating .empty { color: #555; }
+        
+        table { color: var(--text-main); }
+        
+        /* Dropdown Menu */
+        .dropdown-menu-dark { background: #1e1e1e; border: 1px solid #333; }
+        .dropdown-menu-dark .dropdown-item { color: #ccc; }
+        .dropdown-menu-dark .dropdown-item:hover { background: var(--accent); color: white; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark navbar-lupang sticky-top">
+  <div class="container">
+    <a class="navbar-brand logo" href="/">LUPANG</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarText">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+            <i class="fas fa-th-large me-1"></i> 카테고리
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark">
+            <li><a class="dropdown-item" href="/?category=Electronics"><i class="fas fa-laptop me-2"></i>전자제품</a></li>
+            <li><a class="dropdown-item" href="/?category=Fashion"><i class="fas fa-tshirt me-2"></i>패션</a></li>
+            <li><a class="dropdown-item" href="/?category=Living"><i class="fas fa-couch me-2"></i>리빙</a></li>
+            <li><a class="dropdown-item" href="/?category=Food"><i class="fas fa-utensils me-2"></i>식품</a></li>
+            <li><a class="dropdown-item" href="/?category=Books"><i class="fas fa-book me-2"></i>도서</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#444;"></li>
+            <li><a class="dropdown-item" href="/"><i class="fas fa-border-all me-2"></i>전체보기</a></li>
+          </ul>
+        </li>
+      </ul>
+      
+      <form class="d-flex search-form me-3" action="search.php" method="GET">
+        <input class="form-control" type="search" name="q" placeholder="상품 검색..." aria-label="Search">
+        <button class="btn btn-lupang" type="submit"><i class="fas fa-search"></i></button>
+      </form>
+      
+      <div class="d-flex align-items-center gap-3">
+        <?php if($currentUser): ?>
+            <a href="wishlist.php" class="nav-link" title="위시리스트"><i class="fas fa-heart"></i></a>
+            <a href="cart.php" class="nav-link" title="장바구니"><i class="fas fa-shopping-cart"></i></a>
+            <div class="dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                <i class="fas fa-user-circle me-1"></i> <?php echo htmlspecialchars($currentUser['real_name'] ?? $currentUser['username']); ?>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+                <li><a class="dropdown-item" href="mypage.php"><i class="fas fa-user me-2"></i>마이페이지</a></li>
+                <li><a class="dropdown-item" href="wishlist.php"><i class="fas fa-heart me-2"></i>위시리스트</a></li>
+                <?php if(isset($currentUser['role']) && $currentUser['role'] === 'admin'): ?>
+                <li><hr class="dropdown-divider" style="border-color:#444;"></li>
+                <li><a class="dropdown-item text-danger" href="admin.php"><i class="fas fa-tools me-2"></i>관리자</a></li>
+                <?php endif; ?>
+                <li><hr class="dropdown-divider" style="border-color:#444;"></li>
+                <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>로그아웃</a></li>
+              </ul>
+            </div>
+        <?php else: ?>
+            <a href="login.php" class="nav-link">로그인</a>
+            <a href="register.php" class="btn btn-sm btn-lupang">회원가입</a>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4 mb-5" style="min-height: 800px;">
+EOF
+
+cat <<'EOF' > /var/www/html/footer.php
+</div>
+<footer class="py-5" style="background-color: #0a0a0a; border-top: 1px solid #222;">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <span class="logo fs-4">LUPANG</span>
+                <p class="text-secondary small mt-3">
+                    대한민국 No.1 프리미엄 쇼핑몰<br>
+                    빠른 배송, 최저가 보장
+                </p>
+            </div>
+            <div class="col-md-4 mb-4">
+                <h6 class="text-white mb-3">고객 서비스</h6>
+                <ul class="list-unstyled">
+                    <li><a href="#" class="text-secondary text-decoration-none small">자주 묻는 질문 (FAQ)</a></li>
+                    <li><a href="#" class="text-secondary text-decoration-none small">1:1 문의하기</a></li>
+                    <li><a href="#" class="text-secondary text-decoration-none small">배송 조회</a></li>
+                    <li><a href="#" class="text-secondary text-decoration-none small">교환/반품 안내</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-4">
+                <h6 class="text-white mb-3">회사 정보</h6>
+                <ul class="list-unstyled">
+                    <li><a href="#" class="text-secondary text-decoration-none small">회사 소개</a></li>
+                    <li><a href="#" class="text-secondary text-decoration-none small">이용약관</a></li>
+                    <li><a href="#" class="text-secondary text-decoration-none small">개인정보처리방침</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr style="border-color: #333;">
+        <div class="text-center">
+            <p class="text-secondary small mb-2">
+                (주)루팡 | 서울특별시 강남구 테헤란로 123 | 고객센터: 1588-0000
+            </p>
+            <p class="text-warning small mb-2">
+                <i class="fas fa-exclamation-triangle me-1"></i> 본 사이트는 모의해킹 실습용 가상 환경입니다.
+            </p>
+            <div class="text-secondary opacity-50 small">Copyright © 2025 LUPANG Corp. All Rights Reserved.</div>
+        </div>
+    </div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+EOF
+
+cat <<'EOF' > /var/www/html/index.php
+<?php include 'header.php'; 
+$conn = getDbConnection('read');
+
+// Category filter
+$category = $_GET['category'] ?? '';
+$categoryWhere = $category ? "WHERE category = '" . $conn->real_escape_string($category) . "'" : "";
+
+// Get products
+$result = $conn->query("SELECT * FROM products $categoryWhere ORDER BY id DESC");
+
+// Get average ratings for products
+$ratingsQuery = $conn->query("SELECT product_id, AVG(rating) as avg_rating, COUNT(*) as review_count FROM reviews GROUP BY product_id");
+$ratings = [];
+while($r = $ratingsQuery->fetch_assoc()) {
+    $ratings[$r['product_id']] = $r;
+}
+?>
+
+<!-- Hero Carousel -->
+<div id="heroCarousel" class="carousel slide hero-carousel mb-5" data-bs-ride="carousel" data-bs-interval="4000">
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+    </div>
+    <div class="carousel-inner rounded-4 overflow-hidden">
+        <div class="carousel-item active" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1400');">
+            <div class="carousel-caption">
+                <h1 class="display-4 fw-bold">🎄 Season Off Sale</h1>
+                <p class="lead">최대 70% 할인! 놓치지 마세요.</p>
+                <a href="/?category=Electronics" class="btn btn-lupang btn-lg mt-2">쇼핑하기 <i class="fas fa-arrow-right ms-2"></i></a>
+            </div>
+        </div>
+        <div class="carousel-item" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1400');">
+            <div class="carousel-caption">
+                <h1 class="display-4 fw-bold">👗 Fashion Week</h1>
+                <p class="lead">트렌디한 겨울 패션 컬렉션</p>
+                <a href="/?category=Fashion" class="btn btn-lupang btn-lg mt-2">컬렉션 보기 <i class="fas fa-arrow-right ms-2"></i></a>
+            </div>
+        </div>
+        <div class="carousel-item" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1400');">
+            <div class="carousel-caption">
+                <h1 class="display-4 fw-bold">🍽️ 맛있는 선물</h1>
+                <p class="lead">프리미엄 식품 기획전</p>
+                <a href="/?category=Food" class="btn btn-lupang btn-lg mt-2">식품 보기 <i class="fas fa-arrow-right ms-2"></i></a>
+            </div>
+        </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+    </button>
+</div>
+
+<!-- Category Pills -->
+<div class="category-pills justify-content-center mb-4">
+    <a href="/" class="category-pill <?php echo !$category ? 'active' : ''; ?>"><i class="fas fa-border-all me-1"></i> 전체</a>
+    <a href="/?category=Electronics" class="category-pill <?php echo $category === 'Electronics' ? 'active' : ''; ?>"><i class="fas fa-laptop me-1"></i> 전자제품</a>
+    <a href="/?category=Fashion" class="category-pill <?php echo $category === 'Fashion' ? 'active' : ''; ?>"><i class="fas fa-tshirt me-1"></i> 패션</a>
+    <a href="/?category=Living" class="category-pill <?php echo $category === 'Living' ? 'active' : ''; ?>"><i class="fas fa-couch me-1"></i> 리빙</a>
+    <a href="/?category=Food" class="category-pill <?php echo $category === 'Food' ? 'active' : ''; ?>"><i class="fas fa-utensils me-1"></i> 식품</a>
+    <a href="/?category=Books" class="category-pill <?php echo $category === 'Books' ? 'active' : ''; ?>"><i class="fas fa-book me-1"></i> 도서</a>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-white mb-0">
+        <?php echo $category ? htmlspecialchars($category) : '전체 상품'; ?>
+        <small class="text-secondary fs-6">(<?php echo $result->num_rows; ?>개)</small>
+    </h2>
+</div>
+
+<div class="row g-4">
+    <?php 
+    $discounts = [0, 0, 10, 15, 20, 25, 30, 35, 40, 50];
+    while($row = $result->fetch_assoc()): 
+        $discount = $discounts[array_rand($discounts)];
+        $originalPrice = $discount > 0 ? intval($row['price'] / (1 - $discount/100)) : 0;
+        $avgRating = $ratings[$row['id']]['avg_rating'] ?? 0;
+        $reviewCount = $ratings[$row['id']]['review_count'] ?? 0;
+    ?>
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="card product-card bg-dark h-100">
+            <div class="card-img-wrapper">
+                <?php if($discount > 0): ?>
+                <span class="discount-badge"><?php echo $discount; ?>% OFF</span>
+                <?php endif; ?>
+                <button class="wishlist-btn" onclick="toggleWishlist(<?php echo $row['id']; ?>, this)" title="위시리스트에 추가">
+                    <i class="far fa-heart"></i>
+                </button>
+                <a href="product.php?id=<?php echo $row['id']; ?>">
+                    <img src="<?php echo htmlspecialchars($row['image_url']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($row['name']); ?>" loading="lazy">
+                </a>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <span class="badge bg-secondary mb-2 align-self-start"><?php echo htmlspecialchars($row['category']); ?></span>
+                <h6 class="card-title text-white mb-2"><?php echo htmlspecialchars($row['name']); ?></h6>
+                
+                <?php if($avgRating > 0): ?>
+                <div class="rating mb-2">
+                    <?php for($i = 1; $i <= 5; $i++): ?>
+                        <i class="fa<?php echo $i <= round($avgRating) ? 's' : 'r'; ?> fa-star"></i>
+                    <?php endfor; ?>
+                    <span class="text-secondary small ms-1">(<?php echo $reviewCount; ?>)</span>
+                </div>
+                <?php endif; ?>
+                
+                <div class="mt-auto">
+                    <?php if($discount > 0): ?>
+                    <span class="text-secondary text-decoration-line-through small"><?php echo number_format($originalPrice); ?>원</span>
+                    <?php endif; ?>
+                    <p class="card-text text-danger fw-bold fs-5 mb-2"><?php echo number_format($row['price']); ?>원</p>
+                    <a href="product.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-light w-100">상세보기</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endwhile; ?>
+</div>
+
+<script>
+function toggleWishlist(productId, btn) {
+    fetch('wishlist_api.php?action=toggle&product_id=' + productId)
+        .then(r => r.json())
+        .then(data => {
+            if(data.added) {
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fas fa-heart"></i>';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="far fa-heart"></i>';
+            }
+        })
+        .catch(e => alert('로그인이 필요합니다.'));
+}
+</script>
+
+<?php include 'footer.php'; ?>
+EOF
+
+# Vulnerability 1: SQL Injection + Stored XSS (Reviews)
+cat <<'EOF' > /var/www/html/product.php
+<?php 
+// Enable error display for SQLi visibility
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+include 'header.php'; 
+$id = $_GET['id'] ?? 0;
+
+// VULNERABLE: Direct concatenation of user input (SQL Injection)
+$conn = getDbConnection('write');
+$sql = "SELECT * FROM products WHERE id = " . $id; 
+$result = $conn->query($sql);
+
+if (!$result) {
+    echo "<div class='container mt-5'><div class='alert alert-danger'><strong>DB Error:</strong> " . htmlspecialchars($conn->error) . "</div></div>";
+    include 'footer.php';
+    exit;
+}
+
+$product = $result->fetch_assoc();
+
+// Handle Review Submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review']) && $currentUser) {
+    $username = $currentUser['username'];
+    $uRes = $conn->query("SELECT id FROM users WHERE username='$username'");
+    $userId = $uRes->fetch_assoc()['id'] ?? 0;
+    
+    $rating = intval($_POST['rating'] ?? 5);
+    $content = $_POST['content'] ?? '';
+    $productId = intval($_POST['product_id'] ?? 0);
+    
+    if ($userId && $productId && $content) {
+        $stmt = $conn->prepare("INSERT INTO reviews (product_id, user_id, rating, content) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("iiis", $productId, $userId, $rating, $content);
+        $stmt->execute();
+        echo "<script>location.href='product.php?id=$productId#reviews';</script>";
+        exit;
+    }
+}
+
+// Get average rating
+$avgResult = $conn->query("SELECT AVG(rating) as avg_rating, COUNT(*) as review_count FROM reviews WHERE product_id = " . intval($id));
+$avgData = $avgResult->fetch_assoc();
+$avgRating = round($avgData['avg_rating'] ?? 0, 1);
+$reviewCount = $avgData['review_count'] ?? 0;
+
+// Get reviews
+$reviews = $conn->query("SELECT r.*, u.username, u.real_name FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.product_id = " . intval($id) . " ORDER BY r.created_at DESC");
+?>
+
+<div class="container mt-4">
+    <?php if(isset($product) && $product): ?>
+    <div class="row">
+        <div class="col-md-6">
+            <img src="<?php echo htmlspecialchars($product['image_url']); ?>" class="img-fluid rounded shadow" alt="..." style="max-height: 500px; width: 100%; object-fit: cover;">
+        </div>
+        <div class="col-md-6">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/" class="text-secondary">홈</a></li>
+                    <li class="breadcrumb-item"><a href="/?category=<?php echo urlencode($product['category']); ?>" class="text-secondary"><?php echo htmlspecialchars($product['category']); ?></a></li>
+                    <li class="breadcrumb-item active text-white"><?php echo htmlspecialchars($product['name']); ?></li>
+                </ol>
+            </nav>
+            
+            <span class="badge bg-secondary mb-2"><?php echo htmlspecialchars($product['category']); ?></span>
+            <h2 class="fw-bold"><?php echo htmlspecialchars($product['name']); ?></h2>
+            
+            <!-- Rating Display -->
+            <div class="d-flex align-items-center gap-2 my-3">
+                <div class="star-rating fs-5">
+                    <?php for($i = 1; $i <= 5; $i++): ?>
+                        <i class="fa<?php echo $i <= round($avgRating) ? 's' : 'r'; ?> fa-star"></i>
+                    <?php endfor; ?>
+                </div>
+                <span class="text-warning fw-bold"><?php echo $avgRating; ?></span>
+                <span class="text-secondary">(<?php echo $reviewCount; ?>개 리뷰)</span>
+            </div>
+            
+            <p class="lead text-secondary"><?php echo htmlspecialchars($product['description']); ?></p>
+            <h3 class="text-danger my-4 fw-bold"><?php echo number_format($product['price']); ?>원</h3>
+            
+            <form action="cart.php" method="POST" class="mb-3">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+                <div class="d-flex gap-2">
+                    <input type="number" name="quantity" value="1" min="1" class="form-control bg-dark text-white border-secondary" style="width: 80px;">
+                    <button class="btn btn-lupang flex-grow-1"><i class="fas fa-shopping-cart me-2"></i>장바구니 담기</button>
+                </div>
+            </form>
+            
+            <button class="btn btn-outline-danger w-100" onclick="toggleWishlist(<?php echo $product['id']; ?>, this)">
+                <i class="far fa-heart me-2"></i>위시리스트에 추가
+            </button>
+        </div>
+    </div>
+    
+    <hr class="my-5 border-secondary">
+    
+    <!-- Reviews Section -->
+    <div id="reviews">
+        <h3 class="mb-4">
+            <i class="fas fa-comments me-2"></i>상품 리뷰 
+            <span class="badge bg-danger"><?php echo $reviewCount; ?></span>
+        </h3>
+        
+        
+        <?php if($currentUser): ?>
+        <!-- Review Form -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header border-secondary">
+                <i class="fas fa-edit me-2"></i>리뷰 작성
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+                    <div class="mb-3">
+                        <label class="form-label">평점</label>
+                        <div class="star-rating-input fs-4">
+                            <?php for($i = 5; $i >= 1; $i--): ?>
+                            <input type="radio" name="rating" value="<?php echo $i; ?>" id="star<?php echo $i; ?>" <?php echo $i === 5 ? 'checked' : ''; ?>>
+                            <label for="star<?php echo $i; ?>"><i class="fas fa-star"></i></label>
+                            <?php endfor; ?>
+                        </div>
+                        <style>
+                            .star-rating-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
+                            .star-rating-input input { display: none; }
+                            .star-rating-input label { cursor: pointer; color: #555; transition: 0.2s; }
+                            .star-rating-input label:hover, .star-rating-input label:hover ~ label,
+                            .star-rating-input input:checked ~ label { color: #ffc107; }
+                        </style>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">리뷰 내용</label>
+                        <textarea name="content" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="상품에 대한 솔직한 리뷰를 작성해주세요..." required></textarea>
+                    </div>
+                    <button type="submit" name="submit_review" class="btn btn-lupang">
+                        <i class="fas fa-paper-plane me-2"></i>리뷰 등록
+                    </button>
+                </form>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="alert alert-secondary">
+            <a href="login.php" class="alert-link">로그인</a>하시면 리뷰를 작성할 수 있습니다.
+        </div>
+        <?php endif; ?>
+        
+        <!-- Review List -->
+        <?php if($reviews->num_rows > 0): ?>
+        <div class="list-group">
+            <?php while($review = $reviews->fetch_assoc()): ?>
+            <div class="list-group-item bg-dark text-white border-secondary mb-2 rounded">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="star-rating small mb-1">
+                            <?php for($i = 1; $i <= 5; $i++): ?>
+                                <i class="fa<?php echo $i <= $review['rating'] ? 's' : 'r'; ?> fa-star"></i>
+                            <?php endfor; ?>
+                        </div>
+                        <strong><?php echo htmlspecialchars($review['real_name'] ?? $review['username']); ?></strong>
+                    </div>
+                    <small class="text-secondary"><?php echo date('Y.m.d', strtotime($review['created_at'])); ?></small>
+                </div>
+                <!-- VULNERABLE: XSS - No htmlspecialchars on content -->
+                <p class="mt-2 mb-0"><?php echo $review['content']; ?></p>
+            </div>
+            <?php endwhile; ?>
+        </div>
+        <?php else: ?>
+        <div class="text-center py-5 text-secondary">
+            <i class="far fa-comment-dots fa-4x mb-3"></i>
+            <p>아직 리뷰가 없습니다. 첫 번째 리뷰를 작성해보세요!</p>
+        </div>
+        <?php endif; ?>
+    </div>
+    
+    <?php else: ?>
+        <div class="alert alert-warning">상품을 찾을 수 없습니다. (ID: <?php echo htmlspecialchars($id); ?>)</div>
+    <?php endif; ?>
+</div>
+
+<script>
+function toggleWishlist(productId, btn) {
+    fetch('wishlist_api.php?action=toggle&product_id=' + productId)
+        .then(r => r.json())
+        .then(data => {
+            if(data.added) {
+                btn.innerHTML = '<i class="fas fa-heart me-2"></i>위시리스트에서 제거';
+                btn.classList.remove('btn-outline-danger');
+                btn.classList.add('btn-danger');
+            } else {
+                btn.innerHTML = '<i class="far fa-heart me-2"></i>위시리스트에 추가';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-outline-danger');
+            }
+        })
+        .catch(e => alert('로그인이 필요합니다.'));
+}
+</script>
+
+<?php include 'footer.php'; ?>
+EOF
+
+cat <<'EOF' > /var/www/html/cart.php
+<?php
+include 'header.php';
+if (!$currentUser) {
+    echo "<script>alert('로그인이 필요합니다.'); location.href='login.php';</script>";
+    exit;
+}
+
+$conn = getDbConnection('write');
+// Get User ID from seed_users logic or session. 
+// For simplicity, query user by username from cookie
+$username = $currentUser['username'];
+$uRes = $conn->query("SELECT id FROM users WHERE username='$username'");
+$userId = $uRes->fetch_assoc()['id'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    if ($action === 'add') {
+        $pid = $_POST['product_id'];
+        $qty = $_POST['quantity'];
+        // Upsert cart
+        $sql = "INSERT INTO cart (user_id, product_id, quantity) VALUES ($userId, $pid, $qty) 
+                ON DUPLICATE KEY UPDATE quantity = quantity + $qty";
+        $conn->query($sql);
+        echo "<script>location.href='cart.php';</script>";
+    } elseif ($action === 'delete') {
+        $cid = $_POST['cart_id'];
+        $conn->query("DELETE FROM cart WHERE id=$cid AND user_id=$userId");
+    } elseif ($action === 'checkout') {
+         // Create Order
+         $total = $_POST['total_amount'];
+         $conn->query("INSERT INTO orders (user_id, total_amount) VALUES ($userId, $total)");
+         $orderId = $conn->insert_id;
+         
+         // Move Items
+         $cRes = $conn->query("SELECT c.*, p.price FROM cart c JOIN products p ON c.product_id = p.id WHERE c.user_id=$userId");
+         while($row = $cRes->fetch_assoc()) {
+             $conn->query("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($orderId, {$row['product_id']}, {$row['quantity']}, {$row['price']})");
+         }
+         
+         // Clear Cart
+         $conn->query("DELETE FROM cart WHERE user_id=$userId");
+         echo "<script>alert('주문이 완료되었습니다!'); location.href='mypage.php';</script>";
+    }
+}
+?>
+<div class="container">
+    <h2 class="mb-4">Shopping Cart</h2>
+    <table class="table table-dark table-hover">
+        <thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Total</th><th>Action</th></tr></thead>
+        <tbody>
+        <?php
+        $sql = "SELECT c.id as cart_id, p.name, p.price, c.quantity FROM cart c JOIN products p ON c.product_id = p.id WHERE c.user_id = $userId";
+        $result = $conn->query($sql);
+        $grandTotal = 0;
+        while($row = $result->fetch_assoc()) {
+            $sub = $row['price'] * $row['quantity'];
+            $grandTotal += $sub;
+            echo "<tr>
+                <td>{$row['name']}</td>
+                <td>".number_format($row['price'])."</td>
+                <td>{$row['quantity']}</td>
+                <td>".number_format($sub)."</td>
+                <td>
+                    <form method='POST' style='display:inline;'>
+                        <input type='hidden' name='action' value='delete'>
+                        <input type='hidden' name='cart_id' value='{$row['cart_id']}'>
+                        <button class='btn btn-sm btn-danger'>Del</button>
+                    </form>
+                </td>
+            </tr>";
+        }
+        ?>
+        </tbody>
+    </table>
+    <div class="d-flex justify-content-end align-items-center gap-3">
+        <h3>Total: <?php echo number_format($grandTotal); ?>원</h3>
+        <?php if($grandTotal > 0): ?>
+        <form method="POST">
+            <input type="hidden" name="action" value="checkout">
+            <input type="hidden" name="total_amount" value="<?php echo $grandTotal; ?>">
+            <button class="btn btn-lupang btn-lg">결제하기</button>
+        </form>
+        <?php endif; ?>
+    </div>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+cat <<'EOF' > /var/www/html/mypage.php
+<?php
+include 'header.php';
+// File Upload Vulnerability
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_pic'])) {
+    $target_dir = "uploads/";
+    $target_file = $target_dir . basename($_FILES["profile_pic"]["name"]);
+    if(move_uploaded_file($_FILES["profile_pic"]["tmp_name"], $target_file)) {
+        echo "<div class='alert alert-success'>프로필 사진이 업데이트 되었습니다. (위치: <a href='$target_file' class='alert-link'>$target_file</a>)</div>";
+    } else {
+        echo "<div class='alert alert-danger'>업로드 실패</div>";
+    }
+}
+
+$conn = getDbConnection('read');
+$username = $currentUser['username'] ?? '';
+$uRes = $conn->query("SELECT id, real_name, address FROM users WHERE username='$username'");
+$userInfo = $uRes->fetch_assoc();
+$userId = $userInfo['id'] ?? 0;
+?>
+<div class="row">
+    <div class="col-md-4">
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header border-secondary">내 정보 관리</div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div style="width: 100px; height: 100px; background: #333; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-user fa-3x text-secondary"></i>
+                    </div>
+                </div>
+                <h5 class="card-title"><?php echo htmlspecialchars($userInfo['real_name'] ?? 'User'); ?></h5>
+                <p class="text-secondary small"><?php echo htmlspecialchars($username); ?></p>
+                
+                <hr class="border-secondary">
+                
+                <form method="POST" enctype="multipart/form-data" class="text-start">
+                    <label class="form-label small text-secondary">프로필 사진 변경</label>
+                    <div class="input-group input-group-sm">
+                        <input type="file" name="profile_pic" class="form-control bg-dark text-white border-secondary">
+                        <button class="btn btn-primary">변경</button>
+                    </div>
+                    <div class="form-text text-muted" style="font-size: 0.7rem;">
+                        * JPG, PNG 파일만 업로드 가능합니다. (실제 기능: 확장자 검증 취약점)
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <h4 class="mb-3 border-bottom border-secondary pb-2">주문 내역</h4>
+        <?php
+        $res = $conn->query("SELECT * FROM orders WHERE user_id = $userId ORDER BY id DESC");
+        if ($res && $res->num_rows > 0) {
+            echo '<div class="list-group">';
+            while($row = $res->fetch_assoc()) {
+                $statusColor = $row['status'] == 'paid' ? 'success' : 'warning';
+                echo "<a href='order_detail.php?id={$row['id']}' class='list-group-item list-group-item-action bg-dark text-white border-secondary d-flex justify-content-between align-items-center'>
+                    <div>
+                        <span class='fw-bold'>주문번호 #{$row['id']}</span>
+                        <div class='small text-secondary'>{$row['created_at']}</div>
+                    </div>
+                    <div class='text-end'>
+                        <div class='fw-bold'>" . number_format($row['total_amount']) . "원</div>
+                        <span class='badge bg-$statusColor'>{$row['status']}</span>
+                    </div>
+                </a>";
+            }
+            echo '</div>';
+        } else {
+            echo "<div class='text-secondary p-4 text-center'>주문 내역이 없습니다.</div>";
+        }
+        ?>
+    </div>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+# Vulnerability 2: Stored XSS
+cat <<'EOF' > /var/www/html/board.php
+<?php
+include 'header.php';
+$conn = getDbConnection('write');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = $_POST['title'];
+    $content = $_POST['content'];
+    // VULNERABLE: No htmlspecialchars here
+    $username = $currentUser['username'] ?? 'Anonymous';
+    $uRes = $conn->query("SELECT id FROM users WHERE username='$username'");
+    $uid = $uRes->fetch_assoc()['id'] ?? 1;
+    
+    $stmt = $conn->prepare("INSERT INTO board (user_id, title, content) VALUES (?, ?, ?)");
+    $stmt->bind_param("iss", $uid, $title, $content);
+    $stmt->execute();
+}
+?>
+<div class="container">
+    <h2>Customer Review Board (XSS Vulnerable)</h2>
+    <form method="POST" class="mb-4 p-3 border rounded bg-dark">
+        <div class="mb-2">
+            <input type="text" name="title" class="form-control" placeholder="Title" required>
+        </div>
+        <div class="mb-2">
+            <textarea name="content" class="form-control" rows="3" placeholder="Content (HTML tags allowed...)" required></textarea>
+        </div>
+        <button class="btn btn-lupang">Write Review</button>
+    </form>
+    
+    <div class="list-group">
+    <?php
+    $res = $conn->query("SELECT b.*, u.username FROM board b JOIN users u ON b.user_id = u.id ORDER BY b.id DESC");
+    while($row = $res->fetch_assoc()) {
+        // VULNERABLE: Outputting content directly
+        echo "<div class='list-group-item bg-dark text-white border-secondary mb-2'>
+            <div class='d-flex w-100 justify-content-between'>
+                <h5 class='mb-1'>".htmlspecialchars($row['title'])."</h5>
+                <small>{$row['created_at']}</small>
+            </div>
+            <p class='mb-1'>{$row['content']}</p>
+            <small class='text-secondary'>By {$row['username']}</small>
+        </div>";
+    }
+    ?>
+    </div>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+# Vulnerability 3: Command Injection + SSRF
+cat <<'EOF' > /var/www/html/admin.php
+<?php
+include 'header.php';
+if (($currentUser['role'] ?? '') !== 'admin') {
+    die("<div class='container mt-5'><div class='alert alert-danger'>관리자 권한이 필요합니다.</div></div>");
+}
+
+$conn = getDbConnection('read');
+
+// Real Stats from DB
+$totalSales = $conn->query("SELECT COALESCE(SUM(total_amount), 0) as total FROM orders")->fetch_assoc()['total'];
+$totalUsers = $conn->query("SELECT COUNT(*) as cnt FROM users")->fetch_assoc()['cnt'];
+$totalOrders = $conn->query("SELECT COUNT(*) as cnt FROM orders")->fetch_assoc()['cnt'];
+$totalProducts = $conn->query("SELECT COUNT(*) as cnt FROM products")->fetch_assoc()['cnt'];
+$totalReviews = $conn->query("SELECT COUNT(*) as cnt FROM reviews")->fetch_assoc()['cnt'];
+
+// Recent 7 days orders for chart
+$chartData = [];
+for ($i = 6; $i >= 0; $i--) {
+    $date = date('Y-m-d', strtotime("-$i days"));
+    $result = $conn->query("SELECT COALESCE(SUM(total_amount), 0) as daily_total FROM orders WHERE DATE(created_at) = '$date'");
+    $chartData[] = ['date' => date('m/d', strtotime($date)), 'amount' => intval($result->fetch_assoc()['daily_total'])];
+}
+
+// Category sales for pie chart
+$categoryData = [];
+$catQuery = $conn->query("SELECT p.category, COALESCE(SUM(oi.price * oi.quantity), 0) as total 
+                          FROM order_items oi 
+                          JOIN products p ON oi.product_id = p.id 
+                          GROUP BY p.category");
+while ($row = $catQuery->fetch_assoc()) {
+    $categoryData[$row['category']] = intval($row['total']);
+}
+
+// Recent Orders
+$recentOrders = $conn->query("SELECT o.*, u.username, u.real_name FROM orders o 
+                              JOIN users u ON o.user_id = u.id 
+                              ORDER BY o.created_at DESC LIMIT 10");
+?>
+
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tachometer-alt me-2"></i>관리자 대시보드</h2>
+        <span class="badge bg-danger fs-6"><i class="fas fa-shield-alt me-1"></i>Admin Mode</span>
+    </div>
+    
+    <!-- Real Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-gradient border-0 h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small opacity-75">총 매출</div>
+                            <div class="fs-4 fw-bold">₩ <?php echo number_format($totalSales); ?></div>
+                        </div>
+                        <div class="fs-1 opacity-50"><i class="fas fa-won-sign"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-gradient border-0 h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small opacity-75">총 회원수</div>
+                            <div class="fs-4 fw-bold"><?php echo number_format($totalUsers); ?>명</div>
+                        </div>
+                        <div class="fs-1 opacity-50"><i class="fas fa-users"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-gradient border-0 h-100" style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small opacity-75">총 주문수</div>
+                            <div class="fs-4 fw-bold"><?php echo number_format($totalOrders); ?>건</div>
+                        </div>
+                        <div class="fs-1 opacity-50"><i class="fas fa-shopping-bag"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-gradient border-0 h-100" style="background: linear-gradient(135deg, #4568dc 0%, #b06ab3 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small opacity-75">총 리뷰수</div>
+                            <div class="fs-4 fw-bold"><?php echo number_format($totalReviews); ?>개</div>
+                        </div>
+                        <div class="fs-1 opacity-50"><i class="fas fa-star"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Sales Chart -->
+        <div class="col-lg-8">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-chart-line me-2"></i>최근 7일 매출 추이</span>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Pie Chart -->
+        <div class="col-lg-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header border-secondary">
+                    <i class="fas fa-chart-pie me-2"></i>카테고리별 매출
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Recent Orders (Real Data) -->
+        <div class="col-lg-8">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-receipt me-2"></i>최근 주문</span>
+                    <span class="badge bg-secondary"><?php echo $totalOrders; ?>건</span>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead><tr><th>주문번호</th><th>고객</th><th>금액</th><th>상태</th><th>일시</th></tr></thead>
+                        <tbody>
+                            <?php if($recentOrders->num_rows > 0): ?>
+                            <?php while($order = $recentOrders->fetch_assoc()): ?>
+                            <tr>
+                                <td><a href="order_detail.php?id=<?php echo $order['id']; ?>" class="text-info">#<?php echo $order['id']; ?></a></td>
+                                <td><?php echo htmlspecialchars($order['real_name'] ?? $order['username']); ?></td>
+                                <td>₩<?php echo number_format($order['total_amount']); ?></td>
+                                <td><span class="badge bg-<?php echo $order['status'] === 'paid' ? 'success' : 'warning'; ?>"><?php echo $order['status']; ?></span></td>
+                                <td class="small"><?php echo date('m/d H:i', strtotime($order['created_at'])); ?></td>
+                            </tr>
+                            <?php endwhile; ?>
+                            <?php else: ?>
+                            <tr><td colspan="5" class="text-center text-secondary py-4">주문 내역이 없습니다.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Security Tools -->
+        <div class="col-lg-4">
+            <!-- Command Injection -->
+            <div class="card bg-dark border-danger mb-3">
+                <div class="card-header bg-danger text-white fw-bold">
+                    <i class="fas fa-terminal me-2"></i>Server Health Check
+                </div>
+                <div class="card-body">
+                    <p class="small text-secondary mb-2">명령어 인젝션 취약점</p>
+                    <form method="GET" class="mb-2">
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="target" class="form-control bg-dark text-white border-secondary" placeholder="예: 8.8.8.8 ; id" value="<?php echo htmlspecialchars($_GET['target'] ?? ''); ?>">
+                            <button class="btn btn-outline-danger">Ping</button>
+                        </div>
+                    </form>
+                    <?php if (isset($_GET['target']) && $_GET['target']): ?>
+                    <pre class="bg-black p-2 rounded text-success small mb-0" style="max-height: 150px; overflow: auto;"><?php
+                        $target = $_GET['target'];
+                        // VULNERABLE: Command Injection
+                        echo htmlspecialchars(shell_exec("ping -c 2 " . $target));
+                    ?></pre>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- SSRF Vulnerability -->
+            <div class="card bg-dark border-warning mb-3">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    <i class="fas fa-globe me-2"></i>URL Fetcher (SSRF)
+                </div>
+                <div class="card-body">
+                    <p class="small text-secondary mb-2">SSRF 취약점 - 내부 URL 접근 가능</p>
+                    <form method="GET" class="mb-2">
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="fetch_url" class="form-control bg-dark text-white border-secondary" placeholder="예: http://169.254.169.254/" value="<?php echo htmlspecialchars($_GET['fetch_url'] ?? ''); ?>">
+                            <button class="btn btn-outline-warning">Fetch</button>
+                        </div>
+                    </form>
+                    <?php if (isset($_GET['fetch_url']) && $_GET['fetch_url']): ?>
+                    <pre class="bg-black p-2 rounded text-info small mb-0" style="max-height: 150px; overflow: auto;"><?php
+                        $url = $_GET['fetch_url'];
+                        // VULNERABLE: SSRF - No validation on URL
+                        $content = @file_get_contents($url);
+                        echo htmlspecialchars($content ?: "Error fetching URL");
+                    ?></pre>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Vulnerability Quick Links -->
+    <h4 class="text-white border-bottom border-secondary pb-2 mb-3">
+        <i class="fas fa-bug me-2"></i>취약점 테스트 도구
+    </h4>
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="card bg-danger text-white h-100 text-center p-3">
+                <i class="fas fa-database fa-2x mb-2"></i>
+                <div class="small fw-bold">SQL Injection</div>
+                <a href="product.php?id=1'" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-dark h-100 text-center p-3">
+                <i class="fas fa-code fa-2x mb-2"></i>
+                <div class="small fw-bold">Stored XSS</div>
+                <a href="product.php?id=1#reviews" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-dark h-100 text-center p-3">
+                <i class="fas fa-search fa-2x mb-2"></i>
+                <div class="small fw-bold">Reflected XSS</div>
+                <a href="search.php?q=<script>alert(1)</script>" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white h-100 text-center p-3">
+                <i class="fas fa-unlock fa-2x mb-2"></i>
+                <div class="small fw-bold">IDOR</div>
+                <a href="order_detail.php?id=1" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-primary text-white h-100 text-center p-3">
+                <i class="fas fa-upload fa-2x mb-2"></i>
+                <div class="small fw-bold">File Upload</div>
+                <a href="mypage.php" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-dark border-light text-white h-100 text-center p-3">
+                <i class="fas fa-cookie fa-2x mb-2"></i>
+                <div class="small fw-bold">Weak Auth</div>
+                <a href="login.php" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Sales Line Chart
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+new Chart(salesCtx, {
+    type: 'line',
+    data: {
+        labels: <?php echo json_encode(array_column($chartData, 'date')); ?>,
+        datasets: [{
+            label: '일별 매출 (원)',
+            data: <?php echo json_encode(array_column($chartData, 'amount')); ?>,
+            fill: true,
+            backgroundColor: 'rgba(230, 0, 35, 0.1)',
+            borderColor: '#e60023',
+            borderWidth: 2,
+            tension: 0.4,
+            pointBackgroundColor: '#e60023'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#fff' } } },
+        scales: {
+            y: { ticks: { color: '#888' }, grid: { color: '#333' } },
+            x: { ticks: { color: '#888' }, grid: { color: '#333' } }
+        }
+    }
+});
+
+// Category Pie Chart
+const catCtx = document.getElementById('categoryChart').getContext('2d');
+new Chart(catCtx, {
+    type: 'doughnut',
+    data: {
+        labels: <?php echo json_encode(array_keys($categoryData)); ?>,
+        datasets: [{
+            data: <?php echo json_encode(array_values($categoryData)); ?>,
+            backgroundColor: ['#667eea', '#11998e', '#eb3349', '#4568dc', '#f093fb']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
+    }
+});
+</script>
+
+<?php include 'footer.php'; ?>
+EOF
+
+cat <<'EOF' > /var/www/html/logout.php
+<?php
+session_start();
+session_unset();
+session_destroy();
+
+if (isset($_COOKIE['lupang_token'])) {
+    setcookie("lupang_token", "", time() - 3600, "/");
+    unset($_COOKIE['lupang_token']);
+}
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="refresh" content="0;url=/">
+<script>
+    location.replace("/");
+</script>
+</head>
+<body>
+    Logging out...
+</body>
+</html>
+EOF
+
+cat <<'EOF' > /var/www/html/login.php
+<?php
+session_start();
+include 'db_config.php';
+
+$message = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+
+    if ($username && strpos($username, '@') === false) {
+        $username .= '@${domain_name}';
+    }
+
+    if ($username && $password) {
+        try {
+            $conn = getDbConnection('read');
+            $stmt = $conn->prepare("SELECT id, password, role, real_name FROM users WHERE username = ?");
+            $stmt->bind_param("s", $username);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                if (password_verify($password, $row['password'])) {
+                    $_SESSION['user_id'] = $username;
+                    $_SESSION['role'] = $row['role'] ?? 'user';
+                    $_SESSION['real_name'] = $row['real_name'];
+                    setcookie("lupang_token", base64_encode(json_encode(["username"=>$username, "role"=>$_SESSION['role'], "real_name"=>$row['real_name']])), time()+3600, "/");
+                    header("Location: /");
+                    exit;
+                } else {
+                    $message = "비밀번호가 일치하지 않습니다.";
+                }
+            } else {
+                $message = "존재하지 않는 사용자입니다.";
+            }
+        } catch (Exception $e) {
+            $message = "로그인 오류: " . $e->getMessage();
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #121212; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Noto Sans KR'; }
+        .login-box { width: 400px; padding: 40px; background: #1e1e1e; border-radius: 10px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .form-control { background-color: #2c2c2c !important; border: 1px solid #444 !important; color: white !important; margin-bottom: 15px; }
+        .form-control::placeholder { color: #aaa !important; opacity: 1; }
+        .btn-login { width: 100%; height: 50px; background: #e60023; border: none; font-weight: bold; color: white; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2 class="text-center mb-4">LUPANG</h2>
+        <?php if($message) echo "<div class='alert alert-danger'>$message</div>"; ?>
+        <form method="post">
+            <input name="username" class="form-control" placeholder="아이디 (이메일)" required>
+            <input name="password" type="password" class="form-control" placeholder="비밀번호" required>
+            <button class="btn btn-login">Login</button>
+        </form>
+        <div class="mt-3 text-center">
+            <a href="register.php" class="text-white text-decoration-none">회원가입</a> | 
+            <a href="/" class="text-secondary text-decoration-none">Home</a>
+        </div>
+    </div>
+</body>
+</html>
+EOF
+
+cat <<'EOF' > /var/www/html/register.php
+<?php
+include 'db_config.php';
+$mail_server_ip = '${mail_server_ip}';
+
+$message = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $name = $_POST['username'] ?? '';
+  $local_part = $_POST['email_local'] ?? '';
+  $pwd = $_POST['password'] ?? '';
+  $addr = $_POST['address'] ?? '';
+  
+  if ($name && $local_part && $pwd) {
+    // Append Domain Automatically
+    $email = $local_part . '@${domain_name}';
+
+    try {
+        $conn = getDbConnection('write');
+        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        if($stmt->get_result()->fetch_assoc()) {
+            $message = "이미 존재하는 계정(Email)입니다: " . htmlspecialchars($email);
+        } else {
+            $hash = password_hash($pwd, PASSWORD_BCRYPT);
+            $stmt = $conn->prepare("INSERT INTO users (username, password, real_name, address) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("ssss", $email, $hash, $name, $addr);
+            
+            if($stmt->execute()) {
+                 // Mail account will be created separately (SSH removed for performance)
+                 $message = "회원가입 완료! 로그인해주세요. (메일 계정: $email)";
+            } else {
+                $message = "회원가입 오류: " . $stmt->error;
+            }
+        }
+    } catch (Exception $e) {
+        $message = "오류 발생: " . $e->getMessage();
+    }
+  } else {
+      $message = "모든 필드를 입력해주세요.";
+  }
+}
+?>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #121212; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Noto Sans KR'; }
+        .register-box { width: 500px; padding: 40px; background: #1e1e1e; border-radius: 10px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .form-control { background-color: #2c2c2c !important; border: 1px solid #444 !important; color: white !important; margin-bottom: 15px; }
+        .form-control::placeholder { color: #aaa !important; opacity: 1; }
+        .input-group-text { background-color: #444; border: 1px solid #444; color: #ddd; }
+        .btn-register { width: 100%; height: 50px; background: #e60023; border: none; font-weight: bold; color: white; }
+        .btn-register:disabled { background-color: #555; cursor: not-allowed; }
+    </style>
+    <script>
+        function disableBtn(form) {
+            var btn = form.querySelector('.btn-register');
+            btn.disabled = true;
+            btn.innerText = "처리 중...";
+            return true;
+        }
+    </script>
+</head>
+<body>
+    <div class="register-box">
+        <h2 class="text-center mb-4">회원가입</h2>
+        <?php if($message) echo "<div class='alert alert-info'>".nl2br($message)."</div>"; ?>
+        <form method="post" onsubmit="return disableBtn(this);">
+            <input name="username" class="form-control" placeholder="실명" required>
+            <div class="input-group mb-3">
+                <input name="email_local" class="form-control mb-0" type="text" placeholder="아이디 (영문)" required>
+                <span class="input-group-text">@${domain_name}</span>
+            </div>
+            <input name="password" type="password" class="form-control" placeholder="비밀번호" required>
+            <input name="address" class="form-control" placeholder="주소" required>
+            <button class="btn btn-register">가입하기</button>
+        </form>
+        <div class="mt-3 text-center">
+            <a href="login.php" class="text-white text-decoration-none">로그인</a> | 
+            <a href="/" class="text-secondary text-decoration-none">Home</a>
+        </div>
+    </div>
+</body>
+</html>
+EOF
+
+# Vulnerability 5: Broken Access Control (IDOR)
+cat <<'EOF' > /var/www/html/order_detail.php
+<?php
+include 'header.php';
+
+// VULNERABLE: No check if the order belongs to the current user
+$orderId = $_GET['id'] ?? 0;
+$conn = getDbConnection('read');
+
+// Vulnerability 6 (Part 2): Security Misconfiguration (Verbose Error)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+$sql = "SELECT o.*, u.username, u.real_name, u.phone, u.address 
+        FROM orders o 
+        JOIN users u ON o.user_id = u.id 
+        WHERE o.id = $orderId"; // SQLi potential here too, but focused on IDOR
+
+$result = $conn->query($sql);
+if (!$result) {
+    die("Query Failed: " . $conn->error); // Info Leak
+}
+
+$order = $result->fetch_assoc();
+?>
+<div class="container">
+    <?php if($order): ?>
+        <h2>Order Detail #<?php echo $order['id']; ?></h2>
+        <div class="card bg-dark text-white border-warning mb-4">
+            <div class="card-header bg-warning text-dark fw-bold">
+                <i class="fas fa-exclamation-triangle"></i> IDOR Vulnerable Page
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Order Info</h5>
+                <p>Status: <?php echo $order['status']; ?></p>
+                <p>Total: <?php echo number_format($order['total_amount']); ?>원</p>
+                <p>Date: <?php echo $order['created_at']; ?></p>
+                <hr>
+                <h5 class="card-title text-danger">Customer Info (PII Exposure)</h5>
+                <p>Name: <?php echo $order['real_name']; ?></p>
+                <p>Phone: <?php echo $order['phone']; ?></p>
+                <p>Address: <?php echo $order['address']; ?></p>
+            </div>
+        </div>
+        
+        <h4>Order Items</h4>
+        <ul class="list-group">
+        <?php
+        $items = $conn->query("SELECT oi.*, p.name FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE order_id = $orderId");
+        while($item = $items->fetch_assoc()) {
+            echo "<li class='list-group-item bg-dark text-white border-secondary'>{$item['name']} x {$item['quantity']} (" . number_format($item['price']) . "원)</li>";
+        }
+        ?>
+        </ul>
+    <?php else: ?>
+        <div class="alert alert-danger">Order not found.</div>
+    <?php endif; ?>
+</div>
+<?php include 'footer.php'; ?>
+EOF
+
+# Vulnerability 6: Security Misconfiguration (Backup File)
+# Create a fake DB dump file accessible via web
+mkdir -p /var/www/html/backup
+cat <<EOF > /var/www/html/backup/db_dump.sql
+-- LUPANG Database Backup (Vulnerable: Publicly Accessible)
+-- Created at: $(date)
+
+CREATE TABLE users (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  username varchar(50) NOT NULL, -- admin@${domain_name}
+  password varchar(255) NOT NULL, -- \$2y\$10\$... (It12345!)
+  PRIMARY KEY (id)
+);
+
+-- DUMP DATA
+INSERT INTO users VALUES (1, 'admin@${domain_name}', '${db_password}');
+INSERT INTO users VALUES (2, 'user1@${domain_name}', '${db_password}');
+EOF
+
+# Vulnerability 7: SQL Injection + Reflected XSS (Search)
+cat <<'EOF' > /var/www/html/search.php
+<?php 
+// Enable error display for vulnerability visibility
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+include 'header.php';
+
+$q = $_GET['q'] ?? '';
+$conn = getDbConnection('read');
+
+// VULNERABLE: SQL Injection - Direct string concatenation
+$sql = "SELECT * FROM products WHERE name LIKE '%" . $q . "%' OR description LIKE '%" . $q . "%'";
+$result = $conn->query($sql);
+?>
+
+<div class="container">
+    <h2 class="mb-4">
+        <i class="fas fa-search text-secondary me-2"></i>
+        검색 결과: "<?php echo $q; /* VULNERABLE: Reflected XSS - No htmlspecialchars */ ?>"
+    </h2>
+    
+    <?php if(!$result): ?>
+        <div class="alert alert-danger">
+            <strong>DB Error:</strong> <?php echo htmlspecialchars($conn->error); ?>
+        </div>
+    <?php elseif($result->num_rows === 0): ?>
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            검색 결과가 없습니다. 다른 검색어를 시도해보세요.
+        </div>
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-lupang">전체 상품 보기</a>
+        </div>
+    <?php else: ?>
+        <p class="text-secondary mb-4"><?php echo $result->num_rows; ?>개의 상품을 찾았습니다.</p>
+        
+        <div class="row g-4">
+            <?php while($row = $result->fetch_assoc()): ?>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="card product-card bg-dark h-100">
+                    <div class="card-img-wrapper">
+                        <a href="product.php?id=<?php echo $row['id']; ?>">
+                            <img src="<?php echo htmlspecialchars($row['image_url']); ?>" class="card-img-top" alt="...">
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <span class="badge bg-secondary mb-2"><?php echo htmlspecialchars($row['category']); ?></span>
+                        <h6 class="card-title text-white"><?php echo htmlspecialchars($row['name']); ?></h6>
+                        <p class="card-text text-danger fw-bold"><?php echo number_format($row['price']); ?>원</p>
+                        <a href="product.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-light w-100">상세보기</a>
+                    </div>
+                </div>
+            </div>
+            <?php endwhile; ?>
+        </div>
+    <?php endif; ?>
+    
+    <!-- Vulnerability Hint -->
+    <div class="alert alert-secondary mt-5">
+        <strong><i class="fas fa-bug me-2"></i>취약점 힌트 (모의해킹용)</strong>
+        <ul class="mb-0 mt-2">
+            <li><strong>SQL Injection:</strong> <code>?q=' OR 1=1 --</code></li>
+            <li><strong>Reflected XSS:</strong> <code>?q=&lt;script&gt;alert(1)&lt;/script&gt;</code></li>
+        </ul>
+    </div>
+</div>
+
+<?php include 'footer.php'; ?>
+EOF
+
+# Wishlist Page
+cat <<'EOF' > /var/www/html/wishlist.php
+<?php
+include 'header.php';
+
+if (!$currentUser) {
+    echo "<script>alert('로그인이 필요합니다.'); location.href='login.php';</script>";
+    exit;
+}
+
+$conn = getDbConnection('read');
+$username = $currentUser['username'];
+$uRes = $conn->query("SELECT id FROM users WHERE username='$username'");
+$userId = $uRes->fetch_assoc()['id'] ?? 0;
+
+$result = $conn->query("SELECT w.*, p.name, p.price, p.image_url, p.category 
+                        FROM wishlist w 
+                        JOIN products p ON w.product_id = p.id 
+                        WHERE w.user_id = $userId 
+                        ORDER BY w.created_at DESC");
+?>
+
+<div class="container">
+    <h2 class="mb-4"><i class="fas fa-heart text-danger me-2"></i>위시리스트</h2>
+    
+    <?php if($result->num_rows === 0): ?>
+        <div class="text-center py-5">
+            <i class="far fa-heart fa-5x text-secondary mb-4"></i>
+            <h4 class="text-secondary">위시리스트가 비어있습니다</h4>
+            <p class="text-muted">마음에 드는 상품을 추가해보세요!</p>
+            <a href="/" class="btn btn-lupang mt-3">쇼핑하러 가기</a>
+        </div>
+    <?php else: ?>
+        <div class="row g-4">
+            <?php while($row = $result->fetch_assoc()): ?>
+            <div class="col-lg-3 col-md-4 col-sm-6" id="wishlist-item-<?php echo $row['product_id']; ?>">
+                <div class="card product-card bg-dark h-100">
+                    <div class="card-img-wrapper">
+                        <button class="wishlist-btn active" onclick="removeFromWishlist(<?php echo $row['product_id']; ?>)" title="위시리스트에서 제거">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                        <a href="product.php?id=<?php echo $row['product_id']; ?>">
+                            <img src="<?php echo htmlspecialchars($row['image_url']); ?>" class="card-img-top" alt="...">
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <span class="badge bg-secondary mb-2"><?php echo htmlspecialchars($row['category']); ?></span>
+                        <h6 class="card-title text-white"><?php echo htmlspecialchars($row['name']); ?></h6>
+                        <p class="card-text text-danger fw-bold"><?php echo number_format($row['price']); ?>원</p>
+                        <a href="product.php?id=<?php echo $row['product_id']; ?>" class="btn btn-sm btn-outline-light w-100">상세보기</a>
+                    </div>
+                </div>
+            </div>
+            <?php endwhile; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
+<script>
+function removeFromWishlist(productId) {
+    fetch('wishlist_api.php?action=remove&product_id=' + productId)
+        .then(r => r.json())
+        .then(data => {
+            if(data.success) {
+                document.getElementById('wishlist-item-' + productId).remove();
+            }
+        });
+}
+</script>
+
+<?php include 'footer.php'; ?>
+EOF
+
+# Wishlist API
+cat <<'EOF' > /var/www/html/wishlist_api.php
+<?php
+header('Content-Type: application/json');
+session_start();
+include 'db_config.php';
+
+$currentUser = null;
+if (isset($_COOKIE['lupang_token'])) {
+    $decoded = base64_decode($_COOKIE['lupang_token']);
+    $json = json_decode($decoded, true);
+    if ($json && isset($json['username'])) {
+        $currentUser = $json;
+    }
+}
+
+if (!$currentUser) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
+
+$conn = getDbConnection('write');
+$username = $currentUser['username'];
+$uRes = $conn->query("SELECT id FROM users WHERE username='$username'");
+$userId = $uRes->fetch_assoc()['id'] ?? 0;
+
+$action = $_GET['action'] ?? '';
+$productId = intval($_GET['product_id'] ?? 0);
+
+if ($action === 'toggle') {
+    // Check if exists
+    $check = $conn->query("SELECT id FROM wishlist WHERE user_id = $userId AND product_id = $productId");
+    if ($check->num_rows > 0) {
+        $conn->query("DELETE FROM wishlist WHERE user_id = $userId AND product_id = $productId");
+        echo json_encode(['success' => true, 'added' => false]);
+    } else {
+        $conn->query("INSERT INTO wishlist (user_id, product_id) VALUES ($userId, $productId)");
+        echo json_encode(['success' => true, 'added' => true]);
+    }
+} elseif ($action === 'remove') {
+    $conn->query("DELETE FROM wishlist WHERE user_id = $userId AND product_id = $productId");
+    echo json_encode(['success' => true]);
+} elseif ($action === 'add') {
+    $conn->query("INSERT IGNORE INTO wishlist (user_id, product_id) VALUES ($userId, $productId)");
+    echo json_encode(['success' => true, 'added' => true]);
+} else {
+    echo json_encode(['error' => 'Invalid action']);
+}
+?>
+EOF
+
+log "Restarting Apache..."
+systemctl restart httpd
+
+log "WAS Initialization Complete!"
+echo "INIT_COMPLETED" > /tmp/was_init_complete.txt
+chmod 644 /tmp/was_init_complete.txt
