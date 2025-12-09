@@ -54,3 +54,8 @@ variable "rbac_users" {
   description = "RBAC 사용자 목록 (PM, 아키텍처검증, 내부보안 등)"
   sensitive   = true
 }
+
+variable "sentinel_service_principal_id" {
+  description = "The Object ID of the Azure Security Insights service principal"
+  type        = string
+}

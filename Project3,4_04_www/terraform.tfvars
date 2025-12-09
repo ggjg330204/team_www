@@ -40,3 +40,5 @@ rbac_users = {
     azure_role   = "Log Analytics Reader"
   }
 }
+
+sentinel_service_principal_id = "c4eede39-5c23-4ee7-88ed-5b6ae587e66d"

@@ -112,10 +112,11 @@ module "security" {
   appgw_identity_principal_id = module.identity.appgw_identity_principal_id
   vmss_identity_principal_id  = module.identity.vmss_identity_principal_id
   enable_appgw                = module.network_central.enable_appgw
-  db_password                 = var.db_password
-  admin_emails                = var.admin_emails
-  admin_phone                 = var.admin_phone
-  domain_name                 = var.domain_name
+  db_password                   = var.db_password
+  admin_emails                  = var.admin_emails
+  admin_phone                   = var.admin_phone
+  domain_name                   = var.domain_name
+  sentinel_service_principal_id = var.sentinel_service_principal_id
 }
 
 module "storage" {
