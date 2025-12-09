@@ -591,9 +591,10 @@ Terraform을 통해 Azure Policy를 배포하여 거버넌스를 강제합니다
 
 ### 향후 로드맵
 
-1.  **DevSecOps Pipeline:** 현재 Terraform 실행은 로컬/관리자 PC에서 수행되지만, 향후 GitHub Actions 또는 Azure DevOps 파이프라인으로 이관합니다. 이때 `tfsec`, `checkov` 같은 정적 분석 도구를 파이프라인에 통합하여 코드 배포 전에 보안 취약점을 자동으로 차단하는 체계를 완성할 것입니다.
-2.  **Chaos Engineering:** 시스템의 견고함을 증명하기 위해, 운영 중인 VM을 무작위로 끄거나 네트워크 지연을 발생시키는 카오스 테스트를 도입할 계획입니다.
-3.  **Container Migration:** 현재 VMSS 기반의 애플리케이션을 AKS(Azure Kubernetes Service)로 마이그레이션하여, 컨테이너 보안 및 서비스 메쉬(Service Mesh) 보안 기술을 적용해 볼 예정입니다.
+1.  **DevSecOps & CI/CD Pipeline:** 현재 Terraform 인프라 배포는 자동화되었으나, GitHub Actions 또는 Azure DevOps를 도입하여 애플리케이션 배포까지 포함한 완전한 CI/CD 파이프라인을 구축합니다. 이때 `tfsec`, `checkov` 보안 검사를 파이프라인에 통합하여 배포 전 보안성을 자동 검증합니다.
+2.  **Automated Chaos Engineering:** 시스템의 회복 탄력성을 극대화하기 위해, Chaos Mesh와 같은 도구를 도입하여 운영 환경에서 무작위로 장애를 주입하고 자동 복구 능력을 상시 검증하는 '자동화된 카오스 엔지니어링 파이프라인'을 구축할 계획입니다.
+3.  **Container Migration (AKS):** 현재 VMSS 기반의 애플리케이션을 AKS(Azure Kubernetes Service)로 마이그레이션하여, 컨테이너 보안, 서비스 메쉬(Service Mesh), 그리고 GitOps 기반의 운영 체계로 고도화할 예정입니다.
+4.  **Data Analytics Platform:** 축적된 쇼핑몰 데이터와 보안 로그를 **Azure Synapse Analytics**로 통합하여, 비즈니스 인사이트 도출 및 보안 위협 예측 모델링(Machine Learning)을 수행할 수 있는 데이터 플랫폼으로 확장할 것입니다.
 
 ---
 
@@ -607,10 +608,13 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
   firewall_policy_id = azurerm_firewall_policy.fw_policy.id
   priority           = 100
 
+  # 애플리케이션 규칙: FQDN(도메인) 기반 트래픽 제어
   application_rule_collection {
     name     = "app_rules"
     priority = 100
     action   = "Allow"
+    
+    # Windows 업데이트 도메인 허용
     rule {
       name = "Allow-Windows-Update"
       protocols {
@@ -624,21 +628,15 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
       source_addresses  = ["*"]
       destination_fqdns = ["*.update.microsoft.com", "*.windowsupdate.com"]
     }
-    rule {
-      name = "Allow-Linux-Update"
-      protocols {
-        type = "Https"
-        port = 443
-      }
-      source_addresses  = ["*"]
-      destination_fqdns = ["*.ubuntu.com", "*.canonical.com"]
-    }
   }
 
+  # 네트워크 규칙: IP/Port 기반 트래픽 제어
   network_rule_collection {
     name     = "network_rules"
     priority = 200
     action   = "Allow"
+    
+    # NTP(시간 동기화) 포트 123 허용
     rule {
       name                  = "Allow-NTP"
       protocols             = ["UDP"]
@@ -656,56 +654,73 @@ Managed Identity를 할당하고 롤링 업데이트 정책을 적용한 VMSS �
 ```hcl
 resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   name                = "web-vmss"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  sku                 = "Standard_B2s"
+  resource_group_name = var.rgname
+  location            = var.loca
+  sku                 = "Standard_D2s_v3"
   instances           = 2
-  admin_username      = "www"
-  upgrade_mode        = "Rolling"
+  admin_username      = var.admin_username
+  upgrade_mode        = "Rolling" # 롤링 업데이트 모드 사용
 
+  # SSH 키 인증 방식 적용 (보안 강화)
   admin_ssh_key {
-    username   = "www"
-    public_key = file("~/.ssh/id_rsa.pub")
+    username   = var.admin_username
+    public_key = file("${path.module}/../../ssh/id_rsa_school.pub")
   }
 
+  # OS 이미지: Rocky Linux 9 사용
   source_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"
-    sku       = "22_04-lts"
+    publisher = "resf"
+    offer     = "rockylinux-x86_64"
+    sku       = "9-lvm"
     version   = "latest"
   }
+  
+  plan {
+    publisher = "resf"
+    product   = "rockylinux-x86_64"
+    name      = "9-lvm"
+  }
 
+  # OS 디스크 설정: 프리미엄 SSD 사용 (성능 최적화)
   os_disk {
-    storage_account_type = "Standard_LRS"
-    caching              = "ReadWrite"
+    caching              = "ReadOnly"
+    storage_account_type = "Premium_LRS"
   }
 
   network_interface {
-    name    = "web-nic"
+    name    = "vmss-nic"
     primary = true
-
     ip_configuration {
       name      = "internal"
       primary   = true
-      subnet_id = var.web_subnet_id
+      subnet_id = var.vmss_subnet_id
       load_balancer_backend_address_pool_ids = [var.lb_backend_pool_id]
     }
   }
 
+  # Managed Identity 할당 (Key Vault 접근용)
   identity {
     type         = "UserAssigned"
-    identity_ids = [var.user_assigned_identity_id]
+    identity_ids = [var.vmss_identity_id]
   }
 
+  # VM 초기화 스크립트 실행 (웹 서버 설정 자동화)
+  extension {
+    name                       = "WebInitScript"
+    publisher                  = "Microsoft.Azure.Extensions"
+    type                       = "CustomScript"
+    type_handler_version       = "2.1"
+    settings = jsonencode({
+      script = base64encode(templatefile("${path.module}/../../scripts/web_init.tftpl", { ... }))
+    })
+  }
+
+  # 롤링 업데이트 정책 설정
   rolling_upgrade_policy {
-    max_batch_instance_percent              = 20
-    max_unhealthy_instance_percent          = 20
-    max_unhealthy_upgraded_instance_percent = 20
-    pause_time_between_batches              = "PT30S"
-  }
-
-  lifecycle {
-    ignore_changes = [instances] # 오토스케일링으로 인한 인스턴스 수 변경 무시
+    max_batch_instance_percent              = 20    # 한 번에 20%씩 업데이트
+    max_unhealthy_instance_percent          = 100   # 비정상 인스턴스 허용 비율
+    max_unhealthy_upgraded_instance_percent = 100   # 업데이트 중 비정상 허용 비율
+    pause_time_between_batches              = "PT0S" # 배치 사이 대기 시간
   }
 }
 ```
@@ -721,18 +736,18 @@ Sentinel 탐지 규칙에 사용된 실제 Kusto Query Language(KQL) 코드 모�
 // SSH Brute Force Attack
 // 5분 내에 3회 이상의 로그인 실패가 발생한 출발지 IP를 식별합니다.
 Syslog
-| where Facility == "auth" or Facility == "authpriv"
-| where SyslogMessage contains "Failed password" or SyslogMessage contains "authentication failure"
-| extend AttackerIP = extract(@"from\s+(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
-| extend TargetUser = extract(@"for\s+(invalid\s+user\s+)?(\w+)", 2, SyslogMessage)
+| where Facility == "auth" or Facility == "authpriv" // 인증 관련 로그만 필터링
+| where SyslogMessage contains "Failed password" or SyslogMessage contains "authentication failure" // 실패 메시지 검색
+| extend AttackerIP = extract(@"from\s+(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage) // 정규식으로 공격자 IP 추출
+| extend TargetUser = extract(@"for\s+(invalid\s+user\s+)?(\w+)", 2, SyslogMessage) // 정규식으로 대상 사용자 추출
 | summarize 
-    FailedAttempts = count(), 
-    TargetUsers = make_set(TargetUser), 
-    LastAttemptTime = max(TimeGenerated) 
-  by AttackerIP, Computer, bin(TimeGenerated, 5m)
-| where FailedAttempts >= 3
+    FailedAttempts = count(), // 실패 횟수 카운트
+    TargetUsers = make_set(TargetUser), // 시도된 사용자 목록 집계
+    LastAttemptTime = max(TimeGenerated) // 마지막 시도 시간
+  by AttackerIP, Computer, bin(TimeGenerated, 5m) // 5분 단위로 그룹화
+| where FailedAttempts >= 3 // 실패 횟수가 3회 이상인 경우만 필터링
 | project TimeGenerated, Computer, AttackerIP, FailedAttempts, TargetUsers, LastAttemptTime
-| order by FailedAttempts desc
+| order by FailedAttempts desc // 실패 횟수 내림차순 정렬
 ```
 
 ### B.2 Break Glass Account Protection
@@ -740,20 +755,20 @@ Syslog
 // Emergency Account Login Detection
 // 비상용 계정(Break Glass Account)이 사용되었을 때 즉시 알림을 발생시킵니다.
 SigninLogs
-| where UserPrincipalName contains "breakglass" or UserPrincipalName contains "admin-emergency"
-| where ResultType == 0 // 0 means Success
-| project TimeGenerated, UserPrincipalName, IPAddress, Location, AppDisplayName, UserAgent
+| where UserPrincipalName contains "breakglass" or UserPrincipalName contains "admin-emergency" // 비상 계정 식별
+| where ResultType == 0 // 0 means Success (로그인 성공인 경우만)
+| project TimeGenerated, UserPrincipalName, IPAddress, Location, AppDisplayName, UserAgent // 주요 정보만 출력
 ```
 
 ### B.3 WAF SQL Injection Detection
 ```csharp
 // AzureDiagnostics Table에서 WAF 로그 분석
 AzureDiagnostics
-| where ResourceType == "APPLICATIONGATEWAYS"
-| where OperationName == "ApplicationGatewayFirewall"
-| where ruleGroup_s == "REQUEST-942-APPLICATION-ATTACK-SQLI" // OWASP SQLi Rule Group
-| summarize AttackCount = count() by clientIp_s, requestUri_s, ruleId_s
-| top 10 by AttackCount
+| where ResourceType == "APPLICATIONGATEWAYS" // App Gateway 리소스만 필터링
+| where OperationName == "ApplicationGatewayFirewall" // WAF 로그 선택
+| where ruleGroup_s == "REQUEST-942-APPLICATION-ATTACK-SQLI" // OWASP SQLi Rule Group (규칙 ID)
+| summarize AttackCount = count() by clientIp_s, requestUri_s, ruleId_s // 공격자 IP, 대상 URI, 규칙 ID별 카운트
+| top 10 by AttackCount // 상위 10개 공격 트래픽 추출
 ```
 
 ---
