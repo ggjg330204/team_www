@@ -3,6 +3,7 @@ db_password     = "It12345!"
 ssh_allowed_ips = ["61.108.60.26", "211.252.127.132", "211.227.107.208"]
 enable_ssl      = false
 domain_name     = "04www.cloud"
+sentinel_service_principal_id = "c4eede39-5c23-4ee7-88ed-5b6ae587e66d"
 admin_emails = [
   "1234enrud@gmail.com",
   "gksk2453@naver.com",
@@ -40,5 +41,3 @@ rbac_users = {
     azure_role   = "Log Analytics Reader"
   }
 }
-
-sentinel_service_principal_id = "c4eede39-5c23-4ee7-88ed-5b6ae587e66d"
