@@ -18,13 +18,46 @@ resource "azurerm_monitor_action_group" "sentinel_email" {
   }
 }
 
-resource "azurerm_logic_app_workflow" "sentinel_playbook" {
-  name                = "sentinel-incident-email"
-  location            = var.loca
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "sentinel_high_severity" {
+  name                = "sentinel-high-severity-incident"
   resource_group_name = var.rgname
+  location            = var.loca
+  description         = "High/Critical severity Sentinel incidents detected"
+  display_name        = "🚨 Sentinel High/Critical Incident"
+  enabled             = true
+  severity            = 1
 
-  identity {
-    type = "SystemAssigned"
+  scopes                = [azurerm_log_analytics_workspace.law.id]
+  evaluation_frequency  = "PT15M"
+  window_duration       = "PT15M"
+  target_resource_types = ["Microsoft.OperationalInsights/workspaces"]
+
+  criteria {
+    query = <<-QUERY
+      SecurityIncident
+      | where TimeGenerated > ago(15m)
+      | where Severity in ("High", "Critical")
+      | project TimeGenerated, Title, Severity, Status, IncidentNumber, IncidentUrl
+    QUERY
+    time_aggregation_method = "Count"
+    threshold               = 0
+    operator                = "GreaterThan"
+
+    dimension {
+      name     = "Title"
+      operator = "Include"
+      values   = ["*"]
+    }
+
+    dimension {
+      name     = "Severity"
+      operator = "Include"
+      values   = ["*"]
+    }
+  }
+
+  action {
+    action_groups = [azurerm_monitor_action_group.sentinel_email.id]
   }
 
   tags = {
@@ -33,76 +66,96 @@ resource "azurerm_logic_app_workflow" "sentinel_playbook" {
   }
 }
 
-resource "azurerm_role_assignment" "sentinel_playbook_contributor" {
-  scope                = azurerm_logic_app_workflow.sentinel_playbook.id
-  role_definition_name = "Microsoft Sentinel Automation Contributor"
-  principal_id         = var.sentinel_service_principal_id
-}
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "sentinel_medium_severity" {
+  name                = "sentinel-medium-severity-incident"
+  resource_group_name = var.rgname
+  location            = var.loca
+  description         = "Medium severity Sentinel incidents detected"
+  display_name        = "⚠️ Sentinel Medium Incident"
+  enabled             = false
+  severity            = 2
 
-resource "azurerm_logic_app_trigger_custom" "sentinel_trigger" {
-  name         = "Microsoft_Sentinel_Incident"
-  logic_app_id = azurerm_logic_app_workflow.sentinel_playbook.id
+  scopes                = [azurerm_log_analytics_workspace.law.id]
+  evaluation_frequency  = "PT10M"
+  window_duration       = "PT10M"
+  target_resource_types = ["Microsoft.OperationalInsights/workspaces"]
 
-  body = <<BODY
-{
-  "type": "Request",
-  "kind": "Http",
-  "inputs": {
-    "schema": {
-      "type": "object",
-      "properties": {
-        "content": {
-          "type": "object"
-        }
-      }
+  criteria {
+    query = <<-QUERY
+      SecurityIncident
+      | where TimeGenerated > ago(10m)
+      | where Severity == "Medium"
+      | project TimeGenerated, Title, Severity, Status, IncidentNumber
+    QUERY
+    time_aggregation_method = "Count"
+    threshold               = 0
+    operator                = "GreaterThan"
+
+    dimension {
+      name     = "Title"
+      operator = "Include"
+      values   = ["*"]
     }
   }
-}
-BODY
-}
 
-resource "azurerm_role_assignment" "sentinel_responder" {
-  scope                = azurerm_log_analytics_workspace.law.id
-  role_definition_name = "Microsoft Sentinel Responder"
-  principal_id         = azurerm_logic_app_workflow.sentinel_playbook.identity[0].principal_id
-}
-
-resource "random_uuid" "automation_rule_id" {}
-
-resource "azurerm_sentinel_automation_rule" "email_on_incident" {
-  name                       = random_uuid.automation_rule_id.result
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
-  display_name               = "Send Email on Incident Created"
-  order                      = 1
-  enabled                    = true
-
-  triggers_on   = "Incidents"
-  triggers_when = "Created"
-
-  action_incident {
-    order  = 1
-    status = "Active"
+  action {
+    action_groups = [azurerm_monitor_action_group.sentinel_email.id]
   }
 
-  action_playbook {
-    order        = 2
-    logic_app_id = azurerm_logic_app_workflow.sentinel_playbook.id
+  tags = {
+    Purpose   = "Sentinel-Alert"
+    ManagedBy = "Terraform"
+  }
+}
+
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "security_alert" {
+  name                = "sentinel-security-alert"
+  resource_group_name = var.rgname
+  location            = var.loca
+  description         = "Security alerts from Defender for Cloud"
+  display_name        = "🛡️ Security Alert Detected"
+  enabled             = true
+  severity            = 2
+
+  scopes                = [azurerm_log_analytics_workspace.law.id]
+  evaluation_frequency  = "PT30M"
+  window_duration       = "PT30M"
+  target_resource_types = ["Microsoft.OperationalInsights/workspaces"]
+
+  criteria {
+    query = <<-QUERY
+      SecurityAlert
+      | where TimeGenerated > ago(30m)
+      | where AlertSeverity in ("High", "Critical")
+      | project TimeGenerated, AlertName, AlertSeverity, Description
+    QUERY
+    time_aggregation_method = "Count"
+    threshold               = 0
+    operator                = "GreaterThan"
+
+    dimension {
+      name     = "AlertName"
+      operator = "Include"
+      values   = ["*"]
+    }
   }
 
-  depends_on = [
-    azurerm_role_assignment.sentinel_playbook_contributor,
-    azurerm_role_assignment.sentinel_responder
-  ]
+  action {
+    action_groups = [azurerm_monitor_action_group.sentinel_email.id]
+  }
+
+  tags = {
+    Purpose   = "Sentinel-Alert"
+    ManagedBy = "Terraform"
+  }
 }
 
 output "action_group_id" {
-  value = azurerm_monitor_action_group.sentinel_email.id
+  value       = azurerm_monitor_action_group.sentinel_email.id
+  description = "Action Group ID for Sentinel alerts"
 }
 
-output "logic_app_id" {
-  value = azurerm_logic_app_workflow.sentinel_playbook.id
-}
-
-output "logic_app_name" {
-  value = azurerm_logic_app_workflow.sentinel_playbook.name
+output "action_group_name" {
+  value       = azurerm_monitor_action_group.sentinel_email.name
+  description = "Action Group name"
 }

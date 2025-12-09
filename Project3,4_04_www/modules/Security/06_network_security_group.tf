@@ -397,8 +397,6 @@ resource "azurerm_network_security_group" "nsg_appgw" {
   }
 }
 
-# [추가] NSG 진단 설정 (Diagnostic Settings)
-
 resource "azurerm_monitor_diagnostic_setting" "nsg_ssh_diag" {
   name                       = "nsg-ssh-diag"
   target_resource_id         = azurerm_network_security_group.nsg_ssh.id

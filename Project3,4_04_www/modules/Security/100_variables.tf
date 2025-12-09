@@ -84,3 +84,19 @@ variable "sentinel_service_principal_id" {
   description = "The Object ID of the Azure Security Insights service principal"
   type        = string
 }
+
+variable "subscription_id" {
+  description = "Azure Subscription ID for data connectors"
+  type        = string
+}
+
+variable "tenant_id" {
+  description = "Azure Tenant ID for Defender connectors"
+  type        = string
+}
+
+variable "enable_activity_logs" {
+  description = "Enable Azure Activity logs Diagnostic Setting (set to false if already exists)"
+  type        = bool
+  default     = false
+}
