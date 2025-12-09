@@ -17,3 +17,7 @@ data "azuread_user" "sec_internal1" {
 data "azuread_user" "sec_internal2" {
   user_principal_name = "${var.rbac_users["sec_internal2"].account_name}@${var.azure_ad_tenant_domain}"
 }
+
+data "azuread_user" "sec_external2" {
+  user_principal_name = "${var.rbac_users["sec_external2"].account_name}@${var.azure_ad_tenant_domain}"
+}
