@@ -76,6 +76,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
       script = base64encode(templatefile("${path.module}/../../scripts/web_init.tftpl", {
         was_lb_ip        = var.was_lb_private_ip
         app_insights_key = var.app_insights_key
+        resource_group   = var.rgname
       }))
     })
   }
