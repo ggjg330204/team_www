@@ -1,6 +1,6 @@
 #!/bin/bash
 # Web VMSS Initialization Script
-# Terraform Variables: ${was_lb_ip}, ${app_insights_key}
+# Terraform Variables: ${was_lb_ip}, ${app_insights_key}, ${resource_group}
 
 set -e
 
@@ -366,11 +366,17 @@ $env.PROMPT_COMMAND = {||
 }
 $env.PROMPT_INDICATOR = ""
 
-# Pre-configured environment variables (from Terraform)
-$env.WAS_IP = "${was_lb_ip}"
-
-# Helper function to connect to WAS
-def was [] { ssh $"www@($env.WAS_IP)" }
+# Helper function to connect to WAS (dynamically fetches VMSS instance IP)
+def was [] {
+    print "WAS VMSS IP 조회 중..."
+    let was_ip = (az vmss nic list --resource-group ${resource_group} --vmss-name was-vmss --query "[0].ipConfigurations[0].privateIPAddress" -o tsv | str trim)
+    if ($was_ip | is-empty) {
+        print "❌ WAS IP를 찾을 수 없습니다. az login 상태를 확인하세요."
+        return
+    }
+    print $"✅ WAS IP: ($was_ip)"
+    ssh $"www@($was_ip)"
+}
 
 # Helper function to connect to MySQL (run on WAS, not Web)
 def mydb [] { 
