@@ -1,4 +1,4 @@
-# CI/CD 사용 시 아래 주석을 해제하세요
+# CI/CD 사용 시 아래 주석을 해제
 #
 # terraform {
 #   backend "azurerm" {

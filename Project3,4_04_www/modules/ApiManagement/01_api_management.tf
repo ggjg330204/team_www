@@ -26,6 +26,3 @@ resource "azurerm_api_management_api" "wordpress" {
   service_url           = "http://${var.lb_private_ip}"
   subscription_required = false
 }
-
-# API Policy는 Azure Portal에서 수동 설정 필요
-# Rate Limit, Quota, CORS 등의 정책은 Portal에서 구성

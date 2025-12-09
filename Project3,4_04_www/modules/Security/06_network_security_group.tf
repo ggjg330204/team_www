@@ -347,9 +347,6 @@ resource "azurerm_network_security_rule" "db_deny_all" {
   network_security_group_name = azurerm_network_security_group.nsg_db.name
 }
 
-
-
-# [추가] Application Gateway NSG (인라인 규칙 적용)
 resource "azurerm_network_security_group" "nsg_appgw" {
   name                = "www-nsg-appgw"
   location            = var.loca
