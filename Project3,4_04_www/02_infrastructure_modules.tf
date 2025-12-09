@@ -162,6 +162,7 @@ module "identity" {
   azure_ad_tenant_domain     = var.azure_ad_tenant_domain
   rbac_users                 = var.rbac_users
   log_analytics_workspace_id = module.security.log_analytics_workspace_id
+  key_vault_id               = module.security.key_vault_id
 }
 
 module "dns" {
