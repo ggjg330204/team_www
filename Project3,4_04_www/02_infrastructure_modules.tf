@@ -117,6 +117,8 @@ module "security" {
   admin_phone                   = var.admin_phone
   domain_name                   = var.domain_name
   sentinel_service_principal_id = var.sentinel_service_principal_id
+  subscription_id = var.subscription_id
+  tenant_id       = data.azurerm_client_config.current.tenant_id
 }
 
 module "storage" {

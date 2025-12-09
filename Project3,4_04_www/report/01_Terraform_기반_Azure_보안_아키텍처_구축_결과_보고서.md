@@ -1,5 +1,4 @@
 # Terraform 기반 Azure 보안 아키텍처 구축 결과 보고서
-**(Azure Security Architecture Implementation Report)**
 
 ## 목차
 
@@ -8,7 +7,7 @@
     *   [1.2 프로젝트 목표 및 범위](#12-프로젝트-목표-및-범위)
     *   [1.3 해결하고자 하는 주요 보안 과제](#13-해결하고자-하는-주요-보안-과제)
 2.  [아키텍처 설계 철학 및 원칙](#2-아키텍처-설계-철학-및-원칙)
-    *   [2.1 Zero Trust Security Model](#21-zero-trust-security-model)
+    *   [2.1 Zero Trust 보안 모델](#21-zero-trust-보안-모델)
     *   [2.2 Immutable Infrastructure (Pets vs Cattle)](#22-immutable-infrastructure-pets-vs-cattle)
     *   [2.3 Hub-Spoke Network Topology](#23-hub-spoke-network-topology)
 3.  [인프라 아키텍처 상세 구현](#3-인프라-아키텍처-상세-구현)
@@ -18,10 +17,10 @@
     *   [3.4 데이터 플랫폼](#34-데이터-플랫폼)
     *   [3.5 로드 밸런싱 및 가속화](#35-로드-밸런싱-및-가속화)
 4.  [보안 엔지니어링 심층 분석](#4-보안-엔지니어링-심층-분석)
-    *   [4.1 Identity & Access Management (IAM)](#41-identity--access-management-iam)
-    *   [4.2 Defense-in-Depth (심층 방어 전략)](#42-defense-in-depth-심층-방어-전략)
-    *   [4.3 Data Protection (암호화 및 키 관리)](#43-data-protection-암호화-및-키-관리)
-    *   [4.4 Threat Detection & Response (SIEM/SOAR)](#44-threat-detection--response-siemsoar)
+    *   [4.1 IAM 및 접근 제어](#41-iam-및-접근-제어)
+    *   [4.2 심층 방어 (Defense-in-Depth)](#42-심층-방어-defense-in-depth)
+    *   [4.3 데이터 보호 및 암호화](#43-데이터-보호-및-암호화)
+    *   [4.4 위협 탐지 및 대응 (SIEM/SOAR)](#44-위협-탐지-및-대응-siemsoar)
 5.  [보안 관제 및 운영 상세](#5-보안-관제-및-운영-상세)
     *   [5.1 Microsoft Sentinel 탐지 규칙](#51-microsoft-sentinel-탐지-규칙)
     *   [5.2 자동화된 사고 대응 (SOAR Automation)](#52-자동화된-사고-대응-soar-automation)
@@ -30,6 +29,9 @@
     *   [6.1 RBAC 기반 권한 관리 매트릭스](#61-rbac-기반-권한-관리-매트릭스)
     *   [6.2 재해 복구(DR) 및 비즈니스 연속성 계획(BCP)](#62-재해-복구dr-및-비즈니스-연속성-계획bcp)
     *   [6.3 Azure Policy 및 규정 준수](#63-azure-policy-및-규정-준수)
+    *   [6.4 IaC 보안 형상 관리](#64-iac-보안-형상-관리)
+    *   [6.5 제한사항 및 환경 제약](#65-제한사항-및-환경-제약)
+    *   [6.6 비용 효율화 및 리소스 최적화 전략](#66-비용-효율화-및-리소스-최적화-전략)
 7.  [결론 및 향후 로드맵](#7-결론-및-향후-로드맵)
 8.  [부록 A: 주요 Terraform 코드](#8-부록-a-주요-terraform-코드)
 9.  [부록 B: Sentinel KQL 라이브러리](#9-부록-b-sentinel-kql-라이브러리)
@@ -84,7 +86,7 @@
 
 본 프로젝트는 단순한 기능 구현을 넘어, 명확한 설계 철학과 원칙에 기반하여 아키텍처를 수립했습니다. 이 철학들은 시스템의 보안성, 안정성, 그리고 운영 효율성을 결정짓는 근간이 됩니다.
 
-### 2.1 Zero Trust Security Model
+### 2.1 Zero Trust 보안 모델
 
 전통적인 보안 모델은 '성벽과 해자(Castle-and-Moat)' 개념이었습니다. 즉, 외부의 침입은 철저히 막되, 일단 내부에 들어온 트래픽은 신뢰했습니다. 그러나 이러한 모델은 내부자 위협이나 횡적 이동(Lateral Movement)에 취약합니다. 우리는 **Never Trust, Always Verify (절대 신뢰하지 말고 항상 검증하라)**는 제로 트러스트 원칙을 적용했습니다.
 
@@ -330,7 +332,7 @@ graph TD
 
 ## 4. 보안 엔지니어링 심층 분석
 
-### 4.1 Identity & Access Management (IAM)
+### 4.1 IAM 및 접근 제어
 
 클라우드 시대에는 'IP 주소'가 아닌 'ID(Identity)'가 새로운 보안 경계입니다. 본 프로젝트는 Azure AD (Entra ID)를 중심으로 강력한 인증 체계를 구축했습니다.
 
@@ -343,7 +345,7 @@ graph TD
 3.  애플리케이션은 Azure Instance Metadata Service(IMDS) 로컬 엔드포인트를 호출하여 Access Token을 발급받습니다.
 4.  이 토큰을 사용하여 Key Vault에서 DB 패스워드를 안전하게 가져옵니다. **소스 코드에는 아무런 비밀 정보도 남지 않습니다.**
 
-### 4.2 Defense-in-Depth (심층 방어 전략)
+### 4.2 심층 방어 (Defense-in-Depth)
 
 공격자가 하나의 방어선을 뚫더라도 다음 방어선이 막아낼 수 있도록 7계층 방어 체계를 구축했습니다.
 
@@ -355,7 +357,7 @@ graph TD
 *   **L6 (Data):** Private Endpoint를 통해 DB가 인터넷과 완전히 단절된 사설망에 존재합니다.
 *   **L7 (Identity):** MFA(Multi-Factor Authentication)와 RBAC를 통해 계정 도용 시 피해를 최소화합니다.
 
-### 4.3 Data Protection (암호화 및 키 관리)
+### 4.3 데이터 보호 및 암호화
 
 #### Encryption in Transit (전송 중 암호화)
 모든 통신 채널에 TLS 1.2 이상을 강제합니다.
@@ -367,12 +369,12 @@ graph TD
 *   **VM Disk:** ADE(Azure Disk Encryption)를 사용하여 OS 영역과 데이터 영역을 모두 암호화했습니다. 물리적 디스크가 탈취되어도 복호화 키 없이는 데이터를 읽을 수 없습니다.
 *   **Platform Managed Keys:** Storage Access Key 등 플랫폼 관리 키는 Microsoft가 관리하며 주기적으로 자동 순환됩니다.
 
-### 4.4 Threat Detection & Response (SIEM/SOAR)
+### 4.4 위협 탐지 및 대응 (SIEM/SOAR)
 
 우리는 **Microsoft Sentinel**을 도입하여 단순한 로그 수집을 넘어선 지능형 위협 대응 체계를 구축했습니다.
 
 *   **SIEM (Security Information and Event Management):** Syslog, Azure Activity Log, Sign-in Log, Firewall Log 등 파편화된 로그를 Log Analytics Workspace로 통합 수집합니다.
-*   **SOAR (Security Orchestration, Automation, and Response):** 위협이 탐지되면, 사전 정의된 'Playbook' 또는 'Automation Rule'이 실행되어 보안 담당자에게 이메일을 보내거나 티켓을 생성합니다.
+*   **SOAR (Security Orchestration, Automation, and Response):** 위협이 탐지되면, Azure Monitor Action Group을 통해 보안 담당자에게 즉시 이메일 알림을 발송하여 신속한 대응을 지원합니다.
 
 
 
@@ -402,13 +404,13 @@ graph TD
 | 14 | **Malicious IP** | High | Microsoft Threat Intelligence가 정의한 악성 IP와의 통신 | 즉시 차단 |
 | 15 | **Break Glass Account** | High | 비상용 계정(Break Glass)의 로그인 성공 이벤트 | 전사 비상 알림 |
 
-### 5.2 자동화된 사고 대응 (SOAR Automation)
+### 5.2 실시간 보안 위협 알림 (Real-time Alerting)
 
-수동 대응의 지연 시간을 없애기 위해 Sentinel의 **Automation Rule**과 **Playbook (Logic App)** 기능을 활용했습니다.
+통합된 Azure Monitor Action Group을 통해 보안 사고 발생 시 담당자에게 즉시 전파합니다.
 
-1.  **트리거 조건:** 심각도 'High' 이상의 인시던트(Incident) 생성 시
-2.  **실행 동작:** `sentinel-incident-email` **Logic App**을 자동 실행
-3.  **결과:** Logic App이 보안 관제 팀(Security Operations Center) 공용 메일함으로 즉시 알림 메일을 발송하고, 인시던트 상태를 'Active'로 자동 전환하여 담당자에게 할당됨을 표시합니다.
+1.  **트리거 조건:** 심각도 'High/Critical' 인시던트 또는 'Security Alert' 발생 시
+2.  **실행 동작:** `sentinel-alert-email` **Action Group** 동작
+3.  **결과:** 보안 관제 팀(Security Operations Center) 공용 메일함 및 담당자에게 상세 위협 내용이 포함된 이메일 발송.
 
 ### 5.3 모니터링 및 로깅 아키텍처
 
@@ -526,7 +528,23 @@ Terraform을 통해 Azure Policy를 배포하여 거버넌스를 강제합니다
 *   **Allowed Locations:** "Korea Central" 외의 리전에 리소스 생성 시도 시 거부(Deny). 데이터 주권 준수.
 *   **Enforce HTTPS:** HTTP 접근을 허용하는 웹 앱 배포 시 거부.
 
-### 6.4 제한사항 및 환경 제약
+### 6.4 IaC 보안 형상 관리
+
+본 프로젝트는 `tfsec`과 같은 정적 분석 도구 도입 이전 단계에서도, **엄격한 절차적 통제**를 통해 구성 불일치(Drift)와 보안 설정 누락을 방지했습니다.
+
+#### 1. State Locking (동시성 제어)
+*   **메커니즘:** Azure Blob Storage의 **Lease 기능**을 활용하여 Terraform State 파일(`tfstate`)을 잠금(Lock) 처리합니다.
+*   **효과:** 다수의 관리자가 동시에 배포를 시도할 경우, 먼저 실행된 프로세스가 Lease를 획득하고 다른 프로세스는 대기하거나 실패하게 함으로써 State의 정합성을 100% 보장합니다.
+
+#### 2. Plan Review & Apply (변경 통제)
+*   **절차:** 모든 인프라 변경은 **`terraform plan` -> `Review` -> `terraform apply`**의 3단계를 엄격히 준수합니다.
+*   **검증:** Plan 단계에서 생성되는 변경 사항 목록(Create/Update/Delete)을 육안으로 검토하여, 의도치 않은 리소스 삭제나 보안 그룹(NSG) 개방이 포함되어 있는지 확인 후 승인합니다.
+
+#### 3. No Manual Drift (불변성 유지)
+*   **원칙:** Azure Portal(콘솔)을 통한 수동 리소스 변경을 원칙적으로 금지합니다.
+*   **대응:** 만약 긴급 상황에서 수동 변경이 발생했더라도, 다음 배포 시 Terraform 코드가 Source of Truth가 되어 수동 변경분을 덮어씌움으로써(Correction), 항상 코드가 정의한 보안 상태를 유지합니다.
+
+### 6.5 제한사항 및 환경 제약
 
 본 프로젝트는 학습용 Azure 구독(Student Subscription) 환경에서 구축되었으며, 다음과 같은 제한사항이 존재합니다:
 
@@ -549,8 +567,19 @@ Terraform을 통해 Azure Policy를 배포하여 거버넌스를 강제합니다
 
 | 서비스 | 상태 | 월 비용 | 비고 |
 |:---|:---:|:---|:---|
-| DDoS Protection Standard | ❌ 미배포 | $3,000+ | Basic으로 대체 |
-| VPN Gateway | ❌ 미배포 | $150-500 | 온프레미스 연동 시 도입 |
+| DDoS Protection Standard | ❌ 미배포 | $3,000+ | Basic Tier로 대체 (WAF로 L7 방어 보완) |
+| VPN Gateway | ❌ 미배포 | $150-500 | 온프레미스 연동 시 도입 예정 |
+
+### 6.6 비용 효율화 및 리소스 최적화 전략 (Cost Optimization)
+클라우드 운영 비용(TCO)을 절감하기 위해 다음과 같은 전략을 수립하고 적용했습니다.
+
+#### 1. 스팟 인스턴스(Spot Instance) 배제 결정 (Trade-off)
+*   **고려사항:** Spot Instance 사용 시 최대 90% 비용 절감이 가능.
+*   **의사결정:** 데이터베이스 및 스테이트풀(Stateful) 애플리케이션의 **데이터 안정성**이 최우선이므로, 예기치 않은 중단을 방지하기 위해 비용이 더 들더라도 **Standard/Premium SKU**를 유지하기로 결정했습니다.
+
+#### 2. 미사용 리소스 정리 자동화 (Resource Cleanup)
+*   **문제:** 테스트 목적으로 생성한 리소스(Public IP, Disk, NIC)가 삭제되지 않고 방치되어 비용인 발생하는 문제(Zombie Resources).
+*   **해결:** `az resource list --tag Purpose=Test` 명령어를 기반으로 하는 **정리 스크립트(Cleanup Script)**를 작성하여, 프로젝트 종료 시 또는 매일 야간에 불필요한 리소스를 일괄 삭제하는 운영 프로세스를 정립했습니다.
 
 ---
 
