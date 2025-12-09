@@ -28,10 +28,18 @@ JSON
   depends_on           = [azurerm_mysql_flexible_server.www_mysql]
 }
 resource "azurerm_data_factory_linked_service_azure_blob_storage" "blob_dest" {
-  name              = "BlobStorageDestination"
-  data_factory_id   = azurerm_data_factory.www_adf.id
-  connection_string = var.storage_connection_string
+  name                 = "BlobStorageDestination"
+  data_factory_id      = azurerm_data_factory.www_adf.id
+  service_endpoint     = "https://${element(split(";", element(split("AccountName=", var.storage_connection_string), 1)), 0)}.blob.core.windows.net/"
+  use_managed_identity = true
 }
+
+resource "azurerm_role_assignment" "adf_blob_contributor" {
+  scope                = var.storage_account_id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_data_factory.www_adf.identity[0].principal_id
+}
+
 resource "azurerm_data_factory_pipeline" "mysql_backup" {
   name            = "MySQLDailyBackup"
   data_factory_id = azurerm_data_factory.www_adf.id

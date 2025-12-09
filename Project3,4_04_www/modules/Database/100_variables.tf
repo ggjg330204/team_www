@@ -75,3 +75,8 @@ variable "log_analytics_workspace_id" {
   description = "The ID of the Log Analytics Workspace"
   type        = string
 }
+
+variable "storage_account_id" {
+  description = "The ID of the storage account for role assignment"
+  type        = string
+}
