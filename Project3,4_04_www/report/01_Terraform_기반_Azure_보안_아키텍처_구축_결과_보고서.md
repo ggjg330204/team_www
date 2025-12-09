@@ -404,11 +404,11 @@ graph TD
 
 ### 5.2 자동화된 사고 대응 (SOAR Automation)
 
-수동 대응의 지연 시간을 없애기 위해 Sentinel의 **Automation Rule** 기능을 활용했습니다.
+수동 대응의 지연 시간을 없애기 위해 Sentinel의 **Automation Rule**과 **Playbook (Logic App)** 기능을 활용했습니다.
 
 1.  **트리거 조건:** 심각도 'High' 이상의 인시던트(Incident) 생성 시
-2.  **실행 동작:** `sentinel-alert-email` 이라는 **Action Group** 호출
-3.  **결과:** 보안 관제 팀(Security Operations Center) 공용 메일함으로 즉시 알림 메일 발송. 메일에는 공격자 IP, 대상 호스트, 공격 유형 등 상세 정보가 포함됨.
+2.  **실행 동작:** `sentinel-incident-email` **Logic App**을 자동 실행
+3.  **결과:** Logic App이 보안 관제 팀(Security Operations Center) 공용 메일함으로 즉시 알림 메일을 발송하고, 인시던트 상태를 'Active'로 자동 전환하여 담당자에게 할당됨을 표시합니다.
 
 ### 5.3 모니터링 및 로깅 아키텍처
 
