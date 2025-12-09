@@ -90,6 +90,7 @@ module "database" {
   vnet_id                    = module.network_central.vnet_id
   storage_connection_string  = module.storage.storage_connection_string
   log_analytics_workspace_id = module.security.log_analytics_workspace_id
+  storage_account_id         = module.storage.storage_account_id
 }
 module "security" {
   source          = "./modules/Security"
