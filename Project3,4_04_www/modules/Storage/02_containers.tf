@@ -1,6 +1,6 @@
 resource "azurerm_storage_container" "www_media" {
   name                  = "media"
-  storage_account_id    = azurerm_storage_account.www_sa.id
+  storage_account_id    = azurerm_storage_account.premium_sa.id
   container_access_type = "private"
   metadata = {
     purpose     = "User uploaded media files (photos, videos)"
@@ -30,7 +30,7 @@ resource "azurerm_storage_container" "www_container" {
 }
 resource "azurerm_storage_container" "wordpress_content" {
   name                  = "wordpress-content"
-  storage_account_id    = azurerm_storage_account.www_sa.id
+  storage_account_id    = azurerm_storage_account.premium_sa.id
   container_access_type = "private"
   metadata = {
     purpose     = "WordPress content and uploads"

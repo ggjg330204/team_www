@@ -16,3 +16,20 @@ output "storage_account_id" {
   description = "The ID of the storage account"
   value       = azurerm_storage_account.www_sa.id
 }
+
+output "premium_storage_account_name" {
+  description = "The name of the premium storage account"
+  value       = azurerm_storage_account.premium_sa.name
+}
+
+output "premium_storage_account_key" {
+  description = "The primary access key for the premium storage account"
+  value       = azurerm_storage_account.premium_sa.primary_access_key
+  sensitive   = true
+}
+
+output "premium_storage_connection_string" {
+  description = "Primary connection string for the premium storage account"
+  value       = azurerm_storage_account.premium_sa.primary_connection_string
+  sensitive   = true
+}
