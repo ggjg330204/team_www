@@ -4,6 +4,12 @@ resource "azurerm_role_assignment" "pm_owner" {
   principal_id         = data.azuread_user.pm.object_id
 }
 
+resource "azurerm_role_assignment" "pm_sentinel" {
+  scope                = var.log_analytics_workspace_id
+  role_definition_name = "Microsoft Sentinel Contributor"
+  principal_id         = data.azuread_user.pm.object_id
+}
+
 resource "azurerm_role_assignment" "arch_reader" {
   scope                = var.rgid
   role_definition_name = "Reader"
