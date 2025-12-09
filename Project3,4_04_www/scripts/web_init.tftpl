@@ -366,11 +366,11 @@ $env.PROMPT_COMMAND = {||
 }
 $env.PROMPT_INDICATOR = ""
 
-# Pre-configured environment variables (fallback values)
-$env.WAS_IP = "192.168.5.6"
+# Pre-configured environment variables (from Terraform)
+$env.WAS_IP = "${was_lb_ip}"
 
 # Helper function to connect to WAS
-def was [] { ssh www@192.168.5.6 }
+def was [] { ssh $"www@($env.WAS_IP)" }
 
 # Helper function to connect to MySQL (run on WAS, not Web)
 def mydb [] { 
