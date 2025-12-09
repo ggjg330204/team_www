@@ -29,3 +29,8 @@ variable "log_analytics_workspace_id" {
   type        = string
   description = "Log Analytics Workspace ID for Log Analytics Reader scope"
 }
+
+variable "key_vault_id" {
+  type        = string
+  description = "Key Vault ID for Key Vault Administrator scope"
+}
