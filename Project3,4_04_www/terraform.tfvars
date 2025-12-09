@@ -40,4 +40,9 @@ rbac_users = {
     role         = "Internal Security"
     azure_role   = "Log Analytics Reader"
   }
+  "sec_external2" = {
+    account_name = "student426"
+    role         = "External Security"
+    azure_role   = "Microsoft Sentinel Contributor"
+  }
 }
