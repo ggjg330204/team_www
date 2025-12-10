@@ -7,8 +7,8 @@
     * [2.1 전체 서비스 흐름도](#21-전체-서비스-흐름도)
     * [2.2 관리자 접속 흐름도](#22-관리자-접속-흐름도)
 3. [인프라 접속 및 계층간 연결 검증](#3-인프라-접속-및-계층간-연결-검증)
-    * [3.1 Edge & Public Access (Front Door/AppGW)](#31-edge--public-access-front-doorappgw)
-    * [3.2 3-Tier Internal Connection (Bastion -> Web -> WAS)](#32-3-tier-internal-connection-bastion---web---was)
+    * [3.1 외부 접속 및 엣지 보안 (Front Door/AppGW)](#31-외부-접속-및-엣지-보안-front-doorappgw)
+    * [3.2 3-Tier 내부 연결 검증 (Bastion -> Web -> WAS)](#32-3-tier-내부-연결-검증-bastion---web---was)
 4. [데이터 서비스 검증](#4-데이터-서비스-검증)
     * [4.1 WAS <-> DB/Redis 연결 검증](#41-was---dbredis-연결-검증)
     * [4.2 Storage Account 연결](#42-storage-account-연결)
@@ -18,6 +18,8 @@
     * [5.1 MySQL Zone Redundant Failover](#51-mysql-zone-redundant-failover)
     * [5.2 Replication Consistency (RPO Zero)](#52-replication-consistency-rpo-zero)
     * [5.3 VMSS Auto Scaling](#53-vmss-auto-scaling)
+    * [5.4 Health Probe 및 VM 장애 복구 검증](#54-health-probe-및-vm-장애-복구-검증)
+    * [5.5 L4 로드밸런싱 분산 처리 검증](#55-l4-로드밸런싱load-balancing-분산-처리-검증)
 6. [종합 검증 지표](#6-종합-검증-지표)
 7. [종합 결론](#7-종합-결론)
 
@@ -297,6 +299,53 @@ Primary에 데이터 입력 시 Replica(Standby)에 즉시 반영되는지 확�
 > *   **Image 1 (Stress):** `htop` 또는 `top` 명령어로 CPU 사용률이 100%를 찍고 있는 화면.
 > *   **Image 2 (Scale-out):** Azure Portal의 VMSS '인스턴스' 탭에서 인스턴스 개수가 2개로 늘어나고 있고, 상태가 'Creating' 또는 'Running'인 화면.
 
+### 5.4 Health Probe 및 VM 장애 복구 검증
+
+Load Balancer의 Health Probe가 백엔드 인스턴스의 장애를 감지하고, VMSS가 자동으로 복구하는지 검증했습니다.
+
+**Step 1: 초기 상태 확인**
+
+www-backend-pool에 2개의 인스턴스가 '실행 중' 상태임을 확인.
+<스크린샷1>
+
+**Step 2: 장애 유발 (Fault Injection)**
+
+*   **Action:** Bastion을 통해 Web VM(Port 50003)에 SSH 접속 후 서비스 중지 또는 시스템 종료 명령 실행.
+
+
+**Step 3: 장애 감지 및 차단**
+
+*   **Observation:** Load Balancer 백엔드 풀 상태 확인 결과, 장애가 발생한 인스턴스의 상태가 비활성화되거나 리스트에서 제외됨을 확인.
+<스크린샷3>
+
+**Step 4: 자동 복구**
+
+*   **Result:** 일정 시간 경과 후 VMSS의 자동 복구 기능이 동작하여, 백엔드 풀의 인스턴스 2개가 다시 모두 '실행 중' 상태로 복구됨.
+<스크린샷4>
+> **Azure Portal Load Balancer 백엔드 풀 화면에서 인스턴스 상태가 다시 '실행 중'으로 돌아온 화면.**
+
+### 5.5 L4 로드밸런싱(Load Balancing) 분산 처리 검증
+
+트래픽이 특정 서버에 편중되지 않고, L4 Load Balancer를 통해 복수의 VM 인스턴스로 균등하게 분산 처리되는지 검증했습니다.
+
+**Step 1: 부하 분산 주소 확인**
+
+Azure Portal에서 Load Balancer의 Frontend IP 구성을 확인하여 DNS 주소(`www-lb-koreacentral.koreacentral.cloudapp.azure.com`)를 확보했습니다.
+> <스크린샷1>
+
+**Step 2: 트래픽 생성 (Traffic Generation)**
+
+*   **Action:** 외부 로컬 PC에서 `curl` 명령어를 사용하여 0.5초 간격으로 20회의 연속적인 HTTP 요청을 전송했습니다.
+*   **Command:** `for ($i=1; $i -le 20; $i++) { curl.exe http://<LB_DNS>; Start-Sleep -Milliseconds 500 }`
+
+> **<스크린샷2> (트래픽 전송):** 로컬 터미널에서 반복문 스크립트를 통해 `HTTP/1.1 200 OK` 응답을 연속적으로 받는 화면.
+
+**Step 3: 분산 처리 결과 확인**
+
+*   **Result:** 두 개의 백엔드 VM(Web Instance)에서 각각 액세스 로그를 확인한 결과, 요청이 한쪽으로 쏠리지 않고 양쪽 VM에 비슷하게 나뉘어 유입됨을 확인했습니다. (Round-Robin 동작 검증)
+
+> **<스크린샷3> (로그 확인):** 두 개의 VM 터미널 창을 나란히 띄워놓고, 트래픽 유입 로그가 양쪽에서 번갈아 가며 올라오는 화면.
+
 ---
 
 ## 6. 종합 검증 지표
@@ -313,6 +362,7 @@ Primary에 데이터 입력 시 Replica(Standby)에 즉시 반영되는지 확�
 | | **Web Service Uptime** (가동률) | 99.9% | **100%*** (테스트 기간 중) | **적합** |
 | **성능** | **Web Response Time** (평균 응답 속도) | < 200ms | **15ms** (Cache Hit) | **적합** |
 | | **Auto-Scale Reaction** (확장 반응 속도) | < 5분 | **3분** (Monitor Alert) | **적합** |
+| | **L4 Load Balancing** | 균등 분산 | **성공** (Traffic 50:50) | **적합** |
 | **보안** | **WAF Blocking Rate** (공격 차단율) | 100% (OWASP Top 10) | **100%*** (403 Forbidden) | **적합** |
 | | **Unwanted Public Access** (비인가 접근) | 0건 | **0건** (All Blocked) | **적합** |
 

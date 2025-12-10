@@ -25,6 +25,7 @@
     *   [5.1 취약점 진단 도구](#51-취약점-진단-도구)
     *   [5.2 SSRF를 이용한 내부망 정찰](#52-ssrf를-이용한-내부망-정찰)
     *   [5.3 Command Injection 및 서버 장악 시도](#53-command-injection-및-서버-장악-시도)
+    *   [5.4 보안 취약점 조치 방안 (Mitigation Strategy)](#54-보안-취약점-조치-방안-mitigation-strategy)
 6. [위협 탐지 및 워크로드 보호 (CWP & XDR)](#6-위협-탐지-및-워크로드-보호-cwp--xdr)
     *   [6.1 권한 상승 및 내부 위협 (Vertical Movement)](#61-권한-상승-및-내부-위협-vertical-movement)
     *   [6.2 Sentinel 위협 시뮬레이션](#62-sentinel-위협-시뮬레이션)
@@ -277,8 +278,6 @@ graph TD
 
 ---
 
----
-
 ## 5. Lupang 애플리케이션 취약점 진단
 
 자체 구축한 이커머스 플랫폼 **'Lupang'**은 모의해킹 실습을 위해 의도적인 취약점 진단 도구가 내장된 **'Red Team Dashboard'**를 제공합니다. 이를 통해 애플리케이션 계층(Layer 7)에서의 내부 보안 위협을 시뮬레이션했습니다.
@@ -325,7 +324,6 @@ graph TD
 #### 2) 메타데이터 접근 차단 (SSRF Defense)
 *   **원인:** SSRF를 통해 Azure IMDS(`169.254.169.254`)에 접근하여 인증 토큰 탈취 가능.
 *   **대책:**
-    *   **IMDSv2 강제화:** 헤더 검증(`Metadata: true`)이 필요한 신규 IMDS API만 허용하도록 시스템 설정 강화.
     *   **IMDSv2 강제화:** 헤더 검증(`Metadata: true`)이 필요한 신규 IMDS API만 허용하도록 시스템 설정 강화.
     *   **헤더 필터링(WAF):** WAF에서 IMDS IP로 향하는 모든 요청 헤더를 검사하여 차단 규칙 적용.
 
