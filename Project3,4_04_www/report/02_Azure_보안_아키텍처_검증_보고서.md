@@ -9,17 +9,19 @@
 3. [인프라 접속 및 계층간 연결 검증](#3-인프라-접속-및-계층간-연결-검증)
     * [3.1 외부 접속 및 엣지 보안 (Front Door/AppGW)](#31-외부-접속-및-엣지-보안-front-doorappgw)
     * [3.2 3-Tier 내부 연결 검증 (Bastion -> Web -> WAS)](#32-3-tier-내부-연결-검증-bastion---web---was)
+    * [3.3 Mail Server 내부 접속](#33-mail-server-내부-접속)
 4. [데이터 서비스 검증](#4-데이터-서비스-검증)
     * [4.1 WAS <-> DB/Redis 연결 검증](#41-was---dbredis-연결-검증)
     * [4.2 Storage Account 연결](#42-storage-account-연결)
     * [4.3 데이터베이스 백업 및 복구 검증](#43-데이터베이스-백업-및-복구-검증)
-    * [4.4 Lupang 비즈니스 로직 연동 검증](#44-lupang-비즈니스-로직-연동-검증)
+    * [4.4 Lupang 비즈니스 로직 검증 (세션/쿠키)](#44-lupang-비즈니스-로직-검증-세션쿠키)
 5. [고가용성(HA) 및 성능 검증](#5-고가용성ha-및-성능-검증)
     * [5.1 MySQL Zone Redundant Failover](#51-mysql-zone-redundant-failover)
     * [5.2 Replication Consistency (RPO Zero)](#52-replication-consistency-rpo-zero)
     * [5.3 VMSS Auto Scaling](#53-vmss-auto-scaling)
     * [5.4 Health Probe 및 VM 장애 복구 검증](#54-health-probe-및-vm-장애-복구-검증)
-    * [5.5 L4 로드밸런싱 분산 처리 검증](#55-l4-로드밸런싱load-balancing-분산-처리-검증)
+    * [5.5 L4 로드밸런싱 분산 처리 검증](#55-l4-로드밸런싱-분산-처리-검증)
+    * [5.6 웹 서비스 부하 테스트 (Locust)](#56-웹-서비스-부하-테스트-locust)
 6. [종합 검증 지표](#6-종합-검증-지표)
 7. [종합 결론](#7-종합-결론)
 
@@ -162,6 +164,15 @@ graph LR
 
 *   **(보안 격리 관련 상세 내용은 `03_내부_보안_검증_보고서.md`를 참조)**
 
+### 3.3 Mail Server 내부 접속
+내부망에 위치한 메일 서버의 보안 접속을 확인했습니다.
+*   **검증:** Web VM 또는 Bastion을 경유하여 SSH 키 인증 방식을 통해 접속.
+*   **결과:** `mail-vm` 접속 성공 및 사설 IP 확인.
+
+> [!NOTE] 스크린샷 가이드: Mail Server 접속
+>
+> *   **Image:** 터미널에서 `ssh ...` 명령어로 메일 서버에 접속하여 프롬프트가 변경된 화면.
+
 ---
 
 ## 4. 데이터 서비스 검증
@@ -234,27 +245,23 @@ graph LR
 > **Ransomware Protection**
 > 본 아키텍처는 백업 스토리지에 대해 불변성(Immutability)은 제공하지 않으나, 별도의 리소스 그룹에 관리되는 백업과 Azure Resource Lock으로 이중 보호됩니다.
 
-### 4.4 Lupang 비즈니스 로직 연동 검증
+### 4.4 Lupang 비즈니스 로직 검증 (세션/쿠키)
 
-보안 인프라 위에서 실제 비즈니스 애플리케이션(Lupang 쇼핑몰)이 정상적으로 리소스를 활용하는지 검증했습니다.
+보안 인프라 위에서 실제 비즈니스 애플리케이션(Lupang 쇼핑몰)의 세션 처리 및 데이터 보안을 검증했습니다.
 
-**검증 항목 1: 상품 이미지 업로드 및 Storage 연동**
-*   **시나리오:** 관리자 페이지에서 신규 상품 등록 시, 이미지가 Web Server 로컬이 아닌 **Azure Blob Storage**에 저장되어야 함.
-*   **검증:** 업로드 후 `https://<StorageAccount>.blob.core.windows.net/...` 경로로 이미지가 로딩되는지 확인 및 Private Endpoint 통신 로그 확인.
-*   **결과:** 성공. WAS -> Storage 간 Private Link 통신 확인.
-
-> [!NOTE] 스크린샷 가이드: 루팡 앱 이미지 업로드
->
-> *   **Image:** 루팡 앱 관리자 페이지에서 상품 이미지를 업로드한 후, 해당 이미지가 페이지에 잘 뜨는 화면 (이미지 주소가 Blob URL임을 개발자 도구로 보여주면 베스트).
-
-**검증 항목 2: 세션 유지**
+**검증 항목 1: 세션 유지 및 쿠키 확인**
 *   **시나리오:** 사용자가 로그인 후 페이지를 이동해도 로그인이 풀리지 않고 동일한 백엔드 세션을 유지해야 함.
-*   **검증:** 브라우저 쿠키(`ApplicationGatewayAffinity`) 확인 및 여러 페이지 이동 시 로그인 상태 유지 확인.
-*   **결과:** 성공. (Redis Session Handler 및 AppGW Cookie Affinity 동작 확인)
+*   **검증:** 브라우저 쿠키(`ApplicationGatewayAffinity`, `Lupang_token`) 확인 및 디코딩.
+*   **결과:** 성공. Redis Session Handler 및 AppGW Cookie Affinity 동작 확인.
 
 > [!NOTE] 스크린샷 가이드: 세션 유지 쿠키
 >
-> *   **Image:** 브라우저 개발자 도구(F12) -> Application 탭 -> Cookies에서 `ApplicationGatewayAffinity` 쿠키가 생성된 화면.
+> *   **Image:** 브라우저 개발자 도구(F12) -> Application 탭 -> Cookies에서 `Lupang_token` 또는 `ApplicationGatewayAffinity` 쿠키가 생성된 화면.
+
+**검증 항목 2: Storage 연동 (이미지 업로드)**
+*   **시나리오:** 상품 등록 시 이미지가 Azure Blob Storage에 안전하게 저장됨을 확인. (Private Endpoint 통신)
+
+---
 
 ---
 
@@ -324,7 +331,7 @@ www-backend-pool에 2개의 인스턴스가 '실행 중' 상태임을 확인.
 <스크린샷4>
 > **Azure Portal Load Balancer 백엔드 풀 화면에서 인스턴스 상태가 다시 '실행 중'으로 돌아온 화면.**
 
-### 5.5 L4 로드밸런싱(Load Balancing) 분산 처리 검증
+### 5.5 L4 로드밸런싱 분산 처리 검증
 
 트래픽이 특정 서버에 편중되지 않고, L4 Load Balancer를 통해 복수의 VM 인스턴스로 균등하게 분산 처리되는지 검증했습니다.
 
@@ -345,6 +352,18 @@ Azure Portal에서 Load Balancer의 Frontend IP 구성을 확인하여 DNS 주�
 *   **Result:** 두 개의 백엔드 VM(Web Instance)에서 각각 액세스 로그를 확인한 결과, 요청이 한쪽으로 쏠리지 않고 양쪽 VM에 비슷하게 나뉘어 유입됨을 확인했습니다. (Round-Robin 동작 검증)
 
 > **<스크린샷3> (로그 확인):** 두 개의 VM 터미널 창을 나란히 띄워놓고, 트래픽 유입 로그가 양쪽에서 번갈아 가며 올라오는 화면.
+
+### 5.6 웹 서비스 부하 테스트 (Locust)
+실제 사용자 트래픽을 모사하기 위해 Locust 도구를 사용하여 부하 테스트를 수행했습니다.
+
+*   **Test Scenario:** 1분 동안 10명의 유저가 지속적으로 접속 (Spawn Rate: 1 user/sec).
+*   **Result:**
+    *   **총 요청 수:** 5,800+ 건
+    *   **실패율(Failures):** 0% (안정적 처리)
+    *   **응답 속도:** 평균 5ms, 99% 구간 20ms 이내 (매우 빠름)
+    
+> [!NOTE] 스크린샷 가이드: Locust 테스트 결과
+> *   **Image 1:** Locust 실행 로그 및 종료 후 출력되는 요약 테이블(Summary Table) 화면.
 
 ---
 
@@ -379,3 +398,5 @@ Azure Portal에서 Load Balancer의 Frontend IP 구성을 확인하여 DNS 주�
 1.  **심층 방어 (Defense-in-Depth):** 외부 -> Edge -> AppGW -> Web -> WAS -> Data로 이어지는 다층 방어 체계가 유효하게 작동합니다.
 2.  **완전 격리 (Isolation):** 중요 데이터(DB/KeyVault)는 Private Endpoint와 방화벽 정책에 의해 외부로부터 완벽히 격리되어 있습니다.
 3.  **서비스 연속성 (Business Continuity):** VMSS 자동 확장 및 DB 이중화 구성을 통해, 장애 발생 및 트래픽 급증 상황에서도 무중단 또는 최소 중단으로 서비스가 유지됩니다.
+
+---

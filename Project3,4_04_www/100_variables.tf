@@ -59,3 +59,5 @@ variable "sentinel_service_principal_id" {
   description = "The Object ID of the Azure Security Insights service principal"
   type        = string
 }
+
+

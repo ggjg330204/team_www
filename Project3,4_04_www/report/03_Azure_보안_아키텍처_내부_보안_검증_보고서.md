@@ -21,6 +21,8 @@
     *   [4.6 App Gateway (WAF) 및 DDoS 보호](#46-app-gateway-waf-및-ddos-보호)
     *   [4.7 Storage SAS 만료 정책](#47-storage-sas-만료-정책)
     *   [4.8 내부 확산 방지 (Lateral Movement Prevention)](#48-내부-확산-방지-lateral-movement-prevention)
+    *   [4.9 보안 구성 검증 (Port & Key Vault)](#49-보안-구성-검증-port--key-vault)
+    *   [4.10 Azure Container Registry (ACR) 보안 설정](#410-azure-container-registry-acr-보안-설정)
 5. [Lupang 애플리케이션 취약점 진단](#5-lupang-애플리케이션-취약점-진단)
     *   [5.1 취약점 진단 도구](#51-취약점-진단-도구)
     *   [5.2 SSRF를 이용한 내부망 정찰](#52-ssrf를-이용한-내부망-정찰)
@@ -276,6 +278,44 @@ graph TD
 > [!NOTE] 스크린샷 가이드: 내부 확산 차단
 > *   **Image:** Web VM에서 `ssh 10.0.2.4` (Bastion IP) 시도 시 타임아웃 발생하는 화면.
 
+### 4.9 보안 구성 검증 (Port & Key Vault)
+주요 인프라의 포트 보안과 키 관리 접근성을 점검했습니다.
+*   **Port Scan:** 불필요한 포트가 닫혀 있는지 스크립트로 전수 검사 수행 (80, 443, 22 외 차단 확인).
+*   **Key Vault:** 애플리케이션이 `db-password` 등 중요 키에 접근 가능한지 권한 확인.
+
+> [!NOTE] 스크린샷 가이드: 보안 검증
+>
+> *   **Image 1:** PowerShell 포트 스캔 결과 화면.
+> *   **Image 2:** `az keyvault secret list` 명령어로 시크릿 목록이 조회되는 화면.
+
+### 4.10 Azure Container Registry (ACR) 보안 설정
+
+컨테이너 이미지 저장소인 ACR의 보안 설정(접근 제어, 네트워크 격리)을 검증했습니다.
+
+**Step 1: ACR 기본 보안 설정 확인 (SKU & Admin User)**
+*   **검증 항목:** Premium SKU 사용 여부 및 관리자 계정(Admin User) 비활성화 확인.
+*   **결과:**
+    *   **Sku:** Premium (확인 완료)
+    *   **AdminEnabled:** False (비활성화 상태 확인 완료)
+<스크린샷1>
+**Step 2: 네트워크(방화벽) 규칙 검증**
+*   **검증 항목:** 코드에 정의된 특정 IP만 접근이 허용되는지 확인.
+*   **결과:** `defaultAction`이 "Deny"이며, `ipRules`에 허용된 IP(`61.108.60.26`, `211.227.107.208`)만 등록되어 있음을 확인.
+<스크린샷2>
+**Step 3: 외부 접속 테스트 (Public Access)**
+*   **시나리오:** 허용된 로컬 PC에서 `curl` 명령어로 ACR 로그인 서버 접속 시도.
+*   **결과:** 검증자의 PC IP가 허용된 IP 리스트에 포함되어 있어 연결은 성공했으나, **401 Unauthorized** 응답 코드가 반환됨.
+*   **분석:** 네트워크 방화벽은 통과했으나, 익명 사용자의 접근(로그인 미수행)을 효과적으로 차단하고 있음을 입증.
+<스크린샷3>
+> [!NOTE] 스크린샷 가이드: ACR 접속 테스트
+>
+> *   **Image:** 로컬 터미널에서 `curl -v https://<ACR_LoginServer>/v2/` 실행 시 `401 Unauthorized` 메시지가 출력되는 화면.
+
+**Step 4: 내부망(Private Endpoint) 검증**
+*   **시나리오:** Bastion을 통해 Web VM에 접속 후, 내부망에서 ACR DNS 조회(`nslookup`) 시도.
+*   **결과:** 사설 IP가 아닌 공인 IP (`20.41.69.135`)가 반환됨. Web VM 내부 트래픽이 Private Endpoint가 아닌 공용 인터넷망을 타고 있음이 확인됨.
+*   **결과 분석 및 대응:** 현재 Private DNS Zone 연결 설정의 미흡점이 식별됨. 향후 Private DNS Zone (`privatelink.azurecr.io`)을 VNet에 연결하여 내부 통신 경로를 보완해야 함. (※ 단, Public Access 방화벽 정책에 의해 비인가 접근은 여전히 안전하게 차단됨)
+
 ---
 
 ## 5. Lupang 애플리케이션 취약점 진단
@@ -391,9 +431,10 @@ graph TD
 > *   **Image:** 'Microsoft Defender for Cloud'의 '환경 설정' 또는 '개요' 페이지에서 모든 리소스 유형(Compute, DB 등)의 보호 상태가 'On'으로 표시된 화면.
 
 ### 6.5 ACR 이미지 보안 스캔
-*   **시나리오:** 오염된 컨테이너 이미지가 배포되는 것을 방지.
+*   **시나리오:** ACR에 업로드 된 이미지에 대한 보안 취약점 자동 스캔 기능 검증.
 *   **수행:** `docker push` 명령어로 `hello-world` 이미지 업로드.
-*   **결과:** Defender for Containers가 이미지를 자동 스캔하여 취약점 보고서를 생성함(초기 상태 Clean).
+*   **로그 분석:** 출력된 'digest: sha256:...' 로그를 통해, ACR 서버에 물리적으로 저장되었음을 입증함.
+*   **결과:** Defender for Containers가 이미지를 자동 스캔하여 발견된 취약점 없음을 확인.
 
 > [!NOTE] 스크린샷 가이드: Defender 컨테이너 스캔
 > *   **Image:** Microsoft Defender for Cloud의 '보안 권장 사항' 또는 ACR 블레이드에서 해당 이미지의 취약점 스캔 결과를 보여주는 화면.
@@ -442,5 +483,3 @@ graph TD
 특히 **Managed Identity를 통한 Credential-free 환경**과 **Defender를 이용한 실시간 위협 탐지**는 운영 편의성과 보안성을 모두 만족시키는 핵심 성과입니다. 다만, RBAC 상속 구조에 따른 권한 제어의 복잡성은 운영 시 세심한 주의가 필요한 부분으로 파악되었습니다.
 
 ---
-
-

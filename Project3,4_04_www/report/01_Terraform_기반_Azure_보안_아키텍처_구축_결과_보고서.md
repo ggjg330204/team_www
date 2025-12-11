@@ -201,8 +201,8 @@ graph TD
     %% --- Flows ---
     User ==> Edge
     Edge ==>|"HTTPS (443)"| AppGW
-    AppGW ==>|"HTTP (80)"| LB
-    LB --> Scale
+    AppGW ==>|"HTTP (80)"| Web
+    LB -.->|"Outbound NAT"| Scale
     Web --> WAS
 
     %% --- Styling ---
@@ -326,7 +326,8 @@ graph TD
 ### 3.5 로드 밸런싱 및 가속화
 
 *   **Azure Front Door:** 글로벌 CDN 및 GSLB(Global Server Load Balancing) 역할을 수행합니다. 사용자는 가장 가까운 엣지(Edge)로 접속하여 빠른 응답 속도를 경험하며, DDoS 공격은 엣지 단계에서 차단됩니다.
-*   **Application Gateway (WAF v2):** 리전 레벨의 L7 로드 밸런서입니다. URL 경로 기반 라우팅과 SSL 종료를 처리하며, 탑재된 WAF가 SQL Injection 등 웹 공격을 방어합니다.
+*   **Application Gateway (WAF v2):** 리전 레벨의 L7 로드 밸런서입니다. URL 경로 기반 라우팅과 SSL 종료를 처리하며, 백엔드 VMSS에 직접 연결(Direct Connection)되어 보안과 성능을 최적화했습니다. 탑재된 WAF가 SQL Injection 등 웹 공격을 방어합니다.
+*   **Public Load Balancer (L4):** VMSS의 아웃바운드 인터넷 통신(SNAT)을 담당하며, 필요 시 TCP/UDP 레벨의 부하 분산을 수행합니다.
 
 ---
 
@@ -344,6 +345,7 @@ graph TD
 2.  이 Identity에 대해 Key Vault에서 **Key Vault Secrets User** 역할을 부여하여, 정확히 필요한 비밀 값만 읽을 수 있도록 제한합니다 (RBAC).
 3.  애플리케이션은 Azure Instance Metadata Service(IMDS) 로컬 엔드포인트를 호출하여 Access Token을 발급받습니다.
 4.  이 토큰을 사용하여 Key Vault에서 DB 패스워드를 안전하게 가져옵니다. **소스 코드에는 아무런 비밀 정보도 남지 않습니다.**
+5.  **Function App:** 이미지 처리 함수 앱 또한 Storage Account Access Key 대신 **System Assigned Managed Identity**를 사용하여 Blob Storage에 안전하게 접근합니다.
 
 ### 4.2 심층 방어 (Defense-in-Depth)
 

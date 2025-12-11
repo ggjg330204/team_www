@@ -37,7 +37,7 @@ provider "acme" {
 }
 
 resource "azurerm_resource_group" "rg" {
-  name     = "04-t1-www-rg"
+  name     = var.rgname
   location = "Korea Central"
   tags = {
     Environment = "Production"

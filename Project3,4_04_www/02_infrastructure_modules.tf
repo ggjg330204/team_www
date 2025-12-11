@@ -3,7 +3,8 @@ module "hub" {
   rgname            = azurerm_resource_group.rg.name
   loca              = "Korea Central"
   hub_address_space = "10.1.0.0/16"
-  enable_vpn        = false
+  enable_vpn                  = false
+  log_analytics_workspace_id  = module.security.log_analytics_workspace_id
 }
 resource "azurerm_virtual_network_peering" "hub_to_spoke" {
   name                      = "hub-to-spoke"
@@ -45,6 +46,9 @@ module "network_central" {
   log_analytics_workspace_id  = module.security.log_analytics_workspace_id
   appgw_identity_id           = module.identity.appgw_identity_id
   appgw_identity_principal_id = module.identity.appgw_identity_principal_id
+  firewall_private_ip         = module.hub.firewall_private_ip
+
+
 }
 module "compute" {
   source                     = "./modules/Compute"
@@ -77,6 +81,7 @@ module "compute" {
   domain_name                = var.domain_name
   key_vault_id               = module.security.key_vault_id
   key_vault_name             = module.security.keyvault_name
+  appgw_backend_pool_id      = module.network_central.appgw_backend_pool_id
 }
 module "database" {
   source                     = "./modules/database"
@@ -191,6 +196,6 @@ module "api_management" {
   rgname          = azurerm_resource_group.rg.name
   loca            = "Korea Central"
   subnet_id       = module.network_central.subnet_ids["www-web"]
-  lb_private_ip   = module.network_central.was_lb_private_ip
+  appgw_public_ip = module.network_central.appgw_public_ip
   publisher_email = var.admin_emails[0]
 }
