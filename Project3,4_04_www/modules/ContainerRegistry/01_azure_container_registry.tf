@@ -11,19 +11,15 @@ resource "azurerm_container_registry" "main" {
   sku                     = "Premium"
   admin_enabled           = false
   zone_redundancy_enabled = true
+
   network_rule_set {
     default_action = "Deny"
-    ip_rule = [
-      {
-        action   = "Allow"
-        ip_range = "61.108.60.26"
-      },
-      {
-        action   = "Allow"
-        ip_range = "211.227.107.208"
-      }
-    ]
+    ip_rule = [for ip in var.allowed_ip_ranges : {
+      action   = "Allow"
+      ip_range = ip
+    }]
   }
+
   identity {
     type = "SystemAssigned"
   }
@@ -33,6 +29,7 @@ resource "azurerm_container_registry" "main" {
     ManagedBy   = "Terraform"
   }
 }
+
 resource "azurerm_private_endpoint" "acr" {
   name                = "acr-private-endpoint"
   location            = var.loca

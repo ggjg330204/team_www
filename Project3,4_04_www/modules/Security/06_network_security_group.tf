@@ -300,10 +300,24 @@ resource "azurerm_network_security_rule" "db_access" {
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
-  source_address_prefixes     = ["10.0.1.0/24", "192.168.0.0/16"]
+  source_address_prefixes     = ["192.168.5.0/24"]
   source_port_range           = "*"
   destination_address_prefix  = "*"
   destination_port_range      = "3306"
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_db.name
+}
+
+resource "azurerm_network_security_rule" "redis_access" {
+  name                        = "allow-redis-internal"
+  priority                    = 110
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_address_prefixes     = ["192.168.5.0/24"]
+  source_port_range           = "*"
+  destination_address_prefix  = "*"
+  destination_port_range      = "6380"
   resource_group_name         = var.rgname
   network_security_group_name = azurerm_network_security_group.nsg_db.name
 }
@@ -371,7 +385,7 @@ resource "azurerm_network_security_group" "nsg_appgw" {
 
   security_rule {
     name                       = "allow-http-https"
-    priority                   = 110
+    priority                   = 101
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"

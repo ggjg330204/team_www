@@ -348,3 +348,28 @@ QUERY
 
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
 }
+
+resource "azurerm_sentinel_alert_rule_scheduled" "fw_deny" {
+  name                       = "Firewall Blocked Traffic"
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
+  display_name               = "External Communication Blocked by Firewall"
+  severity                   = "High"
+  query                      = <<QUERY
+union AZFWNetworkRule, AZFWApplicationRule
+| where Action contains "Deny"
+| extend Destination = case(
+    Type == "AZFWNetworkRule", DestinationIp,
+    Type == "AZFWApplicationRule", Fqdn,
+    "Unknown"
+  )
+| project TimeGenerated, SourceIp, Destination, Action, Protocol, DestinationPort
+QUERY
+  query_frequency            = "PT5M"
+  query_period               = "PT5M"
+  trigger_operator           = "GreaterThan"
+  trigger_threshold          = 0
+  description                = "Detects traffic blocked by Azure Firewall (Data Exfiltration Attempts)."
+  enabled                    = true
+
+  depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel_onboarding]
+}

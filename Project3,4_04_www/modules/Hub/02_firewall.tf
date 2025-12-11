@@ -58,7 +58,29 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
         port = 443
       }
       source_addresses  = ["*"]
-      destination_fqdns = ["*.update.microsoft.com", "*.windowsupdate.com"]
+      destination_fqdns = ["*.update.microsoft.com", "*.windowsupdate.com", "packages.microsoft.com", "acs-mirror.azureedge.net"]
+    }
+    rule {
+      name = "Allow-Linux-Repos"
+      protocols {
+        type = "Http"
+        port = 80
+      }
+      protocols {
+        type = "Https"
+        port = 443
+      }
+      source_addresses  = ["*"]
+      destination_fqdns = ["*.rockylinux.org", "download.rockylinux.org", "rpms.remirepo.net", "mirrors.fedoraproject.org"]
+    }
+    rule {
+      name = "Allow-Dev-Tools"
+      protocols {
+        type = "Https"
+        port = 443
+      }
+      source_addresses  = ["*"]
+      destination_fqdns = ["github.com", "*.github.com", "objects.githubusercontent.com", "raw.githubusercontent.com"]
     }
     rule {
       name = "Allow-Azure-Services"

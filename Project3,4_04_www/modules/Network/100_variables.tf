@@ -88,3 +88,10 @@ variable "mysql_private_endpoint_ip" {
   type        = string
   default     = ""
 }
+
+variable "firewall_private_ip" {
+  description = "Private IP address of the Hub Firewall for UDR"
+  type        = string
+}
+
+

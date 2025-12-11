@@ -125,7 +125,15 @@ variable "key_vault_id" {
   type        = string
 }
 
+
+
 variable "key_vault_name" {
   description = "The Name of the Key Vault"
   type        = string
+}
+
+variable "appgw_backend_pool_id" {
+  description = "The ID of the Application Gateway Backend Pool"
+  type        = string
+  default     = null
 }

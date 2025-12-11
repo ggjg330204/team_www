@@ -7,8 +7,9 @@ variable "loca" {
 variable "subnet_id" {
   type = string
 }
-variable "lb_private_ip" {
-  type = string
+variable "appgw_public_ip" {
+  type        = string
+  description = "Application Gateway Public IP for API backend"
 }
 
 variable "publisher_email" {

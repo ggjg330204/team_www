@@ -18,7 +18,13 @@ resource "azurerm_monitor_action_group" "sentinel_email" {
   }
 }
 
+resource "time_sleep" "wait_for_sentinel" {
+  depends_on      = [azurerm_log_analytics_solution.security]
+  create_duration = "120s"
+}
+
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "sentinel_high_severity" {
+  depends_on          = [time_sleep.wait_for_sentinel]
   name                = "sentinel-high-severity-incident"
   resource_group_name = var.rgname
   location            = var.loca
@@ -67,6 +73,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "sentinel_high_severit
 }
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "sentinel_medium_severity" {
+  depends_on          = [time_sleep.wait_for_sentinel]
   name                = "sentinel-medium-severity-incident"
   resource_group_name = var.rgname
   location            = var.loca
@@ -109,6 +116,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "sentinel_medium_sever
 }
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "security_alert" {
+  depends_on          = [time_sleep.wait_for_sentinel]
   name                = "sentinel-security-alert"
   resource_group_name = var.rgname
   location            = var.loca

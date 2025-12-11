@@ -23,6 +23,6 @@ resource "azurerm_api_management_api" "wordpress" {
   display_name          = "WordPress REST API"
   path                  = "wp-json"
   protocols             = ["https"]
-  service_url           = "http://${var.lb_private_ip}"
+  service_url           = "https://${var.appgw_public_ip}"
   subscription_required = false
 }

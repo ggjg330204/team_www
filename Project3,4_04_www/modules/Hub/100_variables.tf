@@ -16,3 +16,7 @@ variable "ddos_protection_plan_id" {
   type        = string
   default     = ""
 }
+variable "log_analytics_workspace_id" {
+  description = "Log Analytics Workspace ID for diagnostics"
+  type        = string
+}

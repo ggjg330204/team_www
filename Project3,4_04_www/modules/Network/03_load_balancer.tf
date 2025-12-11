@@ -16,6 +16,11 @@ resource "azurerm_public_ip" "lb_pip" {
     ignore_changes        = [zones, tags]
   }
 }
+
+locals {
+  lb_internal_ip = "192.168.4.10"
+}
+
 resource "azurerm_lb" "vmss_lb" {
   name                = var.loca == "Korea Central" ? "www-lb" : "www-lb-south"
   location            = var.loca
@@ -25,6 +30,7 @@ resource "azurerm_lb" "vmss_lb" {
     name                 = "PublicIPAddress"
     public_ip_address_id = azurerm_public_ip.lb_pip.id
   }
+
   tags = {
     Environment = "Production"
     Purpose     = "Load-Balancer"
@@ -54,6 +60,10 @@ resource "azurerm_lb_rule" "vmss_lb_rule" {
   frontend_ip_configuration_name = "PublicIPAddress"
   probe_id                       = azurerm_lb_probe.vmss_probe.id
 }
+
+
+
+
 resource "azurerm_lb_nat_pool" "ssh_nat_pool" {
   resource_group_name            = var.rgname
   loadbalancer_id                = azurerm_lb.vmss_lb.id

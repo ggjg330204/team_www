@@ -106,7 +106,8 @@ resource "azurerm_application_gateway" "appgw" {
   }
   backend_address_pool {
     name  = "www-backend-pool"
-    fqdns = [azurerm_public_ip.lb_pip.fqdn]
+    ip_addresses = []
+
   }
   backend_http_settings {
     name                                = "www-http-settings"
@@ -166,7 +167,7 @@ resource "azurerm_application_gateway" "appgw" {
   probe {
     name                                      = "www-health-probe"
     protocol                                  = "Http"
-    path                                      = "/health.php"
+    path                                      = "/health.html"
     interval                                  = 30
     timeout                                   = 30
     unhealthy_threshold                       = 3

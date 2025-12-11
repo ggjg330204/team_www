@@ -49,6 +49,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
       subnet_id                              = var.vmss_subnet_id
       load_balancer_backend_address_pool_ids = [var.lb_backend_pool_id]
       load_balancer_inbound_nat_rules_ids    = [var.ssh_nat_pool_id]
+      application_gateway_backend_address_pool_ids = var.appgw_backend_pool_id != null ? [var.appgw_backend_pool_id] : []
     }
   }
   identity {
