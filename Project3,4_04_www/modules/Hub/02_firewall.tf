@@ -61,7 +61,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
       destination_fqdns = ["*.update.microsoft.com", "*.windowsupdate.com", "packages.microsoft.com", "acs-mirror.azureedge.net"]
     }
     rule {
-      name = "Allow-Linux-Repos"
+      name = "Allow-Package-Repos"
       protocols {
         type = "Http"
         port = 80
@@ -71,7 +71,24 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
         port = 443
       }
       source_addresses  = ["*"]
-      destination_fqdns = ["*.rockylinux.org", "download.rockylinux.org", "rpms.remirepo.net", "mirrors.fedoraproject.org"]
+      destination_fqdns = [
+        # Rocky Linux mirrors (wildcard for all mirrors)
+        "*.rockylinux.org", "download.rockylinux.org",
+        # Remi PHP repository (wildcard for CDN and mirrors)
+        "*.remirepo.net", "rpms.remirepo.net", "cdn.remirepo.net",
+        # Fedora/EPEL mirrors
+        "*.fedoraproject.org", "mirrors.fedoraproject.org", "dl.fedoraproject.org",
+        # Ubuntu (for reference)
+        "*.ubuntu.com", "security.ubuntu.com", "azure.archive.ubuntu.com",
+        "changelogs.ubuntu.com", "ppa.launchpadcontent.net",
+        # CentOS mirrors
+        "*.centos.org", "mirror.centos.org", "vault.centos.org",
+        # CDN providers used by package repos
+        "*.cloudflare.com", "*.akamai.net", "*.fastly.net", "*.amazonaws.com",
+        # Regional mirrors (Korea, Japan, etc.)
+        "mirror.kakao.com", "*.kakao.com", "ftp.kaist.ac.kr", "ftp.jaist.ac.jp",
+        "*.ac.jp", "*.ac.kr", "*.edu.cn", "*.riken.jp"
+      ]
     }
     rule {
       name = "Allow-Dev-Tools"
@@ -80,7 +97,21 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
         port = 443
       }
       source_addresses  = ["*"]
-      destination_fqdns = ["github.com", "*.github.com", "objects.githubusercontent.com", "raw.githubusercontent.com"]
+      destination_fqdns = [
+        "github.com", "*.github.com", 
+        "objects.githubusercontent.com", "raw.githubusercontent.com",
+        "*.githubassets.com", "github-releases.githubusercontent.com",
+        "github-cloud.s3.amazonaws.com", "*.s3.amazonaws.com",
+        "release-assets.githubusercontent.com", "*.githubusercontent.com",
+        # SSL certificates
+        "*.digicert.com", "cacerts.digicert.com",
+        # CDN for Bootstrap/JS
+        "*.jsdelivr.net", "cdn.jsdelivr.net",
+        # Image services
+        "*.unsplash.com", "images.unsplash.com",
+        # Microsoft/Azure packages
+        "packages.microsoft.com", "*.microsoft.com"
+      ]
     }
     rule {
       name = "Allow-Azure-Services"
@@ -89,7 +120,27 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
         port = 443
       }
       source_addresses  = ["*"]
-      destination_fqdns = ["management.azure.com", "login.microsoftonline.com"]
+      destination_fqdns = ["management.azure.com", "login.microsoftonline.com", "graph.microsoft.com"]
+    }
+    rule {
+      name = "Allow-Misc-Services"
+      protocols {
+        type = "Http"
+        port = 80
+      }
+      protocols {
+        type = "Https"
+        port = 443
+      }
+      source_addresses  = ["*"]
+      destination_fqdns = [
+        "api.snapcraft.io", "*.snapcraft.io", 
+        "*.letsencrypt.org", "zerossl.com", "acme-v02.api.letsencrypt.org",
+        # Fonts
+        "fonts.googleapis.com", "fonts.gstatic.com",
+        # ACME.sh for SSL certificates
+        "get.acme.sh", "*.acme.sh"
+      ]
     }
   }
   network_rule_collection {
@@ -109,6 +160,20 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
       source_addresses      = ["*"]
       destination_addresses = ["*"]
       destination_ports     = ["123"]
+    }
+    rule {
+      name                  = "Allow-MySQL"
+      protocols             = ["TCP"]
+      source_addresses      = ["*"]
+      destination_addresses = ["*"]
+      destination_ports     = ["3306"]
+    }
+    rule {
+      name                  = "Allow-Redis"
+      protocols             = ["TCP"]
+      source_addresses      = ["*"]
+      destination_addresses = ["*"]
+      destination_ports     = ["6379", "6380"]
     }
   }
 }

@@ -7,6 +7,9 @@ output "vnet_id" {
 output "subnet_ids" {
   value = { for k, v in azurerm_subnet.subnets : k => v.id }
 }
+output "subnet_prefixes" {
+  value = { for k, v in azurerm_subnet.subnets : k => v.address_prefixes[0] }
+}
 output "lb_backend_pool_id" {
   value = azurerm_lb_backend_address_pool.bpepool.id
 }

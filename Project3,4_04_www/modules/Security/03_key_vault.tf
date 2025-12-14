@@ -19,7 +19,7 @@ resource "azurerm_key_vault" "kv" {
     bypass                     = "AzureServices"
     default_action             = "Deny"
     virtual_network_subnet_ids = var.allowed_subnet_ids
-    ip_rules                   = distinct(concat(var.admin_ip_rules, [data.http.my_ip.response_body, "211.227.107.208", "61.108.60.26"]))
+    ip_rules                   = distinct(concat(var.admin_ip_rules, var.ssh_allowed_ips, [data.http.my_ip.response_body]))
   }
 
   tags = {

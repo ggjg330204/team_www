@@ -35,7 +35,7 @@ resource "azurerm_network_interface" "mail_nic" {
 
   ip_configuration {
     name                          = "mail-ip-config"
-    subnet_id                     = var.was_subnet_id
+    subnet_id                     = var.mail_subnet_id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.mail_pip.id
   }
@@ -153,7 +153,7 @@ resource "azurerm_network_security_group" "mail_nsg" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefix      = "*"
+    source_address_prefix      = "VirtualNetwork"
     source_port_range          = "*"
     destination_address_prefix = "*"
     destination_port_range     = "25"

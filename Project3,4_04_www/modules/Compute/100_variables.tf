@@ -18,6 +18,10 @@ variable "was_subnet_id" {
   description = "The ID of the subnet where the WAS VMSS will be connected"
   type        = string
 }
+variable "mail_subnet_id" {
+  description = "The ID of the subnet where the Mail VM will be connected"
+  type        = string
+}
 variable "admin_username" {
   description = "The admin username for the VMSS"
   type        = string

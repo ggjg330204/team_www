@@ -100,3 +100,13 @@ variable "enable_activity_logs" {
   type        = bool
   default     = false
 }
+
+variable "bastion_subnet_prefix" {
+  description = "CIDR prefix for the Bastion subnet"
+  type        = string
+}
+
+variable "was_subnet_prefix" {
+  description = "CIDR prefix for the WAS subnet"
+  type        = string
+}

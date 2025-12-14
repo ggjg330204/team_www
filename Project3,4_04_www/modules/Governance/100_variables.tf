@@ -10,3 +10,7 @@ variable "db_id" {
   description = "The ID of the MySQL Database to lock"
   type        = string
 }
+variable "location" {
+  description = "The location of the resource group"
+  type        = string
+}

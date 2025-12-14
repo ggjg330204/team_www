@@ -23,7 +23,6 @@ resource "azurerm_subnet" "subnets" {
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = [each.value]
   default_outbound_access_enabled = contains([
-    "www-vmss",
     "www-web",
     "www-db",
     "www-stor",
@@ -31,8 +30,9 @@ resource "azurerm_subnet" "subnets" {
   ], each.key) ? false : true
   service_endpoints = concat(
     each.key == "www-stor" ? ["Microsoft.Storage"] : [],
-    contains(["www-web", "www-was"], each.key) ? ["Microsoft.KeyVault"] : []
+    contains(["www-web", "www-was", "www-mail"], each.key) ? ["Microsoft.KeyVault"] : []
   )
+  private_endpoint_network_policies = each.key == "www-db" ? "Disabled" : "Enabled"
 }
 resource "azurerm_virtual_network_peering" "spoke_to_hub" {
   name                      = "spoke-to-hub"

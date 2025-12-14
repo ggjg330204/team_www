@@ -115,7 +115,8 @@ resource "azurerm_application_gateway" "appgw" {
     port                                = 80
     protocol                            = "Http"
     request_timeout                     = 60
-    pick_host_name_from_backend_address = true
+    pick_host_name_from_backend_address = false
+    host_name                           = "localhost"
     probe_name                          = "www-health-probe"
   }
   http_listener {

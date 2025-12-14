@@ -13,6 +13,7 @@ resource "azurerm_mysql_flexible_server" "www_mysql" {
   version                      = "8.0.21"
   backup_retention_days        = 35
   geo_redundant_backup_enabled = false
+
   zone                         = "1"
   storage {
     auto_grow_enabled = true

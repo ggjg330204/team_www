@@ -67,6 +67,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
     product   = "rockylinux-x86_64"
     name      = "9-lvm"
   }
+
   extension {
     name                       = "WebInitScript"
     publisher                  = "Microsoft.Azure.Extensions"
@@ -81,6 +82,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
       }))
     })
   }
+
+
+
   tags = {
     Environment = "Production"
     Purpose     = "Web-Scale-Set"

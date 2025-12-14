@@ -94,4 +94,10 @@ variable "firewall_private_ip" {
   type        = string
 }
 
+variable "ssh_allowed_ips" {
+  description = "List of allowed IPs for SSH access"
+  type        = list(string)
+  default     = []
+}
+
 

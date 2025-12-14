@@ -24,5 +24,5 @@ resource "azurerm_api_management_api" "wordpress" {
   path                  = "wp-json"
   protocols             = ["https"]
   service_url           = "https://${var.appgw_public_ip}"
-  subscription_required = false
+  subscription_required = true
 }

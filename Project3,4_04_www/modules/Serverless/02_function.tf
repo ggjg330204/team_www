@@ -12,6 +12,7 @@ resource "azurerm_linux_function_app" "image_processor" {
   service_plan_id               = azurerm_service_plan.function.id
   storage_account_name          = azurerm_storage_account.function.name
   storage_uses_managed_identity = true
+  https_only                    = true
 
   identity {
     type = "SystemAssigned"

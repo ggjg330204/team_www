@@ -78,3 +78,8 @@ resource "azurerm_role_assignment" "sec_external2_sentinel" {
     ignore_changes = all
   }
 }
+resource "azurerm_role_assignment" "vmss_identity_reader" {
+  scope                = var.rgid
+  role_definition_name = "Reader"
+  principal_id         = azurerm_user_assigned_identity.vmss_identity.principal_id
+}

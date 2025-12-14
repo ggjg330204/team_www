@@ -18,3 +18,7 @@ output "bastion_subnet_id" {
 output "bastion_host_name" {
   value = azurerm_bastion_host.hub_bastion.name
 }
+
+output "bastion_subnet_prefix" {
+  value = azurerm_subnet.bastion_subnet.address_prefixes[0]
+}

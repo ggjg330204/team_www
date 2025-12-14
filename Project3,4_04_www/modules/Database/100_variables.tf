@@ -80,3 +80,9 @@ variable "storage_account_id" {
   description = "The ID of the storage account for role assignment"
   type        = string
 }
+
+variable "ssh_allowed_ips" {
+  description = "List of allowed IPs for firewall rules"
+  type        = list(string)
+  default     = []
+}

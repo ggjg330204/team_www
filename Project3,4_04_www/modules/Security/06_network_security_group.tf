@@ -242,6 +242,20 @@ resource "azurerm_network_security_rule" "web_dns_outbound" {
   resource_group_name         = var.rgname
   network_security_group_name = azurerm_network_security_group.nsg_http.name
 }
+
+resource "azurerm_network_security_rule" "web_vnet_outbound" {
+  name                        = "allow-vnet-outbound"
+  priority                    = 125
+  direction                   = "Outbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_address_prefix       = "VirtualNetwork"
+  source_port_range           = "*"
+  destination_address_prefix  = "VirtualNetwork"
+  destination_port_range      = "*"
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_http.name
+}
 resource "azurerm_network_security_rule" "web_smtp_inbound" {
   name                        = "allow-smtp-inbound"
   priority                    = 130
@@ -250,7 +264,7 @@ resource "azurerm_network_security_rule" "web_smtp_inbound" {
   protocol                    = "Tcp"
   source_address_prefix       = "*"
   source_port_range           = "*"
-  destination_address_prefix  = "*"
+  destination_address_prefix  = var.was_subnet_prefix
   destination_port_ranges     = ["25", "587"]
   resource_group_name         = var.rgname
   network_security_group_name = azurerm_network_security_group.nsg_http.name
@@ -263,8 +277,21 @@ resource "azurerm_network_security_rule" "web_imap_inbound" {
   protocol                    = "Tcp"
   source_address_prefix       = "*"
   source_port_range           = "*"
-  destination_address_prefix  = "*"
+  destination_address_prefix  = var.was_subnet_prefix
   destination_port_range      = "993"
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_http.name
+}
+resource "azurerm_network_security_rule" "web_deny_bastion_outbound" {
+  name                        = "deny-bastion-outbound"
+  priority                    = 105
+  direction                   = "Outbound"
+  access                      = "Deny"
+  protocol                    = "*"
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+  destination_address_prefix  = var.bastion_subnet_prefix
+  destination_port_range      = "*"
   resource_group_name         = var.rgname
   network_security_group_name = azurerm_network_security_group.nsg_http.name
 }
@@ -333,6 +360,34 @@ resource "azurerm_network_security_rule" "ssh_internal" {
   destination_port_range      = "22"
   resource_group_name         = var.rgname
   network_security_group_name = azurerm_network_security_group.nsg_ssh.name
+}
+
+resource "azurerm_network_security_rule" "was_allow_lb" {
+  name                        = "allow-azure-load-balancer-was"
+  priority                    = 125
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_address_prefix       = "AzureLoadBalancer"
+  source_port_range           = "*"
+  destination_address_prefix  = "*"
+  destination_port_range      = "*"
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_http.name
+}
+
+resource "azurerm_network_security_rule" "was_http_inbound" {
+  name                        = "allow-http-from-web-was"
+  priority                    = 126
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_address_prefix       = "VirtualNetwork"
+  source_port_range           = "*"
+  destination_address_prefix  = "*"
+  destination_port_range      = "80"
+  resource_group_name         = var.rgname
+  network_security_group_name = azurerm_network_security_group.nsg_http.name
 }
 resource "azurerm_network_security_rule" "ssh_deny_all" {
   name                        = "deny-all-inbound"

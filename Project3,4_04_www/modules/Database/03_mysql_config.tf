@@ -14,7 +14,7 @@ resource "azurerm_mysql_flexible_server_configuration" "require_ssl" {
   name                = "require_secure_transport"
   resource_group_name = var.rgname
   server_name         = azurerm_mysql_flexible_server.www_mysql.name
-  value               = "OFF"
+  value               = "ON"
 }
 resource "azurerm_mysql_flexible_server_configuration" "slow_query_log" {
   name                = "slow_query_log"
@@ -47,18 +47,11 @@ resource "azurerm_mysql_flexible_server_firewall_rule" "allow_azure_services" {
   start_ip_address    = "0.0.0.0"
   end_ip_address      = "0.0.0.0"
 }
-resource "azurerm_mysql_flexible_server_firewall_rule" "allow_class_ip" {
-  name                = "allow-class-ip"
+resource "azurerm_mysql_flexible_server_firewall_rule" "allow_ssh_ips" {
+  for_each            = toset(var.ssh_allowed_ips)
+  name                = "allow-ssh-ip-${replace(each.key, ".", "-")}"
   resource_group_name = var.rgname
   server_name         = azurerm_mysql_flexible_server.www_mysql.name
-  start_ip_address    = "61.108.60.26"
-  end_ip_address      = "61.108.60.26"
-}
-
-resource "azurerm_mysql_flexible_server_firewall_rule" "allow_my_ip" {
-  name                = "allow-my-ip"
-  resource_group_name = var.rgname
-  server_name         = azurerm_mysql_flexible_server.www_mysql.name
-  start_ip_address    = "211.227.107.208"
-  end_ip_address      = "211.227.107.208"
+  start_ip_address    = each.key
+  end_ip_address      = each.key
 }

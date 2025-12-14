@@ -46,3 +46,31 @@ resource "azurerm_resource_group_policy_assignment" "require_tag" {
     }
   })
 }
+
+resource "azurerm_resource_group_policy_assignment" "inherit_tag" {
+  name                 = "inherit-tag-env"
+  resource_group_id    = var.rgid
+  policy_definition_id = "/providers/Microsoft.Authorization/policyDefinitions/cd3aa116-8754-49c9-a813-ad46512ece54"
+  display_name         = "Inherit a tag from the resource group"
+  description          = "리소스 그룹의 태그를 리소스가 상속받도록 합니다."
+  location             = var.location
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  parameters = jsonencode({
+    tagName = {
+      value = "Environment"
+    }
+  })
+}
+
+resource "azurerm_resource_group_policy_assignment" "sql_security_audit" {
+  name                 = "sql-security-audit"
+  resource_group_id    = var.rgid
+  policy_definition_id = "/providers/Microsoft.Authorization/policyDefinitions/1f314764-cb73-4fc9-b863-8eca98ac36e9"
+  display_name         = "An Azure Active Directory administrator should be provisioned for SQL servers"
+  description          = "SQL Server에 Azure AD 관리자가 프로비저닝되어 있는지 감사합니다."
+}
+
