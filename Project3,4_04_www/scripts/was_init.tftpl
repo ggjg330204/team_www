@@ -35,39 +35,97 @@ log "Installing packages..."
 
 install_with_retry() {
     local cmd="$1"
-    local max_attempts=5
+    local max_attempts=10
     local attempt=1
     while [ $attempt -le $max_attempts ]; do
-        log "Attempt $attempt: $cmd"
+        log "Attempt $attempt/$max_attempts: $cmd"
         if eval "$cmd"; then
+            log "SUCCESS: $cmd"
             return 0
         fi
-        log "Attempt $attempt failed, retrying in 10 seconds..."
-        sleep 10
+        log "Attempt $attempt failed, retrying in 15 seconds..."
+        sleep 15
         attempt=$((attempt + 1))
     done
-    log "WARNING: All attempts failed for: $cmd"
-    return 0
+    log "ERROR: All attempts failed for: $cmd"
+    return 1
 }
 
 install_with_retry "dnf install -y epel-release"
-install_with_retry "dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
-dnf module reset -y php || true
-dnf module enable -y php:remi-8.1 || true
 
-install_with_retry "dnf install -y httpd php php-mysqlnd php-gd php-json php-mbstring php-pecl-redis php-imap mysql git php-pear sshpass"
+# Use Rocky Linux default AppStream PHP (Remi repo blocked by CDN)
+log "Enabling PHP module from AppStream..."
+dnf module reset -y php || true
+dnf module enable -y php:8.1 || true
+
+log "Installing packages..."
+install_with_retry "dnf install -y httpd php php-mysqlnd php-gd php-json php-mbstring mysql git sshpass"
+
+# php-pecl-redis is not in AppStream, install from EPEL if available
+dnf install -y php-pecl-redis 2>/dev/null || log "WARNING: php-pecl-redis not available, skipping"
+
 systemctl enable --now httpd
+
+log "Installing and configuring auditd for host behavior monitoring..."
+install_with_retry "dnf install -y audit audit-libs"
+
+# Configure file integrity monitoring rules
+log "Configuring file integrity monitoring..."
+auditctl -w /etc/passwd -p wa -k passwd_changes || true
+auditctl -w /etc/shadow -p wa -k shadow_changes || true
+auditctl -w /etc/sudoers -p wa -k sudoers_changes || true
+auditctl -w /var/log -p wa -k log_tampering || true
+auditctl -w /var/www/html -p wa -k webapp_tampering || true
+
+# Configure process execution monitoring
+log "Configuring suspicious process monitoring..."
+auditctl -a always,exit -F arch=b64 -S execve -k process_execution || true
+
+# Configure network connection monitoring
+log "Configuring network connection monitoring..."
+auditctl -a always,exit -F arch=b64 -S connect -k network_connect || true
+
+# Persist audit rules
+log "Persisting audit rules..."
+cat <<'AUDITRULES' > /etc/audit/rules.d/lupang-security.rules
+# File Integrity Monitoring
+-w /etc/passwd -p wa -k passwd_changes
+-w /etc/shadow -p wa -k shadow_changes
+-w /etc/sudoers -p wa -k sudoers_changes
+-w /var/log -p wa -k log_tampering
+-w /var/www/html -p wa -k webapp_tampering
+
+# Process Execution Monitoring
+-a always,exit -F arch=b64 -S execve -k process_execution
+
+# Network Connection Monitoring
+-a always,exit -F arch=b64 -S connect -k network_connect
+AUDITRULES
+
+systemctl enable auditd || true
+systemctl restart auditd || true
+systemctl restart rsyslog || true
+
+log "Auditd configuration complete. Host behavior detection enabled."
+
 
 log "Updating OpenSSH..."
 dnf update -y openssh-server openssh-clients || true
 systemctl restart sshd || true
 
-log "Configuring PHP usage of Redis..."
-sed -i 's/session.save_handler = files/session.save_handler = redis/g' /etc/php.ini
-cat <<EOF > /etc/php.d/50-redis.ini
-extension=redis.so
-session.save_path = "tcp://${redis_host}:${redis_port}?auth=${redis_key}"
-EOF
+log "Downloading Azure MySQL SSL Cert (DigiCert Global Root G2)..."
+curl -L -o /var/www/html/DigiCertGlobalRootG2.crt.pem https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem || log "WARNING: Failed to download SSL cert, DB connection using SSL may fail"
+
+# NOTE: Redis session disabled due to Private Endpoint DNS resolution issues
+# To enable Redis sessions, ensure Redis Private DNS Zone is properly linked to VNet
+# and the FQDN resolves to the Private Endpoint IP from within the VNet.
+log "Configuring PHP sessions (file-based)..."
+# Redis session configuration disabled - using file sessions instead
+# sed -i 's/session.save_handler = files/session.save_handler = redis/g' /etc/php.ini
+# cat <<EOF > /etc/php.d/50-redis.ini
+# extension=redis.so
+# session.save_path = "tcp://${redis_host}:${redis_port}?auth=${redis_key}&timeout=2"
+# EOF
 sed -i 's/expose_php = On/expose_php = Off/g' /etc/php.ini
 
 mkdir -p /var/www/html/uploads
@@ -78,14 +136,14 @@ chmod 666 /var/log/lupang_app.json
 
 cat <<EOF > /var/www/html/health.php
 <?php
-\$conn = new mysqli("${db_host}", "${db_user}", "${db_password}", "${db_name}");
-
-if (\$conn->connect_error) { 
-    http_response_code(500); 
-    echo "DB Down: " . \$conn->connect_error; 
-} else { 
-    http_response_code(200); 
-    echo "WAS-OK"; 
+include_once 'db_config.php';
+try {
+    \$conn = getDbConnection('read');
+    echo "WAS-OK";
+    http_response_code(200);
+} catch (Exception \$e) {
+    http_response_code(500);
+    echo "DB Error: " . \$e->getMessage();
 }
 ?>
 EOF
@@ -102,11 +160,13 @@ function getDbConnection(\$type = 'read') {
     global \$db_host_wr, \$db_host_ro, \$db_user, \$db_pass, \$db_name;
     \$host = (\$type === 'write') ? \$db_host_wr : \$db_host_ro;
     
-    if (empty("\$db_host_ro")) \$host = \$db_host_wr;
+    if (empty(\$db_host_ro)) \$host = \$db_host_wr;
 
-    \$conn = new mysqli(\$host, \$db_user, \$db_pass, \$db_name);
-    if (\$conn->connect_error) {
-        writeLog('DB_ERROR', 'CRITICAL', "Connection Failed", ['error' => \$conn->connect_error]);
+    \$conn = mysqli_init();
+    mysqli_ssl_set(\$conn, NULL, NULL, "/var/www/html/DigiCertGlobalRootG2.crt.pem", NULL, NULL);
+
+    if (!mysqli_real_connect(\$conn, \$host, \$db_user, \$db_pass, \$db_name, 3306, NULL, MYSQLI_CLIENT_SSL)) {
+        writeLog('DB_ERROR', 'CRITICAL', "Connection Failed", ['error' => mysqli_connect_error()]);
         die("Service Error");
     }
     return \$conn;
@@ -162,23 +222,21 @@ function sendMail(\$to, \$subject, \$body, \$isHtml = true) {
 EOF
 
 log "Waiting for DB connection..."
-wait_for_db() {
-    local host="$1"
-    local max=30
-    local i=0
-    while ! mysql -h "$host" -u "${db_user}" -p"${db_password}" -e "SELECT 1" &>/dev/null; do
-        if [ $i -ge $max ]; then
-            log "DB connection timed out."
-            return 1
-        fi
-        log "Waiting for DB ($host)..."
-        sleep 2
-        ((i++))
-    done
-    return 0
-}
-
-wait_for_db "${db_host}"
+DB_CONNECT_HOST="${db_host}"
+DB_CONNECT_USER="${db_user}"
+DB_CONNECT_PASS="${db_password}"
+DB_MAX_RETRY=30
+DB_RETRY_COUNT=0
+while ! mysql -h "$DB_CONNECT_HOST" -u "$DB_CONNECT_USER" -p"$DB_CONNECT_PASS" --ssl-ca=/var/www/html/DigiCertGlobalRootG2.crt.pem -e "SELECT 1" &>/dev/null; do
+    if [ $DB_RETRY_COUNT -eq 30 ]; then
+        log "WARNING: Could not connect to MySQL after 30 attempts. Continuing without DB connection..."
+        break
+    fi
+    log "Waiting for DB ($DB_CONNECT_HOST)..."
+    sleep 2
+    ((DB_RETRY_COUNT++)) || true
+done
+log "DB connection successful!"
 
 log "Seeding Database..."
 cat <<EOSQL > /tmp/init_db.sql
@@ -296,7 +354,7 @@ INSERT INTO products (category, name, description, price, stock, image_url) VALU
 SET FOREIGN_KEY_CHECKS=1;
 EOSQL
 
-mysql -h "${db_host}" -u "${db_user}" -p"${db_password}" "${db_name}" < /tmp/init_db.sql 2>&1 | tee -a "/var/log/was_init.log"
+mysql -h "${db_host}" -u "${db_user}" -p"${db_password}" --ssl-ca=/var/www/html/DigiCertGlobalRootG2.crt.pem "${db_name}" < /tmp/init_db.sql 2>&1 | tee -a "/var/log/was_init.log"
 rm -f /tmp/init_db.sql
 
 log "Seeding Users..."

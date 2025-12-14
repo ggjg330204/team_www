@@ -24,6 +24,7 @@ chmod 600 /etc/lupang_app_insights_key
 
 setenforce 0 || true
 sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config || true
+setsebool -P httpd_can_network_connect 1 || true
 
 log "Installing firewalld..."
 dnf install -y firewalld || true
@@ -35,12 +36,76 @@ firewall-cmd --zone=public --add-service=ssh --permanent || true
 firewall-cmd --reload || true
 
 log "Installing packages..."
-dnf install -y nginx redis mysql
+
+# Retry function for package installation (waits for Firewall rules to be applied)
+install_with_retry() {
+    local cmd="$1"
+    local max_attempts=10
+    local attempt=1
+    while [ $attempt -le $max_attempts ]; do
+        log "Attempt $attempt/$max_attempts: $cmd"
+        if eval "$cmd"; then
+            log "SUCCESS: $cmd"
+            return 0
+        fi
+        log "Attempt $attempt failed, retrying in 15 seconds..."
+        sleep 15
+        attempt=$((attempt + 1))
+    done
+    log "ERROR: All attempts failed for: $cmd"
+    return 1
+}
+
+install_with_retry "dnf install -y nginx redis mysql"
+
+log "Installing and configuring auditd for host behavior monitoring..."
+install_with_retry "dnf install -y audit audit-libs"
+
+# Configure file integrity monitoring rules
+log "Configuring file integrity monitoring..."
+auditctl -w /etc/passwd -p wa -k passwd_changes || true
+auditctl -w /etc/shadow -p wa -k shadow_changes || true
+auditctl -w /etc/sudoers -p wa -k sudoers_changes || true
+auditctl -w /var/log -p wa -k log_tampering || true
+
+# Configure process execution monitoring
+log "Configuring suspicious process monitoring..."
+auditctl -a always,exit -F arch=b64 -S execve -k process_execution || true
+
+# Configure network connection monitoring
+log "Configuring network connection monitoring..."
+auditctl -a always,exit -F arch=b64 -S connect -k network_connect || true
+
+# Persist audit rules
+log "Persisting audit rules..."
+cat <<'AUDITRULES' > /etc/audit/rules.d/lupang-security.rules
+# File Integrity Monitoring
+-w /etc/passwd -p wa -k passwd_changes
+-w /etc/shadow -p wa -k shadow_changes
+-w /etc/sudoers -p wa -k sudoers_changes
+-w /var/log -p wa -k log_tampering
+
+# Process Execution Monitoring
+-a always,exit -F arch=b64 -S execve -k process_execution
+
+# Network Connection Monitoring
+-a always,exit -F arch=b64 -S connect -k network_connect
+AUDITRULES
+
+systemctl enable auditd || true
+systemctl restart auditd || true
+systemctl restart rsyslog || true
+
+log "Auditd configuration complete. Host behavior detection enabled."
+
 
 log "Installing Azure CLI..."
 rpm --import https://packages.microsoft.com/keys/microsoft.asc
 dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm || true
 dnf install -y azure-cli || true
+
+log "Logging in with Managed Identity..."
+az login --identity || log "WARNING: az login failed. Check Managed Identity assignment."
 
 log "Updating OpenSSH..."
 dnf update -y openssh-server openssh-clients || true
@@ -336,11 +401,18 @@ fi
 # Install Nu Shell for improved shell experience (idempotent)
 if [ ! -f /usr/local/bin/nu ]; then
     log "Installing Nu Shell..."
-    curl -L https://github.com/nushell/nushell/releases/download/0.88.1/nu-0.88.1-x86_64-unknown-linux-musl.tar.gz -o /tmp/nu.tar.gz
-    tar -xzf /tmp/nu.tar.gz -C /tmp
-    mv /tmp/nu-0.88.1-x86_64-unknown-linux-musl/nu /usr/local/bin/nu
-    chmod +x /usr/local/bin/nu
-    rm -rf /tmp/nu.tar.gz /tmp/nu-0.88.1-x86_64-unknown-linux-musl
+    for i in 1 2 3 4 5; do
+        if curl -L --connect-timeout 30 --max-time 180 https://github.com/nushell/nushell/releases/download/0.88.1/nu-0.88.1-x86_64-unknown-linux-musl.tar.gz -o /tmp/nu.tar.gz; then
+            tar -xzf /tmp/nu.tar.gz -C /tmp
+            mv /tmp/nu-0.88.1-x86_64-unknown-linux-musl/nu /usr/local/bin/nu
+            chmod +x /usr/local/bin/nu
+            rm -rf /tmp/nu.tar.gz /tmp/nu-0.88.1-x86_64-unknown-linux-musl
+            log "Nu Shell downloaded successfully"
+            break
+        fi
+        log "Nu Shell download attempt $i failed, retrying in 15s..."
+        sleep 15
+    done
 else
     log "Nu Shell already installed, skipping download"
 fi
@@ -348,16 +420,18 @@ grep -q "/usr/local/bin/nu" /etc/shells || echo "/usr/local/bin/nu" >> /etc/shel
 dnf install -y util-linux-user 2>/dev/null || true
 getent passwd www | grep -q "/usr/local/bin/nu" || chsh -s /usr/local/bin/nu www || true
 
-# Configure Nu Shell for www user (idempotent)
-su - www -s /bin/bash -c 'mkdir -p ~/.config/nushell'
-cat <<'NUCONFIG' > /home/www/.config/nushell/config.nu
+# Configure Nu Shell for www user (optional, only if Nu Shell was installed)
+(
+    if [ -f /usr/local/bin/nu ]; then
+        su - www -s /bin/bash -c 'mkdir -p ~/.config/nushell' || true
+        cat <<'NUCONFIG' > /home/www/.config/nushell/config.nu
 # Nu Shell Configuration
 $env.config = {
     show_banner: false
 }
 NUCONFIG
 
-cat <<'NUENV' > /home/www/.config/nushell/env.nu
+        cat <<'NUENV' > /home/www/.config/nushell/env.nu
 # Nu Shell Environment
 $env.PROMPT_COMMAND = {||
     let hostname = (hostname | str trim)
@@ -384,8 +458,12 @@ def mydb [] {
 }
 NUENV
 
-chown -R www:www /home/www/.config/nushell
-log "Nu Shell installed successfully with custom prompt"
+        chown -R www:www /home/www/.config/nushell 2>/dev/null || true
+        log "Nu Shell configuration complete"
+    else
+        log "Skipping Nu Shell configuration (not installed)"
+    fi
+) || log "WARNING: Nu Shell configuration failed (non-critical)"
 
 echo "INIT_COMPLETED" > /tmp/web_init_complete.txt
 chmod 644 /tmp/web_init_complete.txt

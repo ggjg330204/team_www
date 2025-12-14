@@ -1,9 +1,9 @@
 resource "azurerm_subnet_network_security_group_association" "vmss_nsg_assoc" {
-  subnet_id                 = module.network_central.subnet_ids["www-vmss"]
+  subnet_id                 = module.network_central.subnet_ids["www-web"]
   network_security_group_id = module.security.nsg_http_id
 }
-resource "azurerm_subnet_network_security_group_association" "web_nsg_assoc" {
-  subnet_id                 = module.network_central.subnet_ids["www-web"]
+resource "azurerm_subnet_network_security_group_association" "acr_nsg_assoc" {
+  subnet_id                 = module.network_central.subnet_ids["www-acr"]
   network_security_group_id = module.security.nsg_http_id
 }
 resource "azurerm_subnet_network_security_group_association" "db_nsg_assoc" {

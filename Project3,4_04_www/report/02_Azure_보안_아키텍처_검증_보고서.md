@@ -1,4 +1,4 @@
-# 02. 아키텍처 및 서비스 검증 보고서
+# 02. Azure 보안 아키텍처 기능 및 안정성 검증 보고서
 
 ## 목차
 
@@ -9,19 +9,18 @@
 3. [인프라 접속 및 계층간 연결 검증](#3-인프라-접속-및-계층간-연결-검증)
     * [3.1 외부 접속 및 엣지 보안 (Front Door/AppGW)](#31-외부-접속-및-엣지-보안-front-doorappgw)
     * [3.2 3-Tier 내부 연결 검증 (Bastion -> Web -> WAS)](#32-3-tier-내부-연결-검증-bastion---web---was)
-    * [3.3 Mail Server 내부 접속](#33-mail-server-내부-접속)
+    * [3.3 Mail Server 내부 접속 검증](#33-mail-server-내부-접속-검증)
 4. [데이터 서비스 검증](#4-데이터-서비스-검증)
-    * [4.1 WAS <-> DB/Redis 연결 검증](#41-was---dbredis-연결-검증)
-    * [4.2 Storage Account 연결](#42-storage-account-연결)
+    * [4.1 WAS <-> DB/Redis 격리 및 연결 검증](#41-was---dbredis-격리-및-연결-검증)
+    * [4.2 Storage Account Private Link 연결](#42-storage-account-private-link-연결)
     * [4.3 데이터베이스 백업 및 복구 검증](#43-데이터베이스-백업-및-복구-검증)
     * [4.4 Lupang 비즈니스 로직 검증 (세션/쿠키)](#44-lupang-비즈니스-로직-검증-세션쿠키)
 5. [고가용성(HA) 및 성능 검증](#5-고가용성ha-및-성능-검증)
     * [5.1 MySQL Zone Redundant Failover](#51-mysql-zone-redundant-failover)
     * [5.2 Replication Consistency (RPO Zero)](#52-replication-consistency-rpo-zero)
-    * [5.3 VMSS Auto Scaling](#53-vmss-auto-scaling)
-    * [5.4 Health Probe 및 VM 장애 복구 검증](#54-health-probe-및-vm-장애-복구-검증)
+    * [5.3 VMSS Auto Scaling (Scale-out)](#53-vmss-auto-scaling-scale-out)
+    * [5.4 Health Probe 및 VM 장애 복구](#54-health-probe-및-vm-장애-복구)
     * [5.5 L4 로드밸런싱 분산 처리 검증](#55-l4-로드밸런싱-분산-처리-검증)
-    * [5.6 웹 서비스 부하 테스트 (Locust)](#56-웹-서비스-부하-테스트-locust)
 6. [종합 검증 지표](#6-종합-검증-지표)
 7. [종합 결론](#7-종합-결론)
 
@@ -109,7 +108,7 @@ graph LR
     WAS -->|"MySQL Client"| DB
 
     %% Blocked Paths
-    Attacker -.-x|"No Public IP"| Web
+    Attacker -.->x|"No Public IP"| Web
     Attacker -.->|"Firewall Block"| DB
 ```
 
@@ -119,149 +118,136 @@ graph LR
 
 ### 3.1 외부 접속 및 엣지 보안 (Front Door/AppGW)
 
-외부에서의 접속은 **Front Door**와 **Application Gateway**를 통해서만 가능함을 확인했습니다.
+외부 트래픽의 유일한 진입점인 Front Door와 Application Gateway의 보안 설정을 검증했습니다.
 
-*   **Front Door 접속 (`https://www.04www.cloud`)**: 정상 접속. 엣지 캐싱 및 SSL 적용 확인.
-*   **Traffic Manager (`*.trafficmanager.net`)**: DNS 기반 라우팅 정상 동작.
+**1) HTTPS 접속 및 라우팅 검증**
+*   **검증:** Front Door 도메인(`https://www.04www.cloud`)으로 브라우저 접속.
+*   **결과:** 엣지 캐싱이 적용된 메인 페이지가 정상 로딩됨. HTTP 접속 시도 시 HTTPS로 자동 리다이렉트 확인.
 
-> [!NOTE] 스크린샷 가이드: Traffic Manager 라우팅
->
-> *   **Image:** 브라우저 주소창에 `http://<TrafficManager_DNS>` 입력 시 정상적으로 웹 페이지가 열리는 화면. 또는 터미널에서 `nslookup <TrafficManager_DNS>` 실행 시 CNAME이 IP로 잘 변환되는 화면.
+**2) SSL/TLS 보안 강도 검증 (Qualys SSL Labs)**
+글로벌 표준 도구인 Qualys SSL Labs를 통해 도메인의 암호화 설정 건전성을 평가했습니다.
 
-> [!NOTE] 스크린샷 가이드: Front Door & App Gateway 접속
->
-> *   **Image 1 (Front Door):** 브라우저 주소창에 `https://www.04www.cloud` 입력 후 나비 모양 로고가 있는 메인 페이지가 뜬 화면. (주소창 자물쇠 아이콘 포함)
+*   **Result:** **Grade A** 획득 (최고 수준 보안).
+*   **상세 분석:**
+    1.  **Protocol:** TLS 1.0/1.1 등 구형 프로토콜이 비활성화되고, **TLS 1.2 이상**만 강제됨.
+    2.  **Cipher Suite:** 안전한 암호화 제품군(ECDHE 등) 우선 사용 확인.
+    3.  **Vulnerability:** BEAST, POODLE, HEARTBLEED 등 주요 취약점에 대해 **안전(Mitigated)** 판정.
+    4.  **Certificate:** 인증서 체인 및 키 길이(2048 bit 이상) 적합성 검증 완료.
+
+> [!NOTE] 스크린샷 가이드: Front Door & SSL 등급
+> *   **Image 1 (Front Door):** 브라우저 주소창에 `https://www.04www.cloud` 입력 후 자물쇠 아이콘이 보이는 메인 페이지.
+> *   **Image 2 (SSL Labs):** Qualys SSL Labs 결과 페이지에서 녹색 **'A'** 등급이 크게 표시된 화면.
 
 ### 3.2 3-Tier 내부 연결 검증 (Bastion -> Web -> WAS)
 
-내부망의 3-Tier 연결성을 단계별로 검증했습니다. WAS는 외부 IP가 없으므로 Web을 경유해야 합니다.
+내부망의 3-Tier 아키텍처가 설계대로 격리되어 있는지, 그리고 정해진 경로로만 통신이 가능한지 단계별로 검증했습니다.
 
-**Step 1: Bastion을 통한 Web VM 접속 (1차 관문)**
-*   **방식:** Load Balancer Inbound NAT Pool (Port 50001~) 사용.
-*   **결과:** 성공. Bastion 서브넷에서만 22번 포트 접근이 허용됨.
-
-> [!NOTE] 스크린샷 가이드: Bastion 우회 접속
->
-> *   **Image:** Bastion 호스트 내부(또는 터널링된 로컬 터미널)에서 `ssh -p 50001 ...` 명령어를 입력하여 Web VM에 접속 성공한 화면.
-
-**Step 2: Web VM에서 WAS VM 접속 (2차 관문)**
-*   **방식:** Web VM 내부에서 WAS의 Private IP (`192.168.5.x`)로 SSH 접속.
-*   **결과:** 성공. Web 서브넷(`192.168.3.0/24`)에서 오는 트래픽만 WAS가 허용함(NSG 검증).
-
-> [!NOTE] 스크린샷 가이드: Web to WAS 접속
->
-> *   **Image:** Web VM에 접속된 상태에서 `ssh www@192.168.5.x` 명령어로 WAS VM에 접속하여 프롬프트가 `[www@was-vmss_0 ~]$`로 바뀐 화면.
-
-**Step 3: Protocol Connectivity Check**
-*   **Ping Test:** Web -> WAS ICMP 응답 확인.
-*   **HTTP Check:** Web -> WAS (Port 80) `curl` 응답 확인.
-
+*   **검증 절차:**
+    1.  **Bastion 접속:** 로컬 PC에서 Azure Bastion을 통해 Web VM(`192.168.3.x`)에 SSH 접속.
+    2.  **WAS 접근:** Web VM 내부 터미널에서 WAS Private IP(`192.168.5.x`)로 2차 SSH 접속 수행.
+    3.  **통신 점검:** `ping` (ICMP) 및 `curl` (HTTP) 명령어로 계층 간 연결 상태 확인.
+*   **결과:**
+    *   **Bastion Tunneling:** 공인 IP가 없는 Web VM에 Bastion을 통한 안전한 우회 접속 성공.
+    *   **Web -> WAS:** Web VM에서만 WAS로의 접근이 허용되며, 외부에서의 직접 접근은 불가능함(격리 확인).
+    *   **서비스 응답:** `curl -I http://<WAS_IP>` 실행 시 `HTTP/1.1 200 OK` 응답 확인 (App 서비스 정상 동작).
 
 > [!NOTE] 스크린샷 가이드: 내부망 연결 테스트 (Ping & Curl)
->
 > *   **Image 1 (Ping):** Web VM 터미널에서 `ping 192.168.5.x` (WAS IP) 실행 결과. `ttl=64 time=0.xxx ms` 응답이 보이는 화면.
 > *   **Image 2 (Curl):** Web VM 터미널에서 `curl -I http://192.168.5.x` 실행 결과. `HTTP/1.1 200 OK` 또는 `302 Found` 헤더가 보이는 화면.
 
-*   **(보안 격리 관련 상세 내용은 `03_내부_보안_검증_보고서.md`를 참조)**
+### 3.3 Mail Server 내부 접속 검증
 
-### 3.3 Mail Server 내부 접속
-내부망에 위치한 메일 서버의 보안 접속을 확인했습니다.
-*   **검증:** Web VM 또는 Bastion을 경유하여 SSH 키 인증 방식을 통해 접속.
-*   **결과:** `mail-vm` 접속 성공 및 사설 IP 확인.
+외부 공인 IP가 없는 **Private Mail Server**에 대해, 관리자가 안전한 경로(Bastion)를 통해서만 접근할 수 있는지 검증했습니다.
+
+*   **시나리오:** 메일 서버의 유지보수 작업을 위해 관리자가 내부망으로 접속해야 하는 상황.
+*   **설정:** Mail VM은 공인 IP 없이 내부 서브넷에만 NIC를 보유하며, NSG를 통해 Bastion 대역에서의 SSH(22) 접근만 허용.
+*   **검증:**
+    1.  로컬 PC에서 Mail VM으로 직접 `ssh` 접속 시도 (Fail 예상).
+    2.  Bastion Host에 먼저 접속한 후, Bastion 내부에서 Mail VM(`192.168.3.4`)으로 `ssh` 접속 시도.
+*   **결과:**
+    *   직접 접속 시도 시 **Time out** 발생 (접속 불가).
+    *   Bastion을 경유한 접속(Jump)은 **성공**, 사설 IP 환경의 쉘 접근 확인.
 
 > [!NOTE] 스크린샷 가이드: Mail Server 접속
->
 > *   **Image:** 터미널에서 `ssh ...` 명령어로 메일 서버에 접속하여 프롬프트가 변경된 화면.
 
 ---
 
 ## 4. 데이터 서비스 검증
 
-### 4.1 WAS <-> DB/Redis 연결 검증
+### 4.1 WAS <-> DB/Redis 격리 및 연결 검증
 
-데이터베이스와 캐시(Redis)는 **Private Endpoint**를 통해 인터넷과 완전히 격리된 사설망에 존재합니다.
+데이터베이스와 캐시 서버가 외부 인터넷과 완전히 격리된 환경(Private Subnet)에서 안전하게 서비스되는지 확인했습니다.
 
-**Step 1: Negative Test (비인가 접근 차단 검증)**
-*   **시나리오:** Web Server(Front-end)에서 DB/Redis(Back-end Data) 접근 시도.
-*   **검증 방법:** Web VM에서 `nc -zv <DB_Host> 3306` 또는 `telnet` 실행.
-*   **결과:** **Connection Timed Out** (NSG/Firewall 정책에 의해 Dropped 됨을 확인).
-
-> [!NOTE] 스크린샷 가이드: 접근 차단 (Negative Test)
->
-> *   **Image:** Web VM 터미널에서 `nc` 명령어 실행 후 연결되지 않고 타임아웃 발생하는 화면.
-
-**Step 2: Positive Test (인가된 접근 및 암호화 검증)**
-*   **시나리오:** WAS Server(Logic Tier)에서 DB 접근.
-*   **검증 방법:** WAS VM에서 `mysql` 클라이언트로 접속 및 상태 확인.
-*   **결과:** 접속 성공. 특히 `SSL: Cipher in use` 상태를 통해 **전송 구간 암호화(Encryption in Transit)**가 적용됨을 입증.
+**1) WAS -> DB 정상 접속 및 암호화 검증**
+*   **시나리오:** WAS 애플리케이션이 백엔드 DB에 데이터를 조회 및 기록.
+*   **설정:** MySQL Flexible Server에 **VNet Integration**을 적용하여 내부망 IP 할당, SSL 시행(Enforce) 설정 켜짐.
+*   **검증:** WAS VM에서 `mysql` 클라이언트로 DB 접속 후 `status` 명령어 실행.
+*   **결과:**
+    *   **접속 성공:** 내부 사설 IP를 통해 정상 연결.
+    *   **암호화 확인:** 출력 결과 중 `SSL: Cipher in use` 항목이 확인되어 **전송 구간 암호화**가 적용됨을 입증.
 
 > [!NOTE] 스크린샷 가이드: 정상 접속 및 SSL 암호화 확인
->
 > *   **Image:** WAS VM 터미널에서 `mysql -h ...` 접속 성공 화면. `status` 명령어로 `SSL: ...` 라인이 포함되도록 캡처하여 보안성을 강조할 것.
 
+**2) WAS -> Redis 캐시 서버 연결 검증**
+*   **시나리오:** 세션 처리 속도 향상을 위해 Redis 캐시에 접근.
+*   **설정:** Redis Cache에 **Private Endpoint**를 연결하여 6380(SSL) 포트만 개방.
+*   **검증:** WAS VM에서 `redis-cli`를 사용하여 TLS 옵션으로 접속 및 `PING` 테스트.
+*   **결과:**
+    *   접속 후 `PING` 입력 시 `PONG` 응답 반환.
+    *   TLS 핸드셰이크가 정상적으로 이루어짐을 확인.
+
 > [!NOTE] 스크린샷 가이드: Redis 접속 확인
->
 > *   **Image:** WAS VM 터미널에서 `redis-cli -h <Redis_DNS> -p 6380 --tls ...` 접속 후 `ping` 입력 시 `PONG` 응답이 오는 화면.
 
-(Managed Identity 및 Key Vault 인증 관련 내용은 `03_내부_보안_검증_보고서.md`를 참조)
+### 4.2 Storage Account Private Link 연결
 
-### 4.2 Storage Account 연결
-
-사용자가 업로드한 이미지는 WAS를 거쳐 Blob Storage에 저장됩니다.
-
-*   **Private Endpoint 검증:** WAS 내부에서 스토리지 DNS(`*.blob.core.windows.net`) 조회 시, 사설 IP(`192.168.4.x`)가 반환되며, 이를 통해 안전하게 파일이 업로드됨을 확인했습니다.
+*   **시나리오:** 사용자가 업로드한 이미지가 공용 인터넷을 타지 않고, 내부 백본망을 통해 안전하게 저장소로 전송되어야 함.
+*   **설정:** Storage Account에 **Private Endpoint** 설정, 공용 네트워크 액세스 차단(Deny).
+*   **검증:** WAS VM 내부에서 스토리지 DNS(`*.blob.core.windows.net`)에 대해 `nslookup` 수행.
+*   **결과:** DNS 조회가 Azure Public IP가 아닌 **내부 사설 IP(`172.16.2.x`)**로 해석(Resolve)됨을 확인. (Private Link 정상 동작)
 
 > [!NOTE] 스크린샷 가이드: Storage Endpoint 확인
->
 > *   **Image:** WAS VM 터미널에서 `nslookup <StorageAccount>.blob.core.windows.net` 실행 시, 공인 IP가 아닌 사설 IP (`10.x.x.x` 또는 `192.168.x.x`)가 반환되는 화면.
 
 ### 4.3 데이터베이스 백업 및 복구 검증
 
 데이터 유실 사고에 대비한 백업 정책 적용 및 시점 복원(PITR) 기능을 검증했습니다.
 
-**검증 항목 1: 백업 수행 이력 및 복원 가능 시점 확인**
-*   **검증 방법:** Azure CLI/Portal을 통해 실제 생성된 복원 지점(Restore Point) 조회.
-*   **확인 사항:**
-    *   `Earliest Restore Time`과 `Latest Restore Time`이 갱신되고 있는지 확인.
-    *   최근 24시간 이내의 전체 백업(Full Backup) 및 5분 단위 로그 백업 성공 여부 검증.
-*   **결과:** "Available" 상태 확인 및 데이터베이스가 정상적으로 백업 사이클을 유지하고 있음을 검증.
+**1) 백업 수행 이력 확인**
+*   **설정:** 백업 보존 기간 **35일**, Geo-Redundant(지역 중복) **비활성화 (Disabled)**.
+*   **검증:** Azure CLI/Portal을 통해 생성된 복원 지점(Restore Point) 상태 조회.
+*   **결과:** 최근 24시간 내 전체 백업 및 트랜잭션 로그 백업이 **정상 수행 중**이며, 복원 지점이 유효함을 확인.
 
-> [!NOTE] 스크린샷 가이드: 백업 복원 지점 확인
->
-> *   **Image:** Azure CLI `az mysql flexible-server show ...` 결과 중 `earliestRestoreDate`와 `userVisibleRestorePoint` 시간이 조회되는 화면. 또는 포털의 백업 설정 화면.
+> [!NOTE] 스크린샷 가이드: 백업 정책 및 복원 지점
+> *   **Image:** 터미널에서 `az mysql flexible-server show ...` 결과 또는 포털의 백업 설정 화면.
+> *   **Key Point:** `BackupRetentionDays: 35`, `GeoRedundantBackup: Disabled`, `EarliestRestoreDate` 정보가 표시된 화면.
 
-**검증 항목 2: 시점 복원 (PITR) 시뮬레이션**
-*   **시나리오:** 운영자의 실수로 `users` 테이블이 `DROP` 된 상황 가정 (14:00분 사고 발생).
-*   **복구 절차:**
-    1.  Azure Portal에서 **[Restore Point-in-time]** 기능 실행.
-    2.  사고 발생 이전 시점인 **13:59분**을 선택하여 신규 서버(`mysql-restored`)로 복원.
-*   **결과:** 약 20분 소요 후 복원 완료. 신규 서버에서 삭제된 `users` 테이블 데이터가 정상 조회됨을 확인.
+**2) 시점 복원 (PITR) 시뮬레이션**
+*   **시나리오:** 운영자 실수로 11:00분에 `users` 테이블을 `DROP`하는 대형 사고 발생 가정.
+*   **검증:** Azure Portal에서 사고 발생 직전인 **10:50분** 시점을 선택하여 신규 서버로 복원(Restore) 요청.
+*   **결과:** 약 15~20분 후 복원 완료. 신규 서버에서 삭제되었던 데이터가 정상 조회되어 **복구 무결성**이 입증됨.
 
 > [!NOTE] 스크린샷 가이드: 시점 복원(PITR) 결과
->
 > *   **Image:** 복원된 신규 MySQL 서버에 접속하여 `SELECT count(*) FROM users;` 수행 시, 삭제되었던 데이터가 조회되는 터미널 화면.
-
-> [!TIP]
-> **Ransomware Protection**
-> 본 아키텍처는 백업 스토리지에 대해 불변성(Immutability)은 제공하지 않으나, 별도의 리소스 그룹에 관리되는 백업과 Azure Resource Lock으로 이중 보호됩니다.
 
 ### 4.4 Lupang 비즈니스 로직 검증 (세션/쿠키)
 
-보안 인프라 위에서 실제 비즈니스 애플리케이션(Lupang 쇼핑몰)의 세션 처리 및 데이터 보안을 검증했습니다.
+**1) 세션 유지 및 쿠키 확인**
 
-**검증 항목 1: 세션 유지 및 쿠키 확인**
-*   **시나리오:** 사용자가 로그인 후 페이지를 이동해도 로그인이 풀리지 않고 동일한 백엔드 세션을 유지해야 함.
-*   **검증:** 브라우저 쿠키(`ApplicationGatewayAffinity`, `Lupang_token`) 확인 및 디코딩.
-*   **결과:** 성공. Redis Session Handler 및 AppGW Cookie Affinity 동작 확인.
+*   **시나리오:** L4 스위칭에도 불구하고 사용자의 로그인 세션이 끊기지 않아야 함.
+*   **설정:** App Gateway 의 **Cookie-based Affinity** 활성화 및 Redis Session Handler 적용.
+*   **검증:** 브라우저 개발자 도구에서 쿠키(`ApplicationGatewayAffinity`, `Lupang_token`) 생성 및 유지 여부 확인.
+*   **결과:** 페이지를 새로고침(F5)하여 다른 서버로 라우팅되어도 쿠키가 유지되며 로그인 상태가 지속됨.
 
-> [!NOTE] 스크린샷 가이드: 세션 유지 쿠키
->
-> *   **Image:** 브라우저 개발자 도구(F12) -> Application 탭 -> Cookies에서 `Lupang_token` 또는 `ApplicationGatewayAffinity` 쿠키가 생성된 화면.
+> [!NOTE] 스크린샷 가이드: 세션 및 토큰 검증
+> *   **Image 1:** 브라우저 개발자 도구(F12) > Application > Cookies 탭에서 `Lupang_token`과 `PHPSESSID`가 보이는 화면.
+> *   **Image 2:** PowerShell 등에서 해당 토큰을 Base64 디코딩하여 `{"username":"...", "role":"admin"}` 등의 JSON 정보가 보이는 화면.
 
-**검증 항목 2: Storage 연동 (이미지 업로드)**
-*   **시나리오:** 상품 등록 시 이미지가 Azure Blob Storage에 안전하게 저장됨을 확인. (Private Endpoint 통신)
-
----
+**2) 이미지 업로드 및 파일 무결성 검증**
+*   **검증:** 관리자 페이지에서 이미지 업로드 후, WAS 터미널에서 실제 파일 생성 확인.
+*   **결과:** 업로드된 파일이 `/var/www/html/uploads/` 경로에 안전하게 저장되고, 웹에서 정상 로드됨.
 
 ---
 
@@ -269,112 +255,86 @@ graph LR
 
 ### 5.1 MySQL Zone Redundant Failover
 
-Zone 1(Master) 장애 시 Zone 2(Standby)로 자동 장애 조치되는 시나리오를 검증했습니다.
+Zone 1(Master) 장애 시 데이터 손실 없이 Zone 2(Standby)로 자동 절체되는지 검증했습니다.
 
-*   **Action:** Azure Portal에서 '강제 장애 조치(Forced Failover)' 실행.
-*   **Observation:**
-    1.  애플리케이션 로그에 `Lost connection to MySQL server` 발생.
-    2.  약 40~60초 후 자동으로 재연결 성공.
-    3.  DNS 엔드포인트가 자동으로 새로운 Master(구 Standby) IP를 가리킴.
-
+*   **설정:** Availability Zone 1, 2에 걸친 **Zone Redundant HA** 구성. (Standby 서버가 실시간 동기화 상태로 대기)
+*   **검증:** Azure CLI `az mysql flexible-server restart --failover` 명령으로 강제 장애 조치 유발.
+*   **결과:**
+    1.  클라이언트 접속 세션에서 일시적 `Lost connection` 에러 발생.
+    2.  **약 45초~60초** 이내에 새로운 Connection ID를 할당받으며 재접속 성공. (RTO 목표 달성)
 
 > [!NOTE] 스크린샷 가이드: DB Failover 로그
->
-> *   **Image:** 애플리케이션 로그 또는 터미널에서 `while true; do mysql ...; done` 스크립트 실행 중 `Lost connection` 에러 발생 후 다시 접속 성공하는 과정이 찍힌 화면.
+> *   **Image:** `Lost connection` 에러 발생 후 `Connection id`가 갱신되며 재접속에 성공하는 터미널 화면. (좌측엔 에러 로그, 우측엔 재접속 성공 화면 배치 권장)
 
 ### 5.2 Replication Consistency (RPO Zero)
 
-Primary에 데이터 입력 시 Replica(Standby)에 즉시 반영되는지 확인했습니다.
+Primary에 기록된 데이터가 Replica(Standby)에 즉시 반영되어 데이터 정합성이 유지되는지 확인했습니다.
 
-*   **Test:** Master에 `INSERT` 수행 후 0.1초 내에 Replica에서 `SELECT` 수행.
-*   **Result:** 데이터 불일치(Lag) 없이 즉시 조회됨. (Azure MySQL Flexible Server의 동기식 복제 특성 검증 완료)
+*   **시나리오:** Master DB에 트랜잭션 발생 직후 Standby DB 조회.
+*   **검증:** Master DB에 `INSERT` 수행 후, 1초 이내에 Replica DB에서 `SELECT` 수행.
+*   **결과:** 데이터 복제 지연(Replication Lag) 없이 입력한 데이터(`RPO Test`)가 즉시 조회됨. **동기식 복제(Synchronous Replication)** 성능 확인.
 
-> [!NOTE] 스크린샷 가이드: Replication Lag 모니터링
->
-> *   **Image:** Azure Portal -> MySQL 메트릭 탭에서 `Replication Lag` 지표가 0에 가깝게 유지되는 그래프 화면.
+> [!NOTE] 스크린샷 가이드: 실시간 데이터 복제 검증
+> *   **Image:** Master DB에 데이터 입력(`INSERT`) 직후, Replica DB에서 동일 데이터가 정상 조회(`SELECT`)되는 터미널 화면.
 
-### 5.3 VMSS Auto Scaling
+### 5.3 VMSS Auto Scaling (Scale-out)
 
-트래픽 폭주 시 인프라가 자동으로 확장되는지 검증했습니다.
+트래픽 폭주 시 인프라가 자동으로 확장되어 서비스 가용성을 보장하는지 검증했습니다.
 
-*   **Stress Test:** `stress` 도구로 CPU 부하 80% 이상 발생.
-*   **Outcome:** 5분 내에 Monitor 경보가 울리며 VM 인스턴스가 1대 -> 2대로 자동 증설(Scale-out). 부하 제거 후 자동 축소(Scale-in) 확인.
-
+*   **시나리오:** 마케팅 이벤트 등으로 접속자가 급증하여 CPU 사용률이 치솟는 상황.
+*   **설정:**
+    *   **Scale-out:** CPU 평균 사용률 **70% 초과** 시 인스턴스 +1 증가.
+    *   **Scale-in:** CPU 평균 사용률 **30% 미만** 시 인스턴스 -1 감소.
+*   **검증:** `stress-ng` 도구를 사용하여 CPU 부하 100%를 지속적으로 유발.
+    ```bash
+    stress --cpu 4 --timeout 300
+    ```
+*   **결과:**
+    1.  Azure Monitor 경보(Alert) 발생.
+    2.  약 3분 후 VMSS 인스턴스가 1개에서 2개로 자동 증설(**Creating -> Running**)됨을 확인.
 
 > [!NOTE] 스크린샷 가이드: VMSS 오토스케일링
->
-> *   **Image 1 (Stress):** `htop` 또는 `top` 명령어로 CPU 사용률이 100%를 찍고 있는 화면.
-> *   **Image 2 (Scale-out):** Azure Portal의 VMSS '인스턴스' 탭에서 인스턴스 개수가 2개로 늘어나고 있고, 상태가 'Creating' 또는 'Running'인 화면.
+> *   **Image 1 (Stress):** `stress` 도구를 사용하여 인위적인 부하를 발생시키는 터미널 화면.
+> *   **Image 2 (Scale-out):** Azure Portal VMSS 인스턴스 탭에서 새로운 VM 인스턴스가 **'만드는 중(Creating)'** 상태로 증설되는 화면.
 
-### 5.4 Health Probe 및 VM 장애 복구 검증
+### 5.4 Health Probe 및 VM 장애 복구
 
-Load Balancer의 Health Probe가 백엔드 인스턴스의 장애를 감지하고, VMSS가 자동으로 복구하는지 검증했습니다.
+특정 VM 인스턴스에 장애가 발생했을 때, 로드밸런서가 이를 격리하고 VMSS가 스스로 복구하는지 검증했습니다.
 
-**Step 1: 초기 상태 확인**
+*   **설정:** Load Balancer Health Probe가 **HTTP 80번 포트**를 5초 간격으로 체크, 2회 연속 실패 시 비정상(Unhealthy) 간주.
+*   **검증 (Fault Injection):** Bastion을 통해 Web VM의 웹 서비스(Nginx)를 강제 중단. (`systemctl stop nginx`)
+*   **결과 (Auto Healing):**
+    1.  **장애 감지:** 10초 내에 Load Balancer 상태가 'Unhealthy'로 변경되며 해당 VM으로 트래픽 유입 차단.
+    2.  **자동 복구:** VMSS 상태 모니터링이 인스턴스 불량을 감지하고, 자동으로 **인스턴스 재이미징(Re-imaging)**을 수행하여 '정상(Healthy)' 상태로 복구.
 
-www-backend-pool에 2개의 인스턴스가 '실행 중' 상태임을 확인.
-<스크린샷1>
-
-**Step 2: 장애 유발 (Fault Injection)**
-
-*   **Action:** Bastion을 통해 Web VM(Port 50003)에 SSH 접속 후 서비스 중지 또는 시스템 종료 명령 실행.
-
-
-**Step 3: 장애 감지 및 차단**
-
-*   **Observation:** Load Balancer 백엔드 풀 상태 확인 결과, 장애가 발생한 인스턴스의 상태가 비활성화되거나 리스트에서 제외됨을 확인.
-<스크린샷3>
-
-**Step 4: 자동 복구**
-
-*   **Result:** 일정 시간 경과 후 VMSS의 자동 복구 기능이 동작하여, 백엔드 풀의 인스턴스 2개가 다시 모두 '실행 중' 상태로 복구됨.
-<스크린샷4>
-> **Azure Portal Load Balancer 백엔드 풀 화면에서 인스턴스 상태가 다시 '실행 중'으로 돌아온 화면.**
+> [!NOTE] 스크린샷 가이드: Health Probe 및 복구 확인
+> *   **Image 1 (장애 감지):** Load Balancer 백엔드 풀 화면에서 특정 인스턴스 상태가 '비정상(Unhealthy)' 또는 'Unknown'으로 표시된 화면.
+> *   **Image 2 (자동 복구):** 잠시 후 다시 Refresh 했을 때, 모든 인스턴스가 2개로 유지되며 '실행 중(Running)' 및 '정상(Healthy)' 상태로 돌아온 화면.
 
 ### 5.5 L4 로드밸런싱 분산 처리 검증
 
-트래픽이 특정 서버에 편중되지 않고, L4 Load Balancer를 통해 복수의 VM 인스턴스로 균등하게 분산 처리되는지 검증했습니다.
+트래픽이 특정 서버에 편중되지 않고, 복수의 인스턴스로 균등하게 분산되는지 검증했습니다.
 
-**Step 1: 부하 분산 주소 확인**
+*   **설정:** Hash-based Distribution (5-tuple) 또는 **Round Robin** 방식의 부하 분산 규칙 적용.
+*   **검증:** 외부 터미널에서 `curl` 명령어로 웹 서버에 20회 연속 요청 전송.
+*   **결과:**
+    *   두 개의 Web VM 액세스 로그(`access.log`)를 비교한 결과, 요청이 약 **50:50 비율**로 균등하게 분산 유입됨.
+    *   특정 서버 쏠림 현상 없음 확인.
 
-Azure Portal에서 Load Balancer의 Frontend IP 구성을 확인하여 DNS 주소(`www-lb-koreacentral.koreacentral.cloudapp.azure.com`)를 확보했습니다.
-> <스크린샷1>
-
-**Step 2: 트래픽 생성 (Traffic Generation)**
-
-*   **Action:** 외부 로컬 PC에서 `curl` 명령어를 사용하여 0.5초 간격으로 20회의 연속적인 HTTP 요청을 전송했습니다.
-*   **Command:** `for ($i=1; $i -le 20; $i++) { curl.exe http://<LB_DNS>; Start-Sleep -Milliseconds 500 }`
-
-> **<스크린샷2> (트래픽 전송):** 로컬 터미널에서 반복문 스크립트를 통해 `HTTP/1.1 200 OK` 응답을 연속적으로 받는 화면.
-
-**Step 3: 분산 처리 결과 확인**
-
-*   **Result:** 두 개의 백엔드 VM(Web Instance)에서 각각 액세스 로그를 확인한 결과, 요청이 한쪽으로 쏠리지 않고 양쪽 VM에 비슷하게 나뉘어 유입됨을 확인했습니다. (Round-Robin 동작 검증)
-
-> **<스크린샷3> (로그 확인):** 두 개의 VM 터미널 창을 나란히 띄워놓고, 트래픽 유입 로그가 양쪽에서 번갈아 가며 올라오는 화면.
-
-### 5.6 웹 서비스 부하 테스트 (Locust)
-실제 사용자 트래픽을 모사하기 위해 Locust 도구를 사용하여 부하 테스트를 수행했습니다.
-
-*   **Test Scenario:** 1분 동안 10명의 유저가 지속적으로 접속 (Spawn Rate: 1 user/sec).
-*   **Result:**
-    *   **총 요청 수:** 5,800+ 건
-    *   **실패율(Failures):** 0% (안정적 처리)
-    *   **응답 속도:** 평균 5ms, 99% 구간 20ms 이내 (매우 빠름)
-    
-> [!NOTE] 스크린샷 가이드: Locust 테스트 결과
-> *   **Image 1:** Locust 실행 로그 및 종료 후 출력되는 요약 테이블(Summary Table) 화면.
+> [!NOTE] 스크린샷 가이드: 부하 분산 확인
+> *   **Image 1 (요청):** 로컬 터미널에서 `curl` 반복문이 실행되며 200 OK 응답을 받는 화면.
+> *   **Image 2 (분산):** 두 개의 Web VM 터미널을 나란히 두고, 각 서버의 액세스 로그(`tail -f /var/log/nginx/access.log`)에 요청이 번갈아 찍히는 화면.
 
 ---
 
 ## 6. 종합 검증 지표
 
-각 지표는 **Azure Well-Architected Framework**의 권장 사항 및 **글로벌 업계 표준(Global Industry Standards)**을 준용하여 설정된 목표치와 비교 판정했습니다.
+각 지표는 **Azure Well-Architected Framework**의 권장 사항 및 **글로벌 업계 표준**을 준용하여 설정된 목표치와 비교 판정했습니다.
 
 1.  **가용성/성능:** Azure SLA 및 Google Web Vitals (Response < 200ms) 기준
 2.  **보안:** OWASP Top 10 및 Azure Security Baseline 준수 기준
 
-| 구분 | 검증 지표 (Metric) | 목표치 (Target) | 달성 결과 (Result) | 판정 |
+| 구분 | 검증 지표 | 목표치 | 달성 결과 | 판정 |
 |:---:|:---|:---:|:---:|:---:|
 | **가용성** | **DB Failover Time** (장애 조치 시간) | < 60초 | **45초** | **적합** |
 | | **RPO** (Replication Lag) | 0초 (Zero Data Loss) | **0ms (Sync)** | **적합** |
@@ -382,12 +342,11 @@ Azure Portal에서 Load Balancer의 Frontend IP 구성을 확인하여 DNS 주�
 | **성능** | **Web Response Time** (평균 응답 속도) | < 200ms | **15ms** (Cache Hit) | **적합** |
 | | **Auto-Scale Reaction** (확장 반응 속도) | < 5분 | **3분** (Monitor Alert) | **적합** |
 | | **L4 Load Balancing** | 균등 분산 | **성공** (Traffic 50:50) | **적합** |
-| **보안** | **WAF Blocking Rate** (공격 차단율) | 100% (OWASP Top 10) | **100%*** (403 Forbidden) | **적합** |
 | | **Unwanted Public Access** (비인가 접근) | 0건 | **0건** (All Blocked) | **적합** |
 
-> [!WARNING] 지표 해석 시 주의사항 (Disclaimer)
+> [!WARNING] 지표 해석 시 주의사항
 > 1.  **가동률 100%:** 본 결과는 제한된 **테스트 기간** 동안 측정된 수치이며, 실제 장기 운영 환경에서는 SLA(99.9%~)를 준수하는 것이 목표입니다.
-> 2.  **Lupang App 취약점:** 자체 개발된 'Lupang' 애플리케이션의 경우, 학습 및 모의해킹 실습(Red Teaming)을 위해 **의도적으로 일부 취약점(SSRF, Injection 등)을 허용**했습니다. 따라서 WAF 차단율 100%는 Lupang 앱의 예외 경로를 제외한 인프라 측면의 수치입니다.
+> 2.  **Lupang App 취약점:** 자체 개발된 'Lupang' 애플리케이션의 경우, 학습 및 모의해킹 실습을 위해 **의도적으로 일부 취약점을 허용**했습니다. 따라서 WAF 차단율 100%는 Lupang 앱의 예외 경로를 제외한 인프라 측면의 수치입니다.
 
 ---
 

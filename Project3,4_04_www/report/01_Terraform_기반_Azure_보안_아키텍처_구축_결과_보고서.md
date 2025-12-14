@@ -152,9 +152,6 @@ graph TD
     User -->|"HTTPS (443)"| Mail
     Admin -->|"HTTPS (443)"| BAS
     
-    %% VNet Peering
-    Hub_VNet <==>|"⚡ VNet Peering ⚡"| Spoke_VNet
-    
     %% Internal Flows
     AppGW --> VMSS
     BAS -.->|"SSH (22)"| VMSS
@@ -163,6 +160,9 @@ graph TD
     Mail -->|"Private Link"| Data
     VMSS -.->|"Outbound Filter"| FW
     Mail -.->|"Outbound Filter"| FW
+
+    %% VNet Peering (Visualized via Nodes)
+    FW <==>|"⚡ VNet Peering ⚡"| AppGW
 
     %% Apply Styles
     class Hub_VNet hub;
@@ -199,8 +199,8 @@ graph TD
     end
 
     %% --- Flows ---
-    User ==> Edge
-    Edge ==>|"HTTPS (443)"| AppGW
+    User ==> TM
+    FD ==>|"HTTPS (443)"| AppGW
     AppGW ==>|"HTTP (80)"| Web
     LB -.->|"Outbound NAT"| Scale
     Web --> WAS
@@ -213,30 +213,33 @@ graph TD
 
 네트워크 인프라는 모듈화된 Terraform 코드(`modules/Network`, `modules/Hub`)를 통해 배포됩니다. 각 서브넷은 철저하게 용도에 따라 분리되어 NSG(네트워크 보안 그룹)로 보호받습니다.
 
-#### 3.2.1 Hub VNet 구성 (10.0.0.0/16)
+특히, **Application Gateway**는 대용량 인터넷 인바운드 트래픽을 효율적으로 처리하기 위해 **Azure Firewall을 경유하지 않는 독립적인 라우팅 경로**를 가집니다. 이는 불필요한 레이턴시를 제거하고, 비대칭 라우팅(Asymmetric Routing)으로 인한 연결 드롭 문제를 원천적으로 방지하기 위함입니다.
+
+#### 3.2.1 Hub VNet 구성 (10.1.0.0/16)
 
 Hub VNet은 보안 및 관리의 핵심 거점입니다.
 
 | 서브넷 명 | CIDR | 주요 리소스 | 설명 |
 |:---|:---|:---|:---|
-| `AzureFirewallSubnet` | 10.0.1.0/24 | **Azure Firewall** | 중앙 집중형 방화벽. 인터넷으로 나가는 모든 트래픽에 대해 SNAT 및 필터링을 수행합니다. |
-| `AzureBastionSubnet` | 10.0.2.0/24 | **Azure Bastion** | Public IP를 가진 유일한 관리 접근 포인트. 443 포트만 오픈하여 내부로의 SSH/RDP 터널링을 제공합니다. |
+| `AzureFirewallSubnet` | 10.1.0.0/24 | **Azure Firewall** | 중앙 집중형 방화벽. 인터넷으로 나가는 모든 트래픽에 대해 SNAT 및 필터링을 수행합니다. |
+| `AzureBastionSubnet` | 10.1.1.0/24 | **Azure Bastion** | Public IP를 가진 유일한 관리 접근 포인트. 443 포트만 오픈하여 내부로의 SSH/RDP 터널링을 제공합니다. |
 
-#### 3.2.2 Spoke VNet 구성 (192.168.0.0/16)
+#### 3.2.2 Spoke VNet 구성 (10.0.0.0/16, 172.16.0.0/16, 192.168.0.0/16)
 
 Spoke VNet은 3-Tier 아키텍처(Web-App-Data)를 수용하기 위해 세분화되어 있습니다.
 
 | 서브넷 명 | CIDR | 용도 | NSG 보안 정책 (Inbound 허용) |
 |:---|:---|:---|:---|
-| `www-appgw` | 192.168.1.0/24 | **App Gateway** | Front Door 및 인터넷으로부터의 80/443 포트 허용. WAF 검사 수행. |
-| `www-web` | 192.168.3.0/24 | **Web VMSS** | App Gateway 서브넷(192.168.1.0/24)에서 오는 80 포트만 허용. 직접 인터넷 접속 불가. |
-| `www-was` | 192.168.5.0/24 | **WAS VMSS** | Web 서브넷(192.168.3.0/24)에서 오는 SSH 및 애플리케이션 포트만 허용. |
-| `www-data` | 192.168.4.0/24 | **Private Endpoints** | WAS 서브넷(192.168.5.0/24)에서 오는 DB(3306), Redis(6379) 포트만 허용. 인터넷 완전 차단. |
+| `www-appgw` | 192.168.3.0/24 | **App Gateway** | Front Door 및 인터넷으로부터의 80/443 포트 허용. WAF 검사 수행. |
+| `www-web` | 192.168.1.0/24 | **Web VMSS** | App Gateway 서브넷(192.168.3.0/24)에서 오는 80 포트만 허용. 직접 인터넷 접속 불가. |
+| `www-was` | 192.168.5.0/24 | **WAS VMSS** | Web 서브넷(192.168.1.0/24)에서 오는 SSH 및 애플리케이션 포트만 허용. |
+| `www-db` | 172.16.1.0/24 | **Private Endpoints** | WAS 서브넷(192.168.5.0/24)에서 오는 DB(3306), Redis(6380) 포트만 허용. 인터넷 완전 차단. |
 | `www-nat` | 192.168.8.0/24 | **NAT Gateway** | 아웃바운드 트래픽 고정 IP 할당 및 포트 고갈 방지용. |
 
 ### 3.3 컴퓨팅 리소스 (VMSS & HA)
 
-#### 3.3.1 Web/WAS VMSS (Virtual Machine Scale Set)
+#### 3.3.1 Web/WAS VMSS (Virtual Machine Scale Set) - 'Lupang' Platform
+커스텀 이커머스 애플리케이션 **'Lupang'**을 호스팅하는 핵심 컴퓨팅 자원입니다.
 *   **자동 확장 (Auto-scaling):** CPU 사용량이 70%를 초과하면 인스턴스를 자동으로 1대 증설(Scale-out)하고, 30% 미만으로 떨어지면 1대 감축(Scale-in)합니다. 최대 10대까지 확장 가능하도록 설정하여 트래픽 폭주에 대응합니다.
 *   **고가용성 (Multi-AZ):** 인스턴스들을 Zone 1과 Zone 2에 균등하게 분산 배치하여, 특정 데이터센터의 전력/네트워크 장애 시에도 서비스 가용성을 보장합니다.
 *   **상태 비저장 (Stateless):** 세션 데이터는 로컬 디스크가 아닌 Redis Cache에 저장하므로, VM이 언제 삭제되고 재생성되어도 사용자 세션은 유지됩니다.
@@ -299,7 +302,7 @@ graph TD
                 KV["🔑 Key Vault"]:::data
             end
             
-            PE ==> Data_Res
+            PE ==> DB
         end
         
         WAS ==>|"Token Auth"| PE
@@ -371,6 +374,15 @@ graph TD
 *   **VM Disk:** ADE(Azure Disk Encryption)를 사용하여 OS 영역과 데이터 영역을 모두 암호화했습니다. 물리적 디스크가 탈취되어도 복호화 키 없이는 데이터를 읽을 수 없습니다.
 *   **Platform Managed Keys:** Storage Access Key 등 플랫폼 관리 키는 Microsoft가 관리하며 주기적으로 자동 순환됩니다.
 
+### 4.5 OS Hardening (운영체제 강화)
+
+리눅스 운영체제 레벨에서도 심층 방어를 구현하기 위해 **OS Hardening**을 적용했습니다.
+
+*   **SELinux (Security-Enhanced Linux):** `Enforcing` 모드를 적용하여, 강제 접근 제어(MAC)를 수행합니다. 이를 통해 프로세스가 허용된 파일이나 네트워크 리소스에만 접근하도록 엄격히 제한합니다.
+*   **Security Booleans:**
+    *   `httpd_can_network_connect`: **ON** (웹 서버가 WAS나 외부 API와 통신할 수 있도록 최소한의 권한을 허용)
+    *   그 외 불필요한 Boolean 정책은 기본적으로 차단(Off)하여 공격 표면을 최소화했습니다.
+
 ### 4.4 위협 탐지 및 대응 (SIEM/SOAR)
 
 우리는 **Microsoft Sentinel**을 도입하여 단순한 로그 수집을 넘어선 지능형 위협 대응 체계를 구축했습니다.
@@ -388,7 +400,7 @@ graph TD
 
 #### 주요 탐지 규칙 상세 명세 (Top 15 Matches)
 
-| ID | 규칙명 (Rule Name) | 심각도 | 설명 및 탐지 논리 | 대응 조치 |
+| ID | 규칙명 | 심각도 | 설명 및 탐지 논리 | 대응 조치 |
 |:---|:---|:---:|:---|:---|
 | 01 | **SSH Brute Force** | High | 5분 내 동일 IP에서 3회 이상 로그인 실패 시 탐지 | IP 차단 및 알림 |
 | 02 | **Sensitive File Access** | Medium | 리눅스 중요 파일(`/etc/passwd`, `/etc/shadow`) 접근 시도 | 계정 감사 |
@@ -433,7 +445,7 @@ graph TD
 
 #### 사용자별 역할 및 권한
 
-| 사용자 (User Principal) | 역할 (Role) | 적용 리소스 (Scope) | 권한 상세 설명 (Allowed Actions) | 제한 사항 (Denied) |
+| 사용자 | 역할 | 적용 리소스 | 권한 상세 | 제한 사항 |
 |:---|:---|:---|:---|:---|
 | `student421` (이두경, PM) | **Owner** | All (RG Level) | 리소스 생성/삭제, 권한 부여, 정책 설정 포함 모든 권한 | 없음 |
 | `student424` (이하연, 아키텍처검증) | **Reader** | All (RG Level) | 모든 리소스 구성 및 상태 조회, 아키텍처 검토 | 설정 변경 불가, 리소스 생성/삭제 불가 |
@@ -503,8 +515,8 @@ graph TD
 
 | 지표 | 목표 값 | 현재 달성 수준 |
 |:---|:---|:---|
-| **RTO** (Recovery Time Objective) | 4시간 | Terraform 재배포 ~30분, DB 복구 ~1시간 |
-| **RPO** (Recovery Point Objective) | 1시간 | MySQL 연속 백업, 5분 간격 |
+| **RTO** | 4시간 | Terraform 재배포 ~30분, DB 복구 ~1시간 |
+| **RPO** | 1시간 | MySQL 연속 백업, 5분 간격 |
 
 #### 재해 복구 절차 흐름
 
@@ -562,8 +574,8 @@ Terraform을 통해 Azure Policy를 배포하여 거버넌스를 강제합니다
 
 | 기능 | 상태 | 필요 권한 | 비고 |
 |:---|:---:|:---|:---|
-| Entra ID 커넥터 | ❌ 불가 | Global Admin | Tenant 레벨 권한 필요 |
-| Defender for Cloud 커넥터 | ❌ 불가 | Security Admin | Legacy 버전 호환성 문제 |
+| Microsoft Defender XDR 커넥터 | ❌ 불가 | Global Admin | Tenant 레벨 권한 필요 (통합 플랫폼 구성 실패) |
+| Defender for Cloud 커넥터 | ✅ 가능 | Security Admin | **Legacy 커넥터**를 통해 우회 연동 성공 (Hybrid Mode) |
 
 #### 비용 제한
 
@@ -638,6 +650,14 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
     priority = 200
     action   = "Allow"
     
+    # DNS 포트 53 허용
+    rule {
+      name                  = "Allow-DNS"
+      protocols             = ["UDP", "TCP"]
+      source_addresses      = ["*"]
+      destination_addresses = ["*"]
+      destination_ports     = ["53"]
+    }
     # NTP(시간 동기화) 포트 123 허용
     rule {
       name                  = "Allow-NTP"
@@ -645,6 +665,22 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
       source_addresses      = ["*"]
       destination_addresses = ["*"]
       destination_ports     = ["123"]
+    }
+    # MySQL 포트 3306 허용 (DB 연결)
+    rule {
+      name                  = "Allow-MySQL"
+      protocols             = ["TCP"]
+      source_addresses      = ["*"]
+      destination_addresses = ["*"]
+      destination_ports     = ["3306"]
+    }
+    # Redis 포트 6379, 6380 허용 (캐시 연결)
+    rule {
+      name                  = "Allow-Redis"
+      protocols             = ["TCP"]
+      source_addresses      = ["*"]
+      destination_addresses = ["*"]
+      destination_ports     = ["6379", "6380"]
     }
   }
 }
@@ -738,18 +774,14 @@ Sentinel 탐지 규칙에 사용된 실제 Kusto Query Language(KQL) 코드 모�
 // SSH Brute Force Attack
 // 5분 내에 3회 이상의 로그인 실패가 발생한 출발지 IP를 식별합니다.
 Syslog
-| where Facility == "auth" or Facility == "authpriv" // 인증 관련 로그만 필터링
-| where SyslogMessage contains "Failed password" or SyslogMessage contains "authentication failure" // 실패 메시지 검색
-| extend AttackerIP = extract(@"from\s+(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage) // 정규식으로 공격자 IP 추출
-| extend TargetUser = extract(@"for\s+(invalid\s+user\s+)?(\w+)", 2, SyslogMessage) // 정규식으로 대상 사용자 추출
-| summarize 
-    FailedAttempts = count(), // 실패 횟수 카운트
-    TargetUsers = make_set(TargetUser), // 시도된 사용자 목록 집계
-    LastAttemptTime = max(TimeGenerated) // 마지막 시도 시간
-  by AttackerIP, Computer, bin(TimeGenerated, 5m) // 5분 단위로 그룹화
-| where FailedAttempts >= 3 // 실패 횟수가 3회 이상인 경우만 필터링
-| project TimeGenerated, Computer, AttackerIP, FailedAttempts, TargetUsers, LastAttemptTime
-| order by FailedAttempts desc // 실패 횟수 내림차순 정렬
+| where Facility == "auth" or Facility == "authpriv"
+| where SyslogMessage contains "Failed password"
+| extend AttackerIP = extract(@"from\s+(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
+| extend TargetUser = extract(@"for\s+(invalid\s+user\s+)?(\w+)", 2, SyslogMessage)
+| summarize FailedAttempts = count(), TargetUsers = make_set(TargetUser) 
+    by Computer, AttackerIP, Bin = bin(TimeGenerated, 5m)
+| where FailedAttempts > 3
+| project TimeGenerated = Bin, Computer, AttackerIP, FailedAttempts, TargetUsers
 ```
 
 ### B.2 Break Glass Account Protection
