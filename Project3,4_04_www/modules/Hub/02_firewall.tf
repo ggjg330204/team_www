@@ -72,20 +72,13 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
       }
       source_addresses  = ["*"]
       destination_fqdns = [
-        # Rocky Linux mirrors (wildcard for all mirrors)
         "*.rockylinux.org", "download.rockylinux.org",
-        # Remi PHP repository (wildcard for CDN and mirrors)
         "*.remirepo.net", "rpms.remirepo.net", "cdn.remirepo.net",
-        # Fedora/EPEL mirrors
         "*.fedoraproject.org", "mirrors.fedoraproject.org", "dl.fedoraproject.org",
-        # Ubuntu (for reference)
         "*.ubuntu.com", "security.ubuntu.com", "azure.archive.ubuntu.com",
         "changelogs.ubuntu.com", "ppa.launchpadcontent.net",
-        # CentOS mirrors
         "*.centos.org", "mirror.centos.org", "vault.centos.org",
-        # CDN providers used by package repos
         "*.cloudflare.com", "*.akamai.net", "*.fastly.net", "*.amazonaws.com",
-        # Regional mirrors (Korea, Japan, etc.)
         "mirror.kakao.com", "*.kakao.com", "ftp.kaist.ac.kr", "ftp.jaist.ac.jp",
         "*.ac.jp", "*.ac.kr", "*.edu.cn", "*.riken.jp"
       ]
@@ -103,13 +96,9 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
         "*.githubassets.com", "github-releases.githubusercontent.com",
         "github-cloud.s3.amazonaws.com", "*.s3.amazonaws.com",
         "release-assets.githubusercontent.com", "*.githubusercontent.com",
-        # SSL certificates
         "*.digicert.com", "cacerts.digicert.com",
-        # CDN for Bootstrap/JS
         "*.jsdelivr.net", "cdn.jsdelivr.net",
-        # Image services
         "*.unsplash.com", "images.unsplash.com",
-        # Microsoft/Azure packages
         "packages.microsoft.com", "*.microsoft.com"
       ]
     }
@@ -136,9 +125,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "fw_policy_rcg" {
       destination_fqdns = [
         "api.snapcraft.io", "*.snapcraft.io", 
         "*.letsencrypt.org", "zerossl.com", "acme-v02.api.letsencrypt.org",
-        # Fonts
         "fonts.googleapis.com", "fonts.gstatic.com",
-        # ACME.sh for SSL certificates
         "get.acme.sh", "*.acme.sh"
       ]
     }

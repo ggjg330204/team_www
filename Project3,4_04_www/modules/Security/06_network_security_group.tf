@@ -350,7 +350,7 @@ resource "azurerm_network_security_rule" "redis_access" {
 }
 resource "azurerm_network_security_rule" "ssh_internal" {
   name                        = "allow-ssh-internal"
-  priority                    = 100
+  priority                    = 105
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"

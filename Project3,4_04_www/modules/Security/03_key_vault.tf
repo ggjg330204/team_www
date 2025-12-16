@@ -37,6 +37,30 @@ resource "azurerm_key_vault_secret" "db_password" {
   depends_on = [azurerm_role_assignment.kv_admin_sp]
 }
 
+resource "random_password" "jwt_secret" {
+  length  = 64
+  special = false
+}
+
+resource "azurerm_key_vault_secret" "jwt_secret" {
+  name         = "JWT-SECRET"
+  value        = random_password.jwt_secret.result
+  key_vault_id = azurerm_key_vault.kv.id
+
+  expiration_date = timeadd(timestamp(), "2160h")
+
+  tags = {
+    Purpose   = "JWT-Signing"
+    ManagedBy = "Terraform"
+  }
+
+  depends_on = [azurerm_role_assignment.kv_admin_sp]
+
+  lifecycle {
+    ignore_changes = [expiration_date]
+  }
+}
+
 resource "random_id" "kv" {
   byte_length = 4
 }

@@ -101,6 +101,11 @@ resource "azurerm_virtual_machine_scale_set_extension" "was_ama" {
   type                         = "AzureMonitorLinuxAgent"
   type_handler_version         = "1.2"
   auto_upgrade_minor_version   = true
+
+  timeouts {
+    create = "45m"
+    update = "45m"
+  }
 }
 
 resource "azurerm_monitor_data_collection_rule_association" "was_vmss_dcr" {
