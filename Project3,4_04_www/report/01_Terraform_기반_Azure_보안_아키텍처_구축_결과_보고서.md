@@ -6,6 +6,7 @@
     *   [1.1 프로젝트 배경 및 필요성](#11-프로젝트-배경-및-필요성)
     *   [1.2 프로젝트 목표 및 범위](#12-프로젝트-목표-및-범위)
     *   [1.3 해결하고자 하는 주요 보안 과제](#13-해결하고자-하는-주요-보안-과제)
+    *   [1.4 핵심 기능 요약 및 월간 운영 비용](#14-핵심-기능-요약-및-월간-운영-비용)
 2.  [아키텍처 설계 철학 및 원칙](#2-아키텍처-설계-철학-및-원칙)
     *   [2.1 Zero Trust 보안 모델](#21-zero-trust-보안-모델)
     *   [2.2 Immutable Infrastructure (Pets vs Cattle)](#22-immutable-infrastructure-pets-vs-cattle)
@@ -80,6 +81,49 @@
 > 본 프로젝트의 Terraform 소스 코드는 아래 GitHub 리포지토리에서 확인하실 수 있습니다.<br>
 > 👉 **[Terraform Security Architecture](https://github.com/HamaPr/Terraform_SecurityArchitecture)**
 
+### 1.4 핵심 기능 요약 및 월간 운영 비용
+
+#### 주요 기능 한눈에 보기
+
+| 영역 | 핵심 기능 | 구현 기술 |
+|:---|:---|:---|
+| **웹 서비스** | 고객 대면 이커머스 플랫폼 (Lupang) | Web/WAS VMSS + App Gateway |
+| **보안 경계** | 7계층 심층 방어, WAF, 중앙 방화벽 | Azure Firewall + App Gateway WAF |
+| **데이터 보호** | 암호화(TDE/ADE), Private Link 격리 | MySQL + Redis + Key Vault |
+| **위협 탐지** | 15개 탐지 규칙 + 자동 알림 | Microsoft Sentinel SIEM/SOAR |
+| **고가용성** | Multi-AZ 구성, 자동 장애 조치 | Zone Redundant HA + VMSS Auto-scale |
+| **메일 서비스** | 자체 구축 메일 서버 | Postfix + Dovecot + Roundcube |
+| **CDN/가속** | 글로벌 엣지 캐싱 및 DDoS 방어 | Azure Front Door |
+
+#### 월간 운영 비용 추정 (Korea Central 기준)
+
+| 영역 | 서비스 | SKU/규격 | 수량 | 월 비용 (USD) |
+|:---|:---|:---|:---:|---:|
+| **웹 서비스** | Web VMSS | D2s_v3 (2 vCPU) | 2~ | $140~ |
+| | WAS VMSS | D2s_v3 (2 vCPU) | 1~ | $70~ |
+| | Application Gateway | WAF_v2 (capacity=2) | 1 | $246 |
+| **보안 경계** | Azure Firewall | Standard | 1 | $912 |
+| | Azure Bastion | Standard | 1 | $139 |
+| | NAT Gateway | Standard | 1 | $32 |
+| **데이터 보호** | MySQL Flexible | GP_D4ds_v4 + ZoneRedundant HA | 1+1 | $520 |
+| | Redis Cache | Premium P1 | 1 | $185 |
+| | Key Vault | Premium | 1 | $5 |
+| | Storage Account | LRS 100GB | 2 | $4 |
+| **위협 탐지** | Log Analytics | 5GB/일 수집 | 1 | $35 |
+| | Defender for Cloud | 서버/SQL/Storage | - | $30 |
+| **메일 서비스** | Mail VM | B2s (2 vCPU) | 1 | $30 |
+| **CDN/가속** | Front Door | Premium | 1 | $330 |
+| **기타** | Public IP | Standard | 5 | $18 |
+| | DNS Zone | Public | 1 | $0.5 |
+| | | | **합계** | **$2,697~/월** |
+
+> **비용 설계 의도**
+> 본 프로젝트는 **다양한 Azure PaaS 서비스를 직접 경험하고 학습**하는 것을 목적으로 Premium 티어를 적극 활용했습니다. 실제 운영 환경에서는 다음과 같이 비용을 절감할 수 있습니다:
+> - **Azure Firewall** ($912) → NAT Gateway + NSG 조합으로 대체 (약 $30)
+> - **Redis Premium** ($185) → Standard 티어 또는 VM에 Redis 직접 설치 (Self-managed, 약 $30)
+> - **Front Door Premium** ($330) → Standard 티어 또는 Application Gateway 단독 사용
+> - **MySQL Zone-Redundant HA** ($520) → 단일 인스턴스 + 백업 전략으로 대체 (약 $80)
+
 ---
 
 ## 2. 아키텍처 설계 철학 및 원칙
@@ -124,7 +168,7 @@ graph TD
     classDef net fill:#0078D4,stroke:#fff,stroke-width:1px,color:#fff;
 
     %% --- External ---
-    subgraph External ["☁️ External World"]
+    subgraph External ["☁️ 외부 인터넷망"]
         User(("👤 User"))
         Admin(("👨‍💻 Admin"))
     end
@@ -141,7 +185,8 @@ graph TD
         %% Spoke VNet
         subgraph Spoke_VNet ["⚙️ Spoke VNet (Workload)"]
             AppGW["🛡️ App Gateway"]:::net
-            VMSS["💻 Web/WAS VMSS"]:::comp
+            Web["💻 Web VMSS"]:::comp
+            WAS["⚙️ WAS VMSS"]:::comp
             Mail["📧 Mail Server"]:::comp
             Data[("🛢️ Data Platform")]:::comp
         end
@@ -153,12 +198,18 @@ graph TD
     Admin -->|"HTTPS (443)"| BAS
     
     %% Internal Flows
-    AppGW --> VMSS
-    BAS -.->|"SSH (22)"| VMSS
-    BAS -.->|"SSH (22)"| Mail
-    VMSS -->|"Private Link"| Data
-    Mail -->|"Private Link"| Data
-    VMSS -.->|"Outbound Filter"| FW
+    AppGW -->|"HTTP (80)"| Web
+    Web -->|"Internal API (80)"| WAS
+    WAS -->|"Private Link (3306/6380)"| Data
+    
+    %% Management Access
+    BAS -.->|"SSH Tunnel (22)"| Web
+    BAS -.->|"SSH Tunnel (22)"| Mail
+    Web -.->|"Jump Host (22)"| WAS
+
+    %% Outbound Flows
+    Web -.->|"Outbound Filter"| FW
+    WAS -.->|"Outbound Filter"| FW
     Mail -.->|"Outbound Filter"| FW
 
     %% VNet Peering (Visualized via Nodes)

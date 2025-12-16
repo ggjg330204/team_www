@@ -33,8 +33,9 @@
     *   [6.2 SSRF 방어 검증](#62-ssrf-방어-검증)
     *   [6.3 Command Injection 방어 검증](#63-command-injection-방어-검증)
     *   [6.4 SQL Injection 방어 검증](#64-sql-injection-방어-검증)
-    *   [6.5 보안 취약점 조치 방안](#65-보안-취약점-조치-방안)
-    *   [6.6 WAF 방어 효용성 검증 결론](#66-waf-방어-효용성-검증-결론)
+    *   [6.5 취약점 상세 진단: 인증 토큰 검증 부재](#65-취약점-상세-진단-인증-토큰-검증-부재)
+    *   [6.6 보안 취약점 조치 방안](#66-보안-취약점-조치-방안)
+    *   [6.7 WAF 방어 효용성 검증 결론](#67-waf-방어-효용성-검증-결론)
 7. [결론](#7-결론)
 
 ---
@@ -615,7 +616,89 @@ $sql = "SELECT * FROM products WHERE id = " . $id;
 
 ---
 
-### 6.5 보안 취약점 조치 방안
+### 6.5 취약점 상세 진단: 인증 토큰 검증 부재
+
+Lupang 애플리케이션의 소스코드(`header.php`, `login.php`) 진단 중, 사용자 인증 토큰의 **무결성 검증 로직이 부재**한 치명적인 취약점이 식별되었습니다. 이는 OWASP Top 10의 **Broken Authentication**에 해당합니다.
+
+#### 6.5.1 취약점 식별 내용
+
+| 진단 항목 | 인증 토큰 무결성 및 만료 처리 검증 |
+|:---:|:---|
+| **위험도** | 🔴 **Critical** |
+| **현상** | `lupang_token` 쿠키가 단순 Base64 인코딩된 JSON으로 구성되어 있으며, 서명 검증이 없음. |
+| **영향** | 악의적인 사용자 또는 퇴사자가 토큰을 임의로 생성/변조하여 **관리자 권한 획득** 및 **지속적인 비인가 접근** 가능. |
+
+**코드 분석 (`header.php`):**
+```php
+// [취약] 서명(Signature) 검증 없이 디코딩된 데이터를 그대로 신뢰함
+if (isset($_COOKIE['lupang_token'])) {
+    $decoded = base64_decode($_COOKIE['lupang_token']);
+    $json = json_decode($decoded, true); // ⚠️ 조작된 JSON도 그대로 수락
+    $currentUser = $json;
+}
+```
+
+#### 6.5.2 권한 탈취 공격 검증
+
+서명이 없는 취약점을 악용하여, 일반 사용자 권한을 관리자로 격상시키는 공격을 시연했습니다.
+
+1.  **공격 구문 생성:**
+    ```bash
+    # 'role' 필드를 'admin'으로 변조한 JSON을 Base64 인코딩
+    PAYLOAD='{"username":"attacker","role":"admin"}'
+    FORGED_TOKEN=$(echo -n $PAYLOAD | base64)
+    ```
+2.  **공격 실행:**
+    ```bash
+    # 위조된 토큰으로 관리자 페이지 요청
+    curl -b "lupang_token=$FORGED_TOKEN" https://www.04www.cloud/admin.php
+    ```
+3.  **결과:** 인증 로직이 위조된 토큰을 정상으로 인식하여 **관리자 페이지 접근 허용**.
+
+> [!NOTE] 스크린샷 가이드: 토큰 위조 공격 성공
+> *   **Image:** Kali Linux 터미널 또는 Postman 화면
+>     1.  `TOKEN=$(echo ... | base64)` 명령어로 위조 토큰 생성 과정이 보이는 터미널.
+>     2.  `curl` 명령어로 admin.php 접근 시 HTTP 200 OK 또는 관리자 페이지 HTML이 반환된 결과.
+
+#### 6.5.3 시큐어 코딩 적용
+
+토큰의 기밀성과 무결성을 보장하기 위해 **HMAC-SHA256 서명**이 포함된 **JWT(Json Web Token)** 구조로 인증 로직을 재설계했습니다.
+
+**1) 보안 토큰 생성 유틸리티 (`auth_utils.php`):**
+```php
+function verifySecureToken($token) {
+    $secret_key = getenv('JWT_SECRET'); // Azure Key Vault에서 로드
+    
+    // 1. 토큰 구조 분리 (Header.Payload.Signature)
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) return false;
+    
+    // 2. 서명 재검증 (무결성 확인)
+    $signature_check = base64url_encode(hash_hmac('sha256', "$parts[0].$parts[1]", $secret_key, true));
+    if (!hash_equals($signature_check, $parts[2])) return false; // 🚫 변조됨
+    
+    // 3. 만료 시간 및 DB 상태 교차 검증 (퇴사자/비활성 계정 확인)
+    $payload = json_decode(base64url_decode($parts[1]), true);
+    if ($payload['exp'] < time()) return false; // 🚫 만료됨
+    if (!checkUserActive($payload['sub'])) return false; // 🚫 계정 비활성/퇴사
+    
+    return $payload;
+}
+```
+
+**2) Azure 기반 키 관리 강화:**
+*   **Key Storage:** 소스코드 내 하드코딩을 제거하고 **Azure Key Vault**에 서명키(`JWT_SECRET`) 저장.
+*   **Key Rotation:** 정기적으로 서명키를 교체하여, 유출된 토큰이 있더라도 자동으로 무효화되도록 구성.
+
+> [!NOTE] 스크린샷 가이드: Azure Key Vault 비밀 키 관리
+> *   **Image:** Azure Portal > Key Vault > Secrets 화면
+>     1.  `lupang-kv` 키 자격 증명 모음 접속.
+>     2.  **Secrets (비밀)** 메뉴 클릭.
+>     3.  `JWT-SECRET` 항목이 생성되어 있고, **Status: Enabled** 상태인 화면 캡처.
+
+---
+
+### 6.6 보안 취약점 조치 방안
 
 비록 WAF가 방어하고 있지만, **심층 방어(Defense in Depth)** 원칙에 따라 애플리케이션 코드 자체도 수정해야 합니다.
 
@@ -633,7 +716,10 @@ $sql = "SELECT * FROM products WHERE id = " . $id;
     $stmt->execute();
     ```
 
-### 6.6 WAF 방어 효용성 검증 결론
+**4) 인증 토큰 검증 강화**
+*   **TO-BE:** JWT 서명 검증 도입 및 Azure Key Vault 키 관리 연동.
+
+### 6.7 WAF 방어 효용성 검증 결론
 
 이번 모의해킹 실습을 통해 **Azure WAF(Application Gateway)가 애플리케이션 보안의 핵심 방어막 역할**을 수행함을 입증했습니다.
 
